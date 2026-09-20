@@ -121,7 +121,7 @@ function decodeParams(raw: RawRebalancePolicyParams): RebalancePolicyParams {
  * contract-enforced guarantee): every rule the account actually has is
  * read and checked.
  */
-async function findPolicyContextRuleId(smartAccount: string): Promise<number | null> {
+export async function findPolicyContextRuleId(smartAccount: string): Promise<number | null> {
   const countSimulation = await simulateReadCall(smartAccount, "get_context_rules_count");
   if (rpc.Api.isSimulationError(countSimulation)) {
     throw new Error(countSimulation.error);

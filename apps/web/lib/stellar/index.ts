@@ -12,6 +12,6 @@ export {
   type SmartAccountAssetBalance,
   type ExtraTokenContract,
 } from "./smart-account-balances";
-export { getPolicyStatus, type PolicyStatus, type RebalancePolicyParams } from "./policy";
+export { getPolicyStatus, findPolicyContextRuleId, type PolicyStatus, type RebalancePolicyParams } from "./policy";
 export { getRebalanceHistory, type RebalanceHistoryEntry, type RebalanceHistoryResult } from "./rebalance-history";
 export { formatBalanceAmount, formatDurationSeconds, parseDecimalToStroops } from "./format";
