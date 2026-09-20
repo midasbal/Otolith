@@ -14,5 +14,5 @@ export {
 } from "./smart-account-balances";
 export { getPolicyStatus, findPolicyContextRuleId, type PolicyStatus, type RebalancePolicyParams } from "./policy";
 export { getRebalanceHistory, type RebalanceHistoryEntry, type RebalanceHistoryResult } from "./rebalance-history";
-export { formatBalanceAmount, formatDurationSeconds, formatUsd, parseDecimalToStroops } from "./format";
+export { formatBalanceAmount, formatBps, formatDurationSeconds, formatUsd, parseDecimalToStroops } from "./format";
 export { getPortfolioValuation, type PortfolioValuation, type PortfolioAssetValue } from "./portfolio-value";

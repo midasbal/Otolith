@@ -1,20 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { truncateAddress, useWallet } from "@/components/wallet-provider";
 import { useSmartAccountBalances } from "@/components/use-smart-account-balances";
 import { usePolicyStatus } from "@/components/use-policy-status";
 import { useRebalanceCheck } from "@/components/use-rebalance-check";
 import { useTriggerRebalance } from "@/components/use-trigger-rebalance";
-import { useRevokePolicy } from "@/components/use-revoke-policy";
 import { usePortfolioValuation, type PortfolioValuationInput } from "@/components/use-portfolio-value";
 import { FundInLira } from "@/components/fund-in-lira";
-import { formatBalanceAmount, formatDurationSeconds, formatUsd, type ExtraTokenContract } from "@/lib/stellar";
+import { formatBalanceAmount, formatBps, formatDurationSeconds, formatUsd, type ExtraTokenContract } from "@/lib/stellar";
 import { BUY_ASSET } from "@/lib/stellar/policy-config";
-
-function formatBps(bps: number): string {
-  return `${(bps / 100).toFixed(2)}%`;
-}
 
 function formatDriftBps(bps: number): string {
   const sign = bps > 0 ? "+" : bps < 0 ? "" : "±";
@@ -57,8 +52,6 @@ export default function DashboardPage() {
   const { state: balancesState, retry: retryBalances } = useSmartAccountBalances(address, extraTokenContracts);
   const { state: rebalanceState, retry: retryRebalanceCheck } = useRebalanceCheck(address);
   const { state: triggerState, trigger: triggerRebalance } = useTriggerRebalance();
-  const { state: revokeState, revoke: revokePolicy, reset: resetRevoke } = useRevokePolicy();
-  const [confirmingRevoke, setConfirmingRevoke] = useState(false);
 
   const valuationInput: PortfolioValuationInput | null = useMemo(() => {
     if (policyState.status !== "loaded" || policyState.result.kind !== "installed") {
@@ -91,22 +84,6 @@ export default function DashboardPage() {
       retryBalances();
       retryRebalanceCheck();
     }
-  };
-
-  const handleRevoke = async () => {
-    if (!address) return;
-    setConfirmingRevoke(false);
-    const succeeded = await revokePolicy(address);
-    if (succeeded) {
-      retryPolicy();
-      retryBalances();
-      retryRebalanceCheck();
-    }
-  };
-
-  const handleContinueAfterRevoke = () => {
-    resetRevoke();
-    setConfirmingRevoke(false);
   };
 
   if (!address) {
@@ -192,40 +169,7 @@ export default function DashboardPage() {
           </div>
         ) : null}
 
-        {revokeState.status === "success" ? (
-          <div className="panel min-w-0 rounded-lg p-6">
-            <h2 className="font-display text-base font-medium text-panel-text">
-              Policy revoked
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-panel-text/70">
-              The standing rebalance authorization on this account has been
-              removed. No further rebalance can be triggered. Your funds
-              stayed in your account the whole time and are untouched; you
-              can set up a new policy whenever you want.
-            </p>
-            <p className="mt-4 text-xs text-panel-text/60">Transaction hash</p>
-            <p className="mt-1 break-all font-mono text-sm text-panel-text">{revokeState.hash}</p>
-            <a
-              href={`https://stellar.expert/explorer/testnet/tx/${revokeState.hash}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-block text-sm text-panel-text/70 underline decoration-hairline-strong underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-panel-text"
-            >
-              View on stellar.expert
-            </a>
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={handleContinueAfterRevoke}
-                className="inline-flex w-fit items-center justify-center rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-text transition-colors duration-[var(--duration-fast)] ease-[var(--ease-settle)] hover:bg-[var(--color-accent-deep)]"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {revokeState.status !== "success" && policyState.status === "loaded" && policyState.result.kind === "not-installed" ? (
+        {policyState.status === "loaded" && policyState.result.kind === "not-installed" ? (
           <div className="panel min-w-0 rounded-lg p-6">
             <h2 className="font-display text-base font-medium text-panel-text">
               Set up your portfolio
@@ -248,7 +192,7 @@ export default function DashboardPage() {
           </div>
         ) : null}
 
-        {revokeState.status !== "success" && policyState.status === "loaded" && policyState.result.kind === "installed" ? (
+        {policyState.status === "loaded" && policyState.result.kind === "installed" ? (
           <div className="panel min-w-0 rounded-lg p-6">
             <p className="text-xs uppercase tracking-[0.14em] text-panel-text/60">
               Portfolio value
@@ -337,60 +281,18 @@ export default function DashboardPage() {
             </ul>
 
             <div className="mt-6 border-t border-panel-border pt-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-panel-text/60">
-                Revoke
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-panel-text/70">
-                Revoking removes this account&rsquo;s standing rebalance
-                authorization. No further rebalance can be triggered until
-                you set up a new policy. Your funds stay in your account,
-                untouched; you are only withdrawing the permission, not
-                moving anything.
-              </p>
-
-              {confirmingRevoke ? (
-                <div className="mt-3 flex flex-wrap items-center gap-4">
-                  <span className="text-sm leading-relaxed text-panel-text">
-                    Revoke this policy? This needs one more passkey signature.
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleRevoke()}
-                      disabled={revokeState.status === "revoking"}
-                      className="inline-flex w-fit items-center justify-center rounded-md border border-panel-text/40 px-3 py-1.5 text-xs font-medium text-panel-text transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-panel-recessed)] disabled:pointer-events-none disabled:opacity-60"
-                    >
-                      {revokeState.status === "revoking" ? "Revoking..." : "Confirm revoke"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingRevoke(false)}
-                      disabled={revokeState.status === "revoking"}
-                      className="text-sm text-panel-text/70 underline decoration-hairline-strong underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-panel-text disabled:pointer-events-none disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setConfirmingRevoke(true)}
-                  className="mt-3 inline-flex w-fit items-center justify-center rounded-md border border-panel-border px-3 py-1.5 text-xs font-medium text-panel-text transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-panel-recessed)]"
-                >
-                  Revoke policy
-                </button>
-              )}
-
-              {revokeState.status === "error" ? (
-                <p className="mt-3 text-sm leading-relaxed text-text-faint">{revokeState.message}</p>
-              ) : null}
+              <a
+                href="/app/settings"
+                className="text-sm text-panel-text/70 underline decoration-hairline-strong underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-panel-text"
+              >
+                Manage or revoke this policy in Settings
+              </a>
             </div>
           </div>
         ) : null}
       </div>
 
-      {policyInstalled && revokeState.status !== "success" ? (
+      {policyInstalled ? (
         <div className="mt-8 min-w-0">
           {triggerState.status === "success" ? (
             <div className="panel min-w-0 rounded-lg p-6">

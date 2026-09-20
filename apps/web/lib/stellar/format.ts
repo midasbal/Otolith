@@ -127,6 +127,15 @@ function pluralize(n: number, unit: string): string {
 }
 
 /**
+ * Formats a basis-points value as a percentage string (for example 250
+ * bps as "2.50%"), the display form policy parameters and drift figures
+ * share throughout the app.
+ */
+export function formatBps(bps: number): string {
+  return `${(bps / 100).toFixed(2)}%`;
+}
+
+/**
  * Formats a duration in seconds as a human-readable string (for example
  * "1 hour" or "1 hour 30 minutes"), rather than the raw seconds a
  * contract stores it as. Shows at most the two largest nonzero units,
