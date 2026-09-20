@@ -1,0 +1,31 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_OPTIONS=\"--require ./scripts/patch-slow-buffer.cjs\" next dev",
+    "build": "NODE_OPTIONS=\"--require ./scripts/patch-slow-buffer.cjs\" next build",
+    "start": "NODE_OPTIONS=\"--require ./scripts/patch-slow-buffer.cjs\" next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^16.3.0",
+    "@stellar/typescript-wallet-sdk": "^5.0.0",
+    "buffer": "^6.0.3",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "smart-account-kit": "^0.5.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

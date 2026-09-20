@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+/*
+  Design tokens: the single source of truth for the Otolith interface.
+
+  Two surfaces, not one. A pale lilac page, carrying dark ink text and
+  quiet hairlines. Dark metal panels, floating on that page, carrying pale
+  mist text and one emphasis color. Cream is the single chromatic note in
+  the whole system: reserved for the instrument's key figures and for
+  filled elements, never used as running text on the light page, since it
+  has nowhere near the contrast for that there. Nothing else in the
+  interface carries color.
+*/
+
+:root {
+  /* Lilac to ink ramp, for the page itself. Paper-50 is the base surface
+     (a pale, desaturated lilac, never a saturated pastel); ink is the
+     primary foreground tone (a very dark, near-neutral charcoal, never
+     pure black). The steps between them cover the hairlines and secondary
+     text the light page itself still needs. Derived in HSL, not by eye: a
+     consistent hue (H250) held across every step, saturation scaled down
+     together with the base's own drop from the previous cool-grey
+     palette, lightness stepped by the same deltas the ramp has always
+     used. text-faint sits slightly darker than a strict "same distance as
+     before" scaling would give it: pushed just far enough to clear 4.5:1
+     against the base on its own, since it is still used for real text
+     (the footer), not only for decoration. */
+  --paper-50: #ebeaf0;
+  --paper-300: #c5c3d0;
+  --paper-400: #aca9b8;
+  --paper-600: #66656d;
+  --paper-700: #52515a;
+  --ink-950: #14161a;
+
+  /* Two near-neighbors of paper-50, a hair lighter and a hair darker,
+     reserved only for the page's own background field (see
+     --surface-field below), never for any other surface, text, or
+     border. Same hue as the rest of the light ramp: no second color. The
+     gap from the base is small on purpose: felt as a soft change in light
+     across the page, not read as a separate color. */
+  --paper-glow: #f2f1f5;
+  --paper-shade: #e4e3ea;
+
+  /* The metal panel system. A dark gunmetal base plus two close
+     neighbors, used only to build the panel treatment below, the same
+     three-tone relationship the light ramp uses (base, a shade lighter, a
+     shade darker), just at the opposite end of the scale. mist is the
+     panel system's own foreground tone, a pale lilac-tinted near-white,
+     the panel equivalent of ink: legible body and label text on a dark
+     surface, never used on the light page. */
+  --metal-base: #191b1f;
+  --metal-light: #22252a;
+  --metal-dark: #121317;
+  --mist: #e8e4f1;
+
+  /* The panel's own border: a soft, translucent white rather than a flat
+     gray, since it needs to read as light catching a machined edge, not
+     as a drawn line. The top edge is a shade brighter than the rest, as
+     if the same light grazing the panel's surface (see --panel-field)
+     also catches its upper lip. */
+  --color-panel-border: rgba(255, 255, 255, 0.08);
+  --color-panel-border-top: rgba(255, 255, 255, 0.06);
+
+  /*
+    The metal panel background: a dark gunmetal base carrying three very
+    low-contrast layers, so it reads as brushed, lit metal rather than a
+    flat swatch, and never as an obvious shiny gradient.
+
+    1. A fine repeating diagonal grain (a hairline-width stripe at 1.6
+       percent white, repeating every 4px), standing in for a brushed
+       texture: felt as a faint grain up close, invisible at a normal
+       reading distance.
+    2. A soft, large radial sheen anchored above each panel's own
+       top-left corner, fading out well before the center, as if one
+       soft light source is grazing the surface.
+    3. A gentle diagonal sweep between metal-light and metal-dark, so the
+       panel is never a single flat fill.
+
+    Defined once here, the same way --surface-field is, so every panel in
+    the interface inherits this exact treatment through the .panel class
+    below rather than a page re-deriving it.
+  */
+  --panel-field: repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.016) 0px,
+      rgba(255, 255, 255, 0.016) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    radial-gradient(620px 320px at 18% -12%, rgba(255, 255, 255, 0.05), transparent 60%),
+    linear-gradient(155deg, var(--metal-light) 0%, var(--metal-base) 45%, var(--metal-dark) 100%);
+
+  /* Cream: the one chromatic note left in the system. Reserved for live
+     state, the primary confirm action, and confirmed on-chain values, the
+     same reserved meaning the retired teal accent used to carry. Legible
+     as text on the metal panels (see the contrast report), never used as
+     text on the light page: there it only ever appears as a filled
+     element (a badge, a button) with dark ink set on top of it. Three
+     controlled steps only, the same shape as before: a base, a deeper
+     tone for hover and pressed states, a soft tone for the rare subtle
+     tint. */
+  --cream: #f5f0d4;
+  --cream-deep: #eee5b5;
+  --cream-soft: #f8f6ed;
+
+  /* Semantic roles, built only from the ramps above. Every component in
+     the page reads from these, never from a raw hex value. surface-raised
+     is the metal panel's own base color (used as the plain fallback fill
+     before --panel-field layers on top of it); panel-text is mist, the
+     one text color legible on that panel. */
+  --color-surface: var(--paper-50);
+  --color-surface-glow: var(--paper-glow);
+  --color-surface-shade: var(--paper-shade);
+  --color-surface-raised: var(--metal-base);
+  --color-surface-raised-hover: var(--metal-light);
+  --color-panel-recessed: var(--metal-dark);
+  --color-panel-text: var(--mist);
+  --color-hairline: var(--paper-300);
+  --color-hairline-strong: var(--paper-400);
+  --color-text: var(--ink-950);
+  --color-text-muted: var(--paper-700);
+  --color-text-faint: var(--paper-600);
+  --color-accent: var(--cream);
+  --color-accent-deep: var(--cream-deep);
+  --color-accent-soft: var(--cream-soft);
+
+  /* The page's background treatment, defined once here so every page
+     that uses --color-surface as its base inherits the same quiet depth
+     rather than reinventing it. Two very soft, large radial fields: a
+     glow anchored above the hero and a shade anchored past the foot of
+     the page, each fading to transparent well before reaching the
+     middle, so the flat base carries the bulk of the page and the two
+     fields only ever read as a faint sense of light, not as a visible
+     gradient. Both draw only from paper-glow and paper-shade, immediate
+     neighbors of paper-50 in the same lilac family: no second hue,
+     nothing saturated enough to be pointed at. */
+  --surface-field: radial-gradient(1100px 700px at 12% -10%, var(--color-surface-glow), transparent 60%),
+    radial-gradient(1300px 900px at 100% 110%, var(--color-surface-shade), transparent 65%);
+
+  /* One signature easing curve: a confident, physical deceleration with
+     no bounce. Everything that moves in this interface settles on this
+     curve, so motion reads as one consistent, deliberate hand. */
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* A small, deliberate set of durations. Fast for hover and focus
+     feedback, base for ordinary transitions, settle for the slower,
+     physical "drift and settle" motion that is the identity's centerpiece. */
+  --duration-fast: 150ms;
+  --duration-base: 400ms;
+  --duration-settle: 1100ms;
+}
+
+@theme inline {
+  /* Typography, as one superfamily plus one instrument face. Zalando Sans
+     Expanded carries every heading and the wordmark: the same letterforms
+     as the body face, only wider, so headings read as confident and
+     architectural without introducing a second, unrelated typeface.
+     Zalando Sans (normal width) carries all body copy: the calm, legible
+     workhorse half of the same system. JetBrains Mono carries every
+     numeral, address, and hash, set with tabular figures so columns of
+     numbers align. */
+  --font-display: var(--font-zalando-sans-expanded);
+  --font-sans: var(--font-zalando-sans);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --color-surface: var(--color-surface);
+  --color-surface-glow: var(--color-surface-glow);
+  --color-surface-shade: var(--color-surface-shade);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-raised-hover: var(--color-surface-raised-hover);
+  --color-panel-recessed: var(--color-panel-recessed);
+  --color-panel-text: var(--color-panel-text);
+  --color-panel-border: var(--color-panel-border);
+  --color-panel-border-top: var(--color-panel-border-top);
+  --color-hairline: var(--color-hairline);
+  --color-hairline-strong: var(--color-hairline-strong);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-faint: var(--color-text-faint);
+  --color-accent: var(--color-accent);
+  --color-accent-deep: var(--color-accent-deep);
+  --color-accent-soft: var(--color-accent-soft);
+
+  /* A modular type scale, base 16px, ratio 1.25 (a major third), rounded
+     to clean values. Eight deliberate steps, used consistently instead of
+     arbitrary sizes: xs and sm for labels and captions, base and md for
+     body copy, lg through xl for headings, and display for the hero.
+     instrument is kept as its own distinct step, not folded into display:
+     it names a recurring role, the large measured figure, that reappears
+     anywhere a product page needs to show one number as the instrument
+     reading, independent of whatever the hero happens to be sized at. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-md: 1.25rem;
+  --text-md--line-height: 1.55;
+  --text-lg: 1.5625rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: 1.9375rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 2.4375rem;
+  --text-2xl--line-height: 1.15;
+  --text-display: 3.8125rem;
+  --text-display--line-height: 1.05;
+  --text-instrument: 4.75rem;
+  --text-instrument--line-height: 1;
+
+  /* The signature easing curve, exposed as a named Tailwind utility
+     (ease-settle) alongside the raw variable, so it can be reached either
+     way. Durations stay as plain CSS variables, used through arbitrary
+     value utilities (duration-[var(--duration-base)]) since Tailwind's
+     duration scale is numeric, not named. */
+  --ease-settle: var(--ease-settle);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-surface);
+  background-image: var(--surface-field);
+  background-repeat: no-repeat;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* The reusable panel treatment: every card, chip, and instrument panel in
+   the interface applies this one class rather than re-deriving the metal
+   effect. Background color and image come from --color-surface-raised
+   (the metal base) and --panel-field (the grain, sheen, and sweep layered
+   on top of it); the border is a translucent white, brighter on its top
+   edge, standing in for a machined edge catching the same light. */
+.panel {
+  background-color: var(--color-surface-raised);
+  background-image: var(--panel-field);
+  border: 1px solid var(--color-panel-border);
+  border-top-color: var(--color-panel-border-top);
+}
+
+/* Numerals, everywhere, read as an instrument: tabular and monospaced so
+   they align in columns rather than drifting with proportional widths. */
+.font-mono,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Motion is meant to inform, never decorate. Anyone who has asked their
+   system for less motion gets a version of this page where state still
+   changes, instantly, with nothing left drifting or settling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

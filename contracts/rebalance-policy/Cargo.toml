@@ -1,0 +1,16 @@
+[package]
+name = "rebalance-policy"
+version = "0.1.0"
+edition = { workspace = true }
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+stellar-accounts = { workspace = true }
+rebalance-sizing = { path = "../rebalance-sizing" }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
