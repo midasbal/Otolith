@@ -15,6 +15,7 @@ import type { Types } from "@stellar/typescript-wallet-sdk";
 import { NETWORK_PASSPHRASE, sorobanServer } from "@/lib/stellar";
 import { simulateReadCall } from "@/lib/stellar/contract-call";
 import { parseDecimalToStroops } from "@/lib/stellar/format";
+import { USDC_ASSET } from "@/lib/stellar/policy-config";
 import { getDeployerKeypair, DeployerNotConfiguredError } from "@/lib/server/deployer";
 
 /**
@@ -40,12 +41,14 @@ const ANCHOR_USDC_CODE = "USDC";
 // contract the portfolio trades (see PORTFOLIO_USDC_SAC below).
 const ANCHOR_USDC_SAC = "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA";
 
-// The portfolio's own USDC (contracts/rebalance-policy's installed
-// buy_asset for the healthy, deep Soroswap pool): a separate SEP-41
-// token contract, not backed by the same classic issuer as the anchor's
-// USDC. See the 1:1 exchange comment on runLiraDeposit for why this
-// mismatch is bridged by a direct swap instead of a market trade.
-const PORTFOLIO_USDC_SAC = "CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F";
+// The portfolio's own USDC: imported from policy-config.ts, the single
+// source of truth the install flow, the dashboard's balance read, and
+// the rebalancer's trading path all already use, rather than a second
+// hardcoded copy of the same address that could quietly drift out of
+// sync with it again. See the 1:1 exchange comment on runLiraDeposit for
+// why the anchor's own USDC and the portfolio's USDC are bridged by a
+// direct forward instead of a market trade.
+const PORTFOLIO_USDC_SAC = USDC_ASSET.contract;
 
 // Sandbox-only endpoint: the anchor has no real bank, so the incoming
 // TRY transfer has to be triggered by hand. A real anchor has no
@@ -231,18 +234,20 @@ export async function runLiraDeposit(userAccount: string, tryAmount: string): Pr
       txHash: stellarTransactionId ?? undefined,
     });
 
-    // THE 1:1 EXCHANGE (deliberate, not a market swap): on testnet the
-    // anchor's USDC and the portfolio's USDC are two separate SEP-41
-    // token contracts, each independently dollar-pegged but not
-    // fungible with each other. Routing this through a Soroswap pool
-    // would expose the deposit to pool depth and price-impact distortion
-    // for no real reason, since both sides are supposed to be worth
-    // exactly the same thing. Instead the relay simply forwards the same
-    // nominal amount of its own portfolio-USDC reserve to the user, and
-    // keeps the anchor-USDC it received. On mainnet the anchor delivers
-    // the canonical USDC directly and this whole step disappears; this
-    // is a testnet-only bridge between two otherwise-identical dollars,
-    // not a trade.
+    // THE 1:1 FORWARD (deliberate, not a market swap): on testnet the
+    // anchor pays out in its own USDC (ANCHOR_USDC_SAC), a separate
+    // SEP-41 token contract from the portfolio's own USDC
+    // (PORTFOLIO_USDC_SAC, the same USDC_ASSET the install flow, the
+    // dashboard's balance read, and the rebalancer's trading path all
+    // use, chosen specifically because it is the one with a healthy,
+    // deep, oracle-aligned Soroswap pool). The two are not fungible with
+    // each other, and the anchor's own USDC has no comparable pool here
+    // to route a real swap through, so the relay does not attempt to
+    // trade between them. Instead it simply forwards the same nominal
+    // amount from its own pre-funded portfolio-USDC reserve to the user,
+    // and keeps the anchor-USDC it received. On mainnet a real anchor
+    // delivers the canonical USDC directly and this whole bridge step
+    // disappears.
     const amountRaw = parseDecimalToStroops(amountOut);
     if (amountRaw === null || amountRaw <= BigInt(0)) {
       return { success: false, message: "The settled amount could not be read.", stages };
