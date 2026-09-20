@@ -20,21 +20,32 @@ function isActiveRoute(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+export function TestnetBadge() {
+  return (
+    <span className="inline-flex w-fit items-center rounded-full border border-hairline-strong px-2 py-0.5 text-xs font-medium uppercase tracking-[0.12em] text-text-faint">
+      Stellar Testnet
+    </span>
+  );
+}
+
 function Logo() {
   return (
-    <Link
-      href="/app"
-      className="flex items-center gap-2.5 font-display text-lg font-medium tracking-tight text-text"
-    >
-      <Image
-        src="/otolith-logo.png"
-        alt=""
-        width={48}
-        height={48}
-        className="h-[48px] w-[48px]"
-      />
-      Otolith
-    </Link>
+    <div className="flex flex-col gap-2">
+      <Link
+        href="/app"
+        className="flex items-center gap-2.5 font-display text-lg font-medium tracking-tight text-text"
+      >
+        <Image
+          src="/otolith-logo.png"
+          alt=""
+          width={48}
+          height={48}
+          className="h-[48px] w-[48px]"
+        />
+        Otolith
+      </Link>
+      <TestnetBadge />
+    </div>
   );
 }
 

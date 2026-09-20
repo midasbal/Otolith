@@ -83,6 +83,43 @@ function describeError(err: unknown, fallback: string): string {
   return fallback;
 }
 
+// createWallet() saves a session for the new account immediately, before
+// its deploy transaction has necessarily reached full RPC-visible
+// finality (see smart-account-kit's own createWallet, which calls
+// storage.saveSession before submitDeploymentTx). If something remounts
+// the wallet provider in that window (a reload, a new tab), the silent
+// restore below takes the saved-session path straight into the kit's own
+// on-chain existence check, which can transiently fail with exactly this
+// message even though the deploy is genuinely underway, not missing.
+// This is the one specific, narrow case worth a bounded retry: it never
+// retries any other failure (a real "no session," a cancelled ceremony,
+// or an actually-missing account all still surface immediately, on the
+// first attempt).
+const TRANSIENT_NOT_DEPLOYED_PATTERN = /not found on-chain|may not have been deployed yet/i;
+const RESTORE_RETRY_ATTEMPTS = 3;
+const RESTORE_RETRY_DELAY_MS = 750;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function connectWalletWithSettlingRetry() {
+  for (let attempt = 1; attempt <= RESTORE_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await getKit().connectWallet();
+    } catch (err) {
+      const isTransientNotDeployed = err instanceof Error && TRANSIENT_NOT_DEPLOYED_PATTERN.test(err.message);
+      if (!isTransientNotDeployed || attempt === RESTORE_RETRY_ATTEMPTS) {
+        throw err;
+      }
+      await sleep(RESTORE_RETRY_DELAY_MS);
+    }
+  }
+  // Unreachable (the loop above always returns or throws on its last
+  // attempt), only here to satisfy the function's return type.
+  return null;
+}
+
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -97,8 +134,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     // Silent restore only: no stored session means no ceremony and no
     // error, just a normal not-connected state for a first-time visitor.
-    getKit()
-      .connectWallet()
+    connectWalletWithSettlingRetry()
       .then((result) => {
         if (result) {
           setAddress(result.contractId);

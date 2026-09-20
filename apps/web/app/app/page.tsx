@@ -428,7 +428,18 @@ export default function DashboardPage() {
                 </div>
               ) : null}
 
-              {rebalanceState.status === "loaded" && rebalanceState.result.state === "not_due" ? (
+              {rebalanceState.status === "loaded" && rebalanceState.result.state === "not_due" && rebalanceState.result.reason === "CostExceedsBenefit" ? (
+                <div className="panel min-w-0 rounded-lg p-6">
+                  <h2 className="font-display text-base font-medium text-panel-text">
+                    Rebalance
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-panel-text/70">
+                    This rebalance would cost more than it is worth right now, so Otolith is holding off. It will rebalance once the benefit clears the cost.
+                  </p>
+                </div>
+              ) : null}
+
+              {rebalanceState.status === "loaded" && rebalanceState.result.state === "not_due" && rebalanceState.result.reason !== "CostExceedsBenefit" ? (
                 <div className="panel min-w-0 rounded-lg p-6">
                   <h2 className="font-display text-base font-medium text-panel-text">
                     Rebalance

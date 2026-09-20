@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { TestnetBadge } from "@/components/app-sidebar";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -11,19 +12,22 @@ export function LandingHeader() {
   return (
     <header className="border-b border-hairline">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-6 sm:px-10">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 font-display text-lg font-medium tracking-tight text-text"
-        >
-          <Image
-            src="/otolith-logo.png"
-            alt=""
-            width={48}
-            height={48}
-            className="h-[48px] w-[48px]"
-          />
-          Otolith
-        </Link>
+        <div className="flex flex-col gap-2">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 font-display text-lg font-medium tracking-tight text-text"
+          >
+            <Image
+              src="/otolith-logo.png"
+              alt=""
+              width={48}
+              height={48}
+              className="h-[48px] w-[48px]"
+            />
+            Otolith
+          </Link>
+          <TestnetBadge />
+        </div>
 
         <nav className="hidden items-center gap-8 sm:flex">
           {NAV_LINKS.map((link) => (
