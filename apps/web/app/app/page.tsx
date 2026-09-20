@@ -7,12 +7,33 @@ import { usePolicyStatus } from "@/components/use-policy-status";
 import { useRebalanceCheck } from "@/components/use-rebalance-check";
 import { useTriggerRebalance } from "@/components/use-trigger-rebalance";
 import { useRevokePolicy } from "@/components/use-revoke-policy";
+import { usePortfolioValuation, type PortfolioValuationInput } from "@/components/use-portfolio-value";
 import { FundInLira } from "@/components/fund-in-lira";
-import { formatBalanceAmount, formatDurationSeconds, type ExtraTokenContract } from "@/lib/stellar";
+import { formatBalanceAmount, formatDurationSeconds, formatUsd, type ExtraTokenContract } from "@/lib/stellar";
 import { BUY_ASSET } from "@/lib/stellar/policy-config";
 
 function formatBps(bps: number): string {
   return `${(bps / 100).toFixed(2)}%`;
+}
+
+function formatDriftBps(bps: number): string {
+  const sign = bps > 0 ? "+" : bps < 0 ? "" : "±";
+  return `${sign}${(bps / 100).toFixed(2)}%`;
+}
+
+// The rebalancer only ever sells sell_asset for buy_asset (v1's fixed
+// one-directional design), so "overweight" the buy asset is called out
+// on its own here rather than folded into "within band": it never
+// implies a rebalance could be pending, in either direction the panel
+// below this one might otherwise seem to echo.
+function driftStatusCopy(bandState: "within_band" | "past_band" | "overweight", buySymbol: string): string {
+  if (bandState === "overweight") {
+    return `Holding more ${buySymbol} than target. Otolith only ever moves toward ${buySymbol}, not away from it, so this does not trigger a rebalance.`;
+  }
+  if (bandState === "past_band") {
+    return "Past your target band. See the rebalance status below for what happens next.";
+  }
+  return "Within your target band. No rebalance is currently indicated.";
 }
 
 const secondaryButtonClass =
@@ -38,6 +59,27 @@ export default function DashboardPage() {
   const { state: triggerState, trigger: triggerRebalance } = useTriggerRebalance();
   const { state: revokeState, revoke: revokePolicy, reset: resetRevoke } = useRevokePolicy();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+
+  const valuationInput: PortfolioValuationInput | null = useMemo(() => {
+    if (policyState.status !== "loaded" || policyState.result.kind !== "installed") {
+      return null;
+    }
+    if (balancesState.status !== "loaded") {
+      return null;
+    }
+    const balances = balancesState.result.kind === "funded" ? balancesState.result.balances : [];
+    const findBalance = (contract: string) => balances.find((b) => b.contract === contract)?.balance ?? "0";
+    const { params } = policyState.result;
+    return {
+      oracle: params.oracle,
+      sellAsset: { contract: params.sellAsset, symbol: params.sellSymbol, balance: findBalance(params.sellAsset) },
+      buyAsset: { contract: params.buyAsset, symbol: params.buySymbol, balance: findBalance(params.buyAsset) },
+      targetBuyWeightBps: params.targetBuyWeightBps,
+      bandThresholdBps: params.bandThresholdBps,
+    };
+  }, [policyState, balancesState]);
+
+  const { state: valuationState } = usePortfolioValuation(valuationInput);
 
   const policyInstalled = policyState.status === "loaded" && policyState.result.kind === "installed";
 
@@ -171,13 +213,15 @@ export default function DashboardPage() {
             >
               View on stellar.expert
             </a>
-            <button
-              type="button"
-              onClick={handleContinueAfterRevoke}
-              className="mt-4 inline-flex w-fit items-center justify-center rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-text transition-colors duration-[var(--duration-fast)] ease-[var(--ease-settle)] hover:bg-[var(--color-accent-deep)]"
-            >
-              Continue
-            </button>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleContinueAfterRevoke}
+                className="inline-flex w-fit items-center justify-center rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-text transition-colors duration-[var(--duration-fast)] ease-[var(--ease-settle)] hover:bg-[var(--color-accent-deep)]"
+              >
+                Continue
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -207,6 +251,53 @@ export default function DashboardPage() {
         {revokeState.status !== "success" && policyState.status === "loaded" && policyState.result.kind === "installed" ? (
           <div className="panel min-w-0 rounded-lg p-6">
             <p className="text-xs uppercase tracking-[0.14em] text-panel-text/60">
+              Portfolio value
+            </p>
+
+            {valuationState.status === "idle" || valuationState.status === "loading" ? (
+              <p className="mt-3 text-sm text-panel-text/60">Reading live prices...</p>
+            ) : null}
+
+            {valuationState.status === "error" ? (
+              <p className="mt-3 text-sm leading-relaxed text-panel-text/60">
+                {valuationState.message}
+              </p>
+            ) : null}
+
+            {valuationState.status === "loaded" && valuationState.result.kind === "unavailable" ? (
+              <p className="mt-3 text-sm leading-relaxed text-panel-text/60">
+                Live value is not available right now. {valuationState.result.reason}
+              </p>
+            ) : null}
+
+            {valuationState.status === "loaded" && valuationState.result.kind === "valued" ? (
+              <>
+                <p className="mt-2 font-mono text-instrument tabular-nums text-panel-text">
+                  ${formatUsd(valuationState.result.totalUsdValue)}
+                </p>
+                <p className="mt-1 text-xs text-panel-text/50">
+                  Priced from the same live oracle the contracts use, not a market quote.
+                </p>
+
+                <div className="mt-5 flex flex-col gap-1.5 border-t border-panel-border pt-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-sm text-panel-text">Drift</span>
+                    <span className="shrink-0 font-mono text-sm tabular-nums text-panel-text">
+                      {formatDriftBps(valuationState.result.driftBps)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-panel-text/60">
+                    Current {formatBps(valuationState.result.currentBuyWeightBps)} {valuationState.result.buyAsset.code} / Target{" "}
+                    {formatBps(valuationState.result.targetBuyWeightBps)} {valuationState.result.buyAsset.code}
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-panel-text/70">
+                    {driftStatusCopy(valuationState.result.bandState, valuationState.result.buyAsset.code)}
+                  </p>
+                </div>
+              </>
+            ) : null}
+
+            <p className="mt-6 text-xs uppercase tracking-[0.14em] text-panel-text/60">
               Your policy
             </p>
             <ul className="mt-3 flex flex-col divide-y divide-panel-border">

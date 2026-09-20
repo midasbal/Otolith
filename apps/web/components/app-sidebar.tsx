@@ -125,8 +125,10 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Desktop and up: the persistent sidebar. */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-hairline px-4 py-6 lg:flex">
+      {/* Desktop and up: the persistent sidebar. Sticky and viewport-tall
+          so it stays in view while the main content scrolls, instead of
+          scrolling away with the rest of the page. */}
+      <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-hairline px-4 py-6 lg:sticky lg:top-0 lg:flex lg:h-screen">
         <div className="flex flex-1 flex-col gap-8">
           <Logo />
           <NavLinks pathname={pathname} />

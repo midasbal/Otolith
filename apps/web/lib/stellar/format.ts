@@ -82,6 +82,20 @@ export function formatBalanceAmount(rawAmount: string): string {
 }
 
 /**
+ * Formats a USD amount (a plain number, already computed from oracle
+ * prices, not a Stellar balance) for display: comma thousands, always
+ * two decimal places, pinned to en-US regardless of viewer locale, same
+ * as formatBalanceAmount's own reasoning. This is a display-only figure;
+ * the number behind it never gets signed or submitted anywhere.
+ */
+export function formatUsd(amount: number): string {
+  if (!Number.isFinite(amount)) {
+    return "-";
+  }
+  return amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/**
  * Parses a decimal amount string (up to 7 decimal places, Stellar's own
  * precision) into raw stroops as a bigint, in string arithmetic. Anchor
  * and contract amounts alike come back as decimal strings, not numbers
