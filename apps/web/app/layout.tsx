@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Zalando_Sans, Zalando_Sans_Expanded, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Background } from "@/components/background/background";
 
 const zalandoSansExpanded = Zalando_Sans_Expanded({
   variable: "--font-zalando-sans-expanded",
@@ -38,7 +39,7 @@ export default function RootLayout({
       className={`${zalandoSansExpanded.variable} ${zalandoSans.variable} ${jetbrainsMono.variable} h-full`}
     >
       <body className="min-h-full bg-bg font-sans text-text antialiased">
-        {children}
+        <Background>{children}</Background>
       </body>
     </html>
   );

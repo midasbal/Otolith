@@ -5,9 +5,10 @@
 
   tokens.css      every color, shadow, radius, size, and timing value
   base.css        the page itself: surface, ink, focus, reduced motion
-  components.css  every primitive (nm-*), built only from the tokens
+  components.css  every primitive (ot-*), built only from the tokens
   glow.css        the headline glow, lit letter by letter
   landing.css     the marketing page's own pieces (the hero dial)
+  background.css  the two fixed layers the growth-ring field is drawn on
 
   Tailwind is used for layout (flex, grid, spacing, type utilities), and
   can only reach the tokens: its default palette and shadow scale are
@@ -18,3 +19,4 @@
 @import "./styles/components.css";
 @import "./styles/glow.css";
 @import "./styles/landing.css";
+@import "./styles/background.css";
