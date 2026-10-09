@@ -1,39 +1,12 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePrefersReducedMotion } from "@/components/ui/use-reduced-motion";
 
 type RevealProps = {
   children: ReactNode;
   className?: string;
 };
-
-function subscribeReducedMotion(callback: () => void) {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  query.addEventListener("change", callback);
-  return () => query.removeEventListener("change", callback);
-}
-
-function getReducedMotionSnapshot() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function getReducedMotionServerSnapshot() {
-  return false;
-}
-
-function usePrefersReducedMotion() {
-  return useSyncExternalStore(
-    subscribeReducedMotion,
-    getReducedMotionSnapshot,
-    getReducedMotionServerSnapshot,
-  );
-}
 
 /**
  * Settles its children into view as they enter the viewport: a gentle
@@ -70,7 +43,7 @@ export function Reveal({ children, className }: RevealProps) {
   return (
     <div
       ref={ref}
-      className={`transition-[opacity,transform] duration-[var(--duration-settle)] ease-[var(--ease-settle)] ${
+      className={`transition-[opacity,transform] duration-[var(--duration-settle)] ease-settle ${
         visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
       } ${className ?? ""}`}
     >

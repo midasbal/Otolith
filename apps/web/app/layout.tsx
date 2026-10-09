@@ -37,7 +37,7 @@ export default function RootLayout({
       lang="en"
       className={`${zalandoSansExpanded.variable} ${zalandoSans.variable} ${jetbrainsMono.variable} h-full`}
     >
-      <body className="min-h-full bg-surface font-sans text-text antialiased">
+      <body className="min-h-full bg-bg font-sans text-text antialiased">
         {children}
       </body>
     </html>

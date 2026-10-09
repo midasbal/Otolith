@@ -1,3 +1,5 @@
+import { Screen, ScreenHeader } from "@/components/app/common";
+
 export default async function AssetDetailPage({
   params,
 }: {
@@ -6,13 +8,8 @@ export default async function AssetDetailPage({
   const { symbol } = await params;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col px-6 py-16 sm:px-10">
-      <h1 className="font-display text-2xl font-medium tracking-tight text-text">
-        {symbol.toUpperCase()}
-      </h1>
-      <p className="mt-4 max-w-xl text-base leading-relaxed text-text-muted">
-        Asset detail is coming soon.
-      </p>
-    </div>
+    <Screen>
+      <ScreenHeader title={symbol.toUpperCase()}>Asset detail is coming soon.</ScreenHeader>
+    </Screen>
   );
 }

@@ -1,0 +1,85 @@
+/*
+  Base styles: the page itself, before any component.
+
+  The page is one flat field of --bg. No background image, no gradient,
+  nothing layered behind the content: a soft surface only reads as soft
+  when the plane it rises from is perfectly even.
+*/
+
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Focus is the one state that can never lean on a shadow, since the
+     shadows are the surface. Every focusable element gets the same ring,
+     in the accent, set off from the element so it is drawn on the open
+     surface rather than against the element's own edge. Keyboard focus
+     only: a pointer click never draws it. */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus-color);
+    outline-offset: var(--focus-offset);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--accent) 24%, transparent);
+    color: var(--text);
+  }
+
+  /* Numerals, everywhere, read as an instrument: tabular and monospaced
+     so they align in columns rather than drifting with proportional
+     widths. */
+  .font-mono,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+/* Motion is meant to inform, never decorate. Anyone who has asked their
+   system for less motion gets a version of this interface where state
+   still changes, instantly, with nothing left drifting or settling.
+   Components that would otherwise loop or follow the pointer (the hero's
+   rotating word, the headline glow) also stop themselves under the same
+   preference rather than relying on this rule alone. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Forced colors (Windows high contrast and similar): the system replaces
+   every color and drops every shadow, which would leave a shadow-only
+   interface with no edges at all. Focus keeps a real outline in the
+   system's own highlight color here; each component restores a real
+   border for itself under the same query (see components.css). */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+}
