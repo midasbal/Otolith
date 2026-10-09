@@ -1,3 +1,5 @@
+import { ChapterHud } from "@/components/landing/chapter-hud";
+import { DriftDemo } from "@/components/landing/drift-demo";
 import { HeroDial } from "@/components/landing/hero-dial";
 import { Reveal } from "@/components/reveal";
 import { RotatingWord } from "@/components/rotating-word";
@@ -71,14 +73,34 @@ const SECURITY_POINTS: Array<{ icon: IconName; title: string; body: string }> = 
   },
 ];
 
+/** The line that opens a chapter: its number, a rule, its name. */
+function ChapterLabel({ index, name }: { index: string; name: string }) {
+  return (
+    <p className="ot-chapter-label">
+      <span>{index}</span>
+      <i aria-hidden="true" />
+      <span>{name}</span>
+    </p>
+  );
+}
+
+/*
+  The page is five chapters over the growth-ring field. Each section
+  names the scene the field shows behind it (data-chapter) and its own
+  name for the chapter marker; text that sits directly on the field is
+  marked data-quiet, and the field dims itself there.
+*/
 export default function Landing() {
   return (
     <>
-      {/* Hero: the headline and its two actions beside the allocation
-          dial, which stands where the photograph used to. On narrow
-          viewports the dial drops beneath the copy. */}
-      <section className="nm-container grid items-center gap-14 pb-6 pt-14 sm:pt-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:gap-12 lg:pt-24">
-        <div className="flex min-w-0 flex-col items-start gap-8">
+      {/* 00. The headline and its two actions beside the allocation dial.
+          On narrow viewports the dial drops beneath the copy. */}
+      <section
+        data-chapter="0"
+        data-chapter-name="Otolith"
+        className="ot-container ot-chapter grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:gap-12"
+      >
+        <div data-quiet="" className="flex min-w-0 flex-col items-start gap-8">
           <h1 className="font-display text-display font-medium tracking-display text-text">
             <span className="sr-only">
               Automated portfolio rebalancing that never leaves your wallet.
@@ -104,18 +126,27 @@ export default function Landing() {
           </div>
         </div>
 
-        <HeroDial />
+        <div data-quiet="">
+          <HeroDial />
+        </div>
       </section>
 
-      <div className="nm-container flex flex-col">
-        {/* What it is, and why it is different */}
+      <div className="ot-container flex flex-col">
+        {/* 01. What it is, and why it is different */}
         <Reveal>
-          <section id="why-different" aria-labelledby="why-different-heading" className="nm-section flex flex-col gap-10">
-            <div className="min-w-0">
-              <h2 id="why-different-heading" className="font-display text-xl font-medium text-text">
+          <section
+            id="why-different"
+            aria-labelledby="why-different-heading"
+            data-chapter="1"
+            data-chapter-name="Why different"
+            className="ot-chapter"
+          >
+            <div data-quiet="" className="min-w-0 max-w-2xl">
+              <ChapterLabel index="01" name="Why different" />
+              <h2 id="why-different-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
                 What it is, and why it is different
               </h2>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-text-muted">
+              <p className="mt-5 text-base leading-relaxed text-text-muted">
                 Most rebalancing tools ask you to hand over your funds, either
                 to a manager or to an off-chain system you have to trust.
                 Otolith does not. Your funds stay in your own wallet at every
@@ -124,7 +155,7 @@ export default function Landing() {
               </p>
             </div>
 
-            <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+            <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
               {WHY_DIFFERENT_POINTS.map((point) => (
                 <Card key={point.title} className="flex flex-col gap-5 sm:flex-row lg:flex-col">
                   <IconWell>
@@ -144,61 +175,76 @@ export default function Landing() {
           </section>
         </Reveal>
 
-        {/* How it works */}
+        {/* 02. How it works, with the drift simulator beside the steps */}
         <Reveal>
-          <section id="how-it-works" aria-labelledby="how-it-works-heading" className="nm-section flex scroll-mt-6 flex-col gap-10 pt-0">
-            <div className="min-w-0">
-              <h2 id="how-it-works-heading" className="font-display text-xl font-medium text-text">
+          <section
+            id="how-it-works"
+            aria-labelledby="how-it-works-heading"
+            data-chapter="2"
+            data-chapter-name="How it works"
+            className="ot-chapter"
+          >
+            <div data-quiet="" className="min-w-0 max-w-2xl">
+              <ChapterLabel index="02" name="How it works" />
+              <h2 id="how-it-works-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
                 How it works
               </h2>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-text-muted">
+              <p className="mt-5 text-base leading-relaxed text-text-muted">
                 Four steps, from setting your targets to a trade landing back
                 in your own wallet.
               </p>
             </div>
 
-            <ol className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-              {HOW_IT_WORKS_STEPS.map((step) => (
-                <Card key={step.title} as="li" className="flex flex-col gap-5">
-                  <IconWell className="nm-num text-sm font-medium tabular-nums">
-                    {step.index}
-                  </IconWell>
-                  <div>
-                    <h3 className="font-display text-base font-medium text-text">
-                      {step.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-text-muted">
-                      {step.body}
-                    </p>
-                  </div>
-                </Card>
-              ))}
-            </ol>
+            <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
+              <ol className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 lg:col-span-8">
+                {HOW_IT_WORKS_STEPS.map((step) => (
+                  <Card key={step.title} as="li" className="flex flex-col gap-5">
+                    <IconWell className="ot-num text-sm font-medium tabular-nums">
+                      {step.index}
+                    </IconWell>
+                    <div>
+                      <h3 className="font-display text-base font-medium text-text">
+                        {step.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed text-text-muted">
+                        {step.body}
+                      </p>
+                    </div>
+                  </Card>
+                ))}
+              </ol>
+              <div className="min-w-0 lg:col-span-4">
+                <DriftDemo />
+              </div>
+            </div>
           </section>
         </Reveal>
 
-        {/* Security */}
+        {/* 03. Security */}
         <Reveal>
           <section
             id="security"
             aria-labelledby="security-heading"
-            className="nm-section grid scroll-mt-6 grid-cols-1 gap-10 pt-0 lg:grid-cols-12 lg:gap-12"
+            data-chapter="3"
+            data-chapter-name="Security"
+            className="ot-chapter grid grid-cols-1 lg:grid-cols-12 lg:gap-12"
           >
-            <div className="min-w-0 lg:col-span-4 lg:self-center">
-              <h2 id="security-heading" className="font-display text-xl font-medium text-text">
+            <div data-quiet="" className="min-w-0 lg:col-span-4 lg:self-center">
+              <ChapterLabel index="03" name="Security" />
+              <h2 id="security-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
                 Security
               </h2>
-              <p className="mt-4 max-w-md text-base leading-relaxed text-text-muted">
+              <p className="mt-5 max-w-md text-base leading-relaxed text-text-muted">
                 Built so there is no party, including Otolith, in a position
                 to move your funds anywhere you have not authorized.
               </p>
             </div>
 
-            <div className="min-w-0 lg:col-span-8">
+            <div className="min-w-0 lg:col-span-8 lg:self-center">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 {SECURITY_POINTS.map((point) => (
-                  <Card key={point.title} variant="pressed" className="flex items-start gap-4">
-                    <IconWell raised>
+                  <Card key={point.title} className="flex items-start gap-4">
+                    <IconWell>
                       <Icon name={point.icon} />
                     </IconWell>
                     <div className="min-w-0">
@@ -223,10 +269,16 @@ export default function Landing() {
           </section>
         </Reveal>
 
-        {/* Closing call to action */}
+        {/* 04. Closing call to action, over the nucleus itself */}
         <Reveal>
-          <section aria-labelledby="cta-heading" className="nm-section pt-0">
-            <div className="nm-pressed-lg flex flex-col items-center gap-6 rounded-xl px-6 py-16 text-center sm:py-20">
+          <section
+            aria-labelledby="cta-heading"
+            data-chapter="4"
+            data-chapter-name="Get started"
+            className="ot-chapter items-center"
+          >
+            <div data-quiet="" className="flex flex-col items-center gap-6 text-center">
+              <ChapterLabel index="04" name="Get started" />
               <h2 id="cta-heading" className="max-w-xl font-display text-2xl font-medium tracking-display text-text">
                 <GlowText>
                   <span data-glow-static="">Your portfolio,</span> held to the weights you choose.
@@ -242,6 +294,8 @@ export default function Landing() {
           </section>
         </Reveal>
       </div>
+
+      <ChapterHud />
     </>
   );
 }

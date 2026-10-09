@@ -1,3 +1,4 @@
+import { BackgroundToggle } from "@/components/background/background";
 import { TextLink } from "@/components/ui/button";
 
 const CONTACT_EMAIL = "support@otolith.xyz";
@@ -21,8 +22,8 @@ const LINK_GROUPS = [
 
 export function LandingFooter() {
   return (
-    <footer className="nm-container pb-10">
-      <div className="nm-divider" />
+    <footer data-quiet="" className="ot-container pb-10">
+      <div className="ot-divider" />
 
       <div className="flex flex-col gap-10 py-12 sm:flex-row sm:justify-between">
         <div className="flex flex-col gap-3">
@@ -35,11 +36,11 @@ export function LandingFooter() {
         <div className="flex flex-wrap gap-x-16 gap-y-10">
           {LINK_GROUPS.map((group) => (
             <nav key={group.heading} aria-label={group.heading} className="flex flex-col gap-3">
-              <span className="nm-caps">{group.heading}</span>
+              <span className="ot-caps">{group.heading}</span>
               <ul className="flex flex-col gap-2">
                 {group.links.map((link) => (
                   <li key={link.href}>
-                    <a href={link.href} className="nm-quiet-link text-sm">
+                    <a href={link.href} className="ot-quiet-link text-sm">
                       {link.label}
                     </a>
                   </li>
@@ -50,7 +51,7 @@ export function LandingFooter() {
         </div>
       </div>
 
-      <div className="nm-divider" />
+      <div className="ot-divider" />
 
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 pt-6 text-sm">
         {/* The address is the link's visible text; "Email" is added for a
@@ -61,7 +62,10 @@ export function LandingFooter() {
           <span className="sr-only">Email </span>
           {CONTACT_EMAIL}
         </TextLink>
-        <TextLink href="/app">Open app</TextLink>
+        <div className="flex items-center gap-4">
+          <BackgroundToggle />
+          <TextLink href="/app">Open app</TextLink>
+        </div>
       </div>
     </footer>
   );

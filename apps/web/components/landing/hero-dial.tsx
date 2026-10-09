@@ -2,6 +2,7 @@
 
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Level } from "@/components/ui/level";
 
 /*
   The hero's illustration: an example portfolio's allocation dial, drawn
@@ -295,27 +296,30 @@ export function HeroDial() {
         </div>
 
         <div aria-hidden="true" className="hero-dial-cap">
-          <span className="nm-caps">Target split</span>
-          <span className="nm-num hero-dial-value">
+          <span className="ot-caps">Target split</span>
+          <span className="ot-num hero-dial-value">
             {figure(sellPercent)} / {figure(buyPercent)}
           </span>
-          <span className="nm-caps">
+          <span className="ot-caps">
             {SELL_SYMBOL} / {BUY_SYMBOL}
           </span>
         </div>
 
       </div>
 
-      {/* The two fixed readouts sit under the dial rather than on it, so
-          the notch and the knob never slide beneath them. */}
+      {/* The two fixed readouts, either side of a level that shows the same
+          thing: the bubble is the drift, the two marks are the band, and it
+          comes to rest between them as the knob settles. The readouts say
+          it in words, so the level itself is not announced. */}
       <div className="hero-dial-readouts">
         <div className="hero-dial-chip">
-          <span className="nm-caps">Drift</span>
-          <span className="nm-num hero-dial-drift">{DRIFT_PERCENT.toFixed(2)}%</span>
+          <span className="ot-caps">Drift</span>
+          <span className="ot-num hero-dial-drift">{DRIFT_PERCENT.toFixed(2)}%</span>
         </div>
+        <Level drift={DRIFT_PERCENT} band={BAND_PERCENT} from={INTRO_DRIFT_PERCENT} className="hero-dial-level" />
         <div className="hero-dial-chip">
-          <span aria-hidden="true" className="nm-badge-dot" />
-          <span className="nm-caps">Within band</span>
+          <span aria-hidden="true" className="ot-badge-dot" />
+          <span className="ot-caps">Within band</span>
         </div>
       </div>
 
@@ -326,12 +330,12 @@ export function HeroDial() {
         <span>
           <span className="hero-dial-key" data-asset="sell" />
           {SELL_SYMBOL}
-          <span className="nm-num hero-dial-percent">{figure(sellPercent)}%</span>
+          <span className="ot-num hero-dial-percent">{figure(sellPercent)}%</span>
         </span>
         <span>
           <span className="hero-dial-key" data-asset="buy" />
           {BUY_SYMBOL}
-          <span className="nm-num hero-dial-percent">{figure(buyPercent)}%</span>
+          <span className="ot-num hero-dial-percent">{figure(buyPercent)}%</span>
         </span>
       </div>
     </div>

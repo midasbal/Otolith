@@ -6,7 +6,7 @@ export default function SiteLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="flex min-h-screen flex-col">
-      <a href="#main" className="nm-skip-link">
+      <a href="#main" className="ot-skip-link">
         Skip to content
       </a>
       <LandingHeader />
