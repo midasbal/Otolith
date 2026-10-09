@@ -12,5 +12,5 @@ type ToggleProps = Omit<ComponentProps<"button">, "role" | "aria-checked" | "chi
  * alone. Name it with aria-label or aria-labelledby.
  */
 export function Toggle({ checked, className, type = "button", ...rest }: ToggleProps) {
-  return <button type={type} role="switch" aria-checked={checked} className={cn("nm-toggle", className)} {...rest} />;
+  return <button type={type} role="switch" aria-checked={checked} className={cn("ot-toggle", className)} {...rest} />;
 }

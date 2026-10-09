@@ -17,21 +17,18 @@
   no pointer events. The ink does not change color and nothing is laid
   out again, on hover or ever.
 
-  A halo is three soft accent shadows of the letter (tight, mid, wide),
-  with the pair of shadows every raised surface in the interface carries
-  set close under them, so a lit letter reads as lifted off the matte
-  surface with light pooled beneath it, not as a neon outline. All of it
-  scales with --glow-blur and peaks at --glow-opacity.
+  A halo is three soft accent shadows of the letter (tight, mid, wide):
+  on this dark ground, simply light behind the letter, the same violet
+  the rings are drawn in. All of it scales with --glow-blur and peaks at
+  --glow-opacity.
 */
 
 @layer components {
   .glow-text {
     --glow-halo:
-      calc(var(--glow-blur) * -0.12) calc(var(--glow-blur) * -0.12) calc(var(--glow-blur) * 0.3) var(--shadow-light),
-      calc(var(--glow-blur) * 0.12) calc(var(--glow-blur) * 0.12) calc(var(--glow-blur) * 0.3) var(--shadow-dark),
       0 0 calc(var(--glow-blur) * 0.35) var(--glow-color),
       0 0 var(--glow-blur) var(--glow-color),
-      0 0 calc(var(--glow-blur) * 2) var(--glow-color);
+      0 0 calc(var(--glow-blur) * 2.2) var(--glow-color);
     position: relative;
     display: block;
     /* Its own stacking context, so the layer's negative z-index puts the
@@ -89,16 +86,29 @@
   }
 }
 
+/* On a small screen the type is small and the light would crowd it: the
+   halo drops its tightest layer, the one that sits right against the
+   letter, and spreads less, so the letter's own edge stays clean. (The
+   lower intensity for small screens is set with the tokens.) */
+@media (max-width: 40rem) {
+  .glow-text {
+    --glow-halo:
+      0 0 calc(var(--glow-blur) * 1.1) var(--glow-color),
+      0 0 calc(var(--glow-blur) * 2.2) var(--glow-color);
+  }
+}
+
 /* Reduced motion: no sweep and no trail. One still, faint halo under the
    part of the headline marked for it, drawn straight onto the text, so
-   it needs no script and nothing ever moves. */
+   it needs no script and nothing ever moves. It has no tight layer
+   either: drawn on the text itself, that layer would soften the edge of
+   every letter. */
 @media (prefers-reduced-motion: reduce) {
   .glow-text [data-glow-static] {
     --glow-static-color: color-mix(in srgb, var(--glow-color) calc(var(--glow-static-opacity) * 100%), transparent);
     text-shadow:
-      0 0 calc(var(--glow-blur) * 0.35) var(--glow-static-color),
-      0 0 var(--glow-blur) var(--glow-static-color),
-      0 0 calc(var(--glow-blur) * 2) var(--glow-static-color);
+      0 0 calc(var(--glow-blur) * 1.1) var(--glow-static-color),
+      0 0 calc(var(--glow-blur) * 2.2) var(--glow-static-color);
   }
 }
 

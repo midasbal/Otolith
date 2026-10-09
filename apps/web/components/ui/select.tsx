@@ -362,11 +362,11 @@ export function Select({
   return (
     <div
       ref={wellRef}
-      className={cn("nm-well nm-select", wellClassName)}
+      className={cn("ot-well ot-select", wellClassName)}
       data-invalid={ariaInvalid === true || ariaInvalid === "true" ? "true" : undefined}
       data-open={open ? "true" : undefined}
     >
-      {leading ? <span className="nm-affix">{leading}</span> : null}
+      {leading ? <span className="ot-affix">{leading}</span> : null}
 
       <button
         type="button"
@@ -382,7 +382,7 @@ export function Select({
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
         aria-required={required ? true : undefined}
-        className={cn("nm-select-trigger", className)}
+        className={cn("ot-select-trigger", className)}
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={handleKeyDown}
         onKeyUp={(event) => {
@@ -395,12 +395,12 @@ export function Select({
         {selected ? selected.label : null}
       </button>
 
-      {trailing ? <span className="nm-affix">{trailing}</span> : null}
-      <Icon name="chevron-down" size={16} className="nm-select-chevron" />
+      {trailing ? <span className="ot-affix">{trailing}</span> : null}
+      <Icon name="chevron-down" size={16} className="ot-select-chevron" />
 
       <select
         ref={nativeRef}
-        className="nm-select-native"
+        className="ot-select-native"
         tabIndex={-1}
         aria-hidden="true"
         name={name}
@@ -425,7 +425,7 @@ export function Select({
         tabIndex={-1}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
-        className="nm-listbox"
+        className="ot-listbox"
         data-open={open ? "true" : undefined}
         // A press in the list must not take focus from the trigger.
         onMouseDown={(event) => event.preventDefault()}
@@ -438,14 +438,14 @@ export function Select({
             aria-selected={index === selectedIndex}
             aria-disabled={item.disabled ? true : undefined}
             data-active={index === activeIndex ? "true" : undefined}
-            className="nm-option"
+            className="ot-option"
             onPointerMove={() => {
               if (!item.disabled && index !== activeIndex) setActiveIndex(index);
             }}
             onClick={() => choose(index)}
           >
-            <span className="nm-option-label">{item.label}</span>
-            <Icon name="check" size={16} className="nm-option-check" />
+            <span className="ot-option-label">{item.label}</span>
+            <Icon name="check" size={16} className="ot-option-check" />
           </li>
         ))}
       </ul>

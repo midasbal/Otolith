@@ -7,8 +7,8 @@ import { cn } from "./cn";
  */
 export function TxHash({ value, className }: { value: string; className?: string }) {
   return (
-    <div className={cn("nm-hash", className)}>
-      <span className="nm-hash-value">{value}</span>
+    <div className={cn("ot-hash", className)}>
+      <span className="ot-hash-value">{value}</span>
     </div>
   );
 }

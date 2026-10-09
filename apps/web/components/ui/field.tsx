@@ -37,12 +37,12 @@ export function Field({ label, hint, error, className, children }: FieldProps) {
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={cn("nm-field", className)}>
-      <label id={labelId} htmlFor={id} className="nm-label">
+    <div className={cn("ot-field", className)}>
+      <label id={labelId} htmlFor={id} className="ot-label">
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="nm-hint">
+        <p id={hintId} className="ot-hint">
           {hint}
         </p>
       ) : null}
@@ -53,7 +53,7 @@ export function Field({ label, hint, error, className, children }: FieldProps) {
         "aria-invalid": error ? true : undefined,
       })}
       {error ? (
-        <p id={errorId} role="alert" className="nm-field-error">
+        <p id={errorId} role="alert" className="ot-field-error">
           <Icon name="alert" size={16} />
           <span>{error}</span>
         </p>
@@ -80,10 +80,10 @@ type InputProps = ComponentProps<"input"> & {
  */
 export function Input({ leading, trailing, wellClassName, className, ...rest }: InputProps) {
   return (
-    <div className={cn("nm-well", wellClassName)} data-invalid={isInvalid(rest["aria-invalid"]) ? "true" : undefined}>
-      {leading ? <span className="nm-affix">{leading}</span> : null}
-      <input className={cn("nm-input", className)} {...rest} />
-      {trailing ? <span className="nm-affix">{trailing}</span> : null}
+    <div className={cn("ot-well", wellClassName)} data-invalid={isInvalid(rest["aria-invalid"]) ? "true" : undefined}>
+      {leading ? <span className="ot-affix">{leading}</span> : null}
+      <input className={cn("ot-input", className)} {...rest} />
+      {trailing ? <span className="ot-affix">{trailing}</span> : null}
     </div>
   );
 }

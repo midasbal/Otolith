@@ -1,134 +1,128 @@
 /*
   Design tokens: the single source of truth for the Otolith interface.
 
-  Soft UI. One matte surface, not several: every card, control, and well
-  shares the page's exact color, and depth is carried only by a pair of
-  soft shadows, lit from the top left. A raised element casts the pair
-  outward (light above and to the left, dark below and to the right); a
-  pressed element, and every input, casts the same pair inward. There are
-  no borders, no textures, and no gradients standing in for a material.
+  Deep water. The page is one dark ground, and behind everything on it
+  runs Annuli, the growth-ring field (components/background). Content
+  sits over that field on quiet panels: a slightly lifted surface with a
+  hairline edge. A raised element is such a panel; a pressed element, and
+  every input, is a darker well cut into it. There are no textures and no
+  gradients standing in for a material, and nothing is blurred.
 
-  One saturated accent, and only one: reserved for the primary action and
-  for focus and active indicators. A single muted red exists beside it for
-  errors and destructive actions, and is never used for anything else.
+  One accent, a violet drawn from the rings themselves: the primary
+  action, focus, and whatever is current. A single red exists beside it
+  for errors and destructive actions, and a warm coral, the color the
+  rings take on when a portfolio drifts, is used only to say "past the
+  band".
 
   Every component reads from these tokens, never from a raw color, size,
   shadow, or timing value. To retune the interface, change a value here.
 */
 
 :root {
-  /* Surface and ink. --bg is the one surface color in the system: the
-     page, every card, every control. --text is the primary ink (12.0:1
-     against --bg); --text-muted is the secondary ink for supporting copy
-     (5.9:1), still comfortably past the 4.5:1 body-text floor, so nothing
-     on the page is ever set in a light grey. */
-  --bg: #e0e5ec;
-  --text: #1f2633;
-  --text-muted: #4a5568;
+  /* Ground and ink. --bg is the page, and the exact color the background
+     field fades to. --text is a pearl (16.5:1 on --bg); --text-muted is
+     the secondary ink (9.0:1). Both stay well past 4.5:1 on a panel too. */
+  --bg: #06070c;
+  --text: #e8eaf6;
+  --text-muted: #a9aec6;
 
-  /* The accent: an indigo-violet in the same hue family as the lilac the
-     identity has always carried. 5.7:1 as text or as a focus ring against
-     --bg, and 7.2:1 under white text when it fills the primary action.
-     --accent-strong is the hover and pressed step of the same hue, not a
-     second color. */
-  --accent: #4a3fd0;
-  --accent-strong: #3a30ae;
-  --on-accent: #ffffff;
+  /* Panels. --surface is what a raised element is made of: nearly opaque,
+     so text on it never depends on what the field is doing behind it.
+     --surface-strong is fully opaque, for anything that floats over other
+     content (a dialog, a menu). --well is the darker cut of an input or a
+     badge. --knob is the small moving part of a control. */
+  --surface: rgba(13, 15, 26, 0.86);
+  --surface-strong: #0d0f1a;
+  --well: rgba(2, 3, 7, 0.62);
+  --knob: #e8eaf6;
 
-  /* Danger: a muted brick red for errors and destructive actions (revoke)
-     only, and always paired with an icon and text, never color alone.
-     5.1:1 against --bg. It is an ink, never a fill: the accent stays the
-     only saturated surface in the interface. */
-  --danger: #a23b3b;
-  --danger-strong: #842c2c;
+  /* Edges: the hairline every panel carries, and a stronger one for
+     wells and for hover. Measured on --bg the hairline is 1.3:1, far
+     below the 3:1 a boundary needs to count on its own, which is why no
+     state in the interface is ever signalled by an edge alone. */
+  --line: rgba(232, 234, 246, 0.11);
+  --line-strong: rgba(232, 234, 246, 0.24);
 
-  /* The two shadow colors every surface is built from. Light is cast
-     toward the top left, dark toward the bottom right. Measured against
-     --bg they sit at 1.2:1 and 1.4:1, far below the 3:1 a boundary needs
-     to count on its own, which is why no state in the interface is ever
-     signalled by shadow alone. */
-  --shadow-light: rgba(255, 255, 255, 0.85);
-  --shadow-dark: rgba(163, 177, 198, 0.6);
+  /* The accent: 6.1:1 as text or a focus ring on --bg. It fills the
+     primary action under the dark ink (--on-accent, 6.1:1), since white
+     on it would not pass. --accent-strong is its hover step. */
+  --accent: #8f7dff;
+  --accent-strong: #a99bff;
+  --on-accent: #06070c;
 
-  /* The same pair for a control filled with the accent, where the page's
-     own shadow colors would read as grey smudges. */
-  --shadow-fill-light: rgba(255, 255, 255, 0.24);
-  --shadow-fill-dark: rgba(12, 14, 40, 0.32);
+  /* Danger: errors and destructive actions (revoke) only, and always
+     paired with an icon and text. 8.6:1 on --bg. An ink, never a fill. */
+  --danger: #ff8a8a;
+  --danger-strong: #ffb0b0;
 
-  /* Depth: one multiplier on every shadow distance, so the whole
-     interface can sit lower on a small screen (see the media queries at
-     the foot of this file) without any component knowing about it. */
+  /* Drift: the warm tone of a portfolio past its band, the same one the
+     rings take on. 7.6:1 on --bg. Always beside a label that says so. */
+  --drift: #ff8279;
+
+  /* Kept for the few rules that still name them: the two tones a panel's
+     edge is drawn from. */
+  --shadow-light: rgba(232, 234, 246, 0.07);
+  --shadow-dark: rgba(0, 0, 0, 0.6);
+  --shadow-fill-light: rgba(255, 255, 255, 0.28);
+  --shadow-fill-dark: rgba(6, 7, 12, 0.34);
+
+  /* Depth: one multiplier on every shadow distance, so panels sit lower
+     on a small screen (see the media queries at the foot of this file). */
   --depth: 1;
-  --elev-sm: calc(var(--depth) * 3px);
-  --elev-md: calc(var(--depth) * 6px);
-  --elev-lg: calc(var(--depth) * 10px);
+  --elev-sm: calc(var(--depth) * 8px);
+  --elev-md: calc(var(--depth) * 18px);
+  --elev-lg: calc(var(--depth) * 30px);
 
   /*
-    Shadow levels. Raised, pressed, and flat, each in three sizes, and
-    every one of them written as the same four layers in the same order:
-    outer light, outer dark, inner light, inner dark. A raised level
-    zeroes the inner pair; a pressed level zeroes the outer pair; flat
-    zeroes both. Keeping the layers aligned is what lets a control ease
-    from raised to pressed as one continuous move, rather than snapping
-    the instant an inset keyword appears.
+    Depth levels. Raised, pressed, and flat, each in three sizes, and
+    every one written as the same three layers in the same order: the
+    hairline edge, an inner tone, and the shadow it casts. Keeping the
+    layers aligned lets a control ease from one level to another.
   */
   --raised-sm:
-    calc(var(--elev-sm) * -1) calc(var(--elev-sm) * -1) calc(var(--elev-sm) * 2) var(--shadow-light),
-    var(--elev-sm) var(--elev-sm) calc(var(--elev-sm) * 2) var(--shadow-dark),
-    inset 0 0 0 transparent,
-    inset 0 0 0 transparent;
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 0 var(--shadow-light),
+    0 var(--elev-sm) calc(var(--elev-sm) * 2.5) calc(var(--elev-sm) * -1) var(--shadow-dark);
   --raised-md:
-    calc(var(--elev-md) * -1) calc(var(--elev-md) * -1) calc(var(--elev-md) * 2) var(--shadow-light),
-    var(--elev-md) var(--elev-md) calc(var(--elev-md) * 2) var(--shadow-dark),
-    inset 0 0 0 transparent,
-    inset 0 0 0 transparent;
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 0 var(--shadow-light),
+    0 var(--elev-md) calc(var(--elev-md) * 2.5) calc(var(--elev-md) * -1) var(--shadow-dark);
   --raised-lg:
-    calc(var(--elev-lg) * -1) calc(var(--elev-lg) * -1) calc(var(--elev-lg) * 2) var(--shadow-light),
-    var(--elev-lg) var(--elev-lg) calc(var(--elev-lg) * 2) var(--shadow-dark),
-    inset 0 0 0 transparent,
-    inset 0 0 0 transparent;
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 0 var(--shadow-light),
+    0 var(--elev-lg) calc(var(--elev-lg) * 2.5) calc(var(--elev-lg) * -1) var(--shadow-dark);
 
   --pressed-sm:
-    0 0 0 transparent,
-    0 0 0 transparent,
-    inset calc(var(--elev-sm) * -1) calc(var(--elev-sm) * -1) calc(var(--elev-sm) * 2) var(--shadow-light),
-    inset var(--elev-sm) var(--elev-sm) calc(var(--elev-sm) * 2) var(--shadow-dark);
+    inset 0 0 0 1px var(--line),
+    inset 0 2px 5px 0 var(--shadow-dark),
+    0 0 0 0 transparent;
   --pressed-md:
-    0 0 0 transparent,
-    0 0 0 transparent,
-    inset calc(var(--elev-md) * -1) calc(var(--elev-md) * -1) calc(var(--elev-md) * 2) var(--shadow-light),
-    inset var(--elev-md) var(--elev-md) calc(var(--elev-md) * 2) var(--shadow-dark);
+    inset 0 0 0 1px var(--line),
+    inset 0 3px 9px 0 var(--shadow-dark),
+    0 0 0 0 transparent;
   --pressed-lg:
-    0 0 0 transparent,
-    0 0 0 transparent,
-    inset calc(var(--elev-lg) * -1) calc(var(--elev-lg) * -1) calc(var(--elev-lg) * 2) var(--shadow-light),
-    inset var(--elev-lg) var(--elev-lg) calc(var(--elev-lg) * 2) var(--shadow-dark);
+    inset 0 0 0 1px var(--line),
+    inset 0 5px 16px 0 var(--shadow-dark),
+    0 0 0 0 transparent;
 
   --flat:
-    0 0 0 transparent,
-    0 0 0 transparent,
-    inset 0 0 0 transparent,
-    inset 0 0 0 transparent;
+    inset 0 0 0 1px transparent,
+    inset 0 0 0 0 transparent,
+    0 0 0 0 transparent;
 
-  /* A filled control keeps the page's own outer pair while raised (it
-     still sits on the matte surface), and takes the fill pair inward
-     when pressed. --raised-on-fill is for a matte part riding on a
-     filled one: the thumb of a switch that is on. */
+  /* On a control filled with the accent: pressed in, and the small part
+     that rides on it. */
   --pressed-fill:
-    0 0 0 transparent,
-    0 0 0 transparent,
-    inset calc(var(--elev-sm) * -1) calc(var(--elev-sm) * -1) calc(var(--elev-sm) * 2) var(--shadow-fill-light),
-    inset var(--elev-sm) var(--elev-sm) calc(var(--elev-sm) * 2) var(--shadow-fill-dark);
+    inset 0 0 0 1px var(--shadow-fill-dark),
+    inset 0 2px 6px 0 var(--shadow-fill-dark),
+    0 0 0 0 transparent;
   --raised-on-fill:
-    calc(var(--elev-sm) * -0.5) calc(var(--elev-sm) * -0.5) var(--elev-sm) var(--shadow-fill-light),
-    calc(var(--elev-sm) * 0.5) calc(var(--elev-sm) * 0.5) var(--elev-sm) var(--shadow-fill-dark),
-    inset 0 0 0 transparent,
-    inset 0 0 0 transparent;
+    inset 0 0 0 1px transparent,
+    inset 0 1px 0 0 var(--shadow-fill-light),
+    0 2px 6px -1px var(--shadow-fill-dark);
 
-  /* An engraved hairline: the only divider in the system. One pixel of
-     shadow over one pixel of light, read as a groove cut into the
-     surface rather than as a line drawn on top of it. */
-  --groove: inset 0 1px 0 var(--shadow-dark), inset 0 2px 0 var(--shadow-light);
+  /* The one divider in the system: a single hairline. */
+  --groove: inset 0 1px 0 var(--line);
 
   /* Spacing: one 4px-based scale. Tailwind's numeric spacing utilities
      run on the same base (see --spacing below), so p-6 and
@@ -170,32 +164,31 @@
   --duration-settle: 1100ms;
 
   /* The headline glow (see glow.css). Each letter the pointer passes is
-     lit from beneath for a moment, then let go. Three of these are the
-     ones to tune: --glow-opacity is the intensity at peak, --glow-blur
-     is how far the light spreads (in ems, so it scales with the type),
-     and --glow-hold is how long a letter stays lit after the pointer has
-     left it. --glow-in and --glow-out are the fade either side of that,
-     --glow-reach is how near the pointer has to pass to light a letter,
-     and --glow-static-opacity is the strength of the one still halo
-     shown in place of all this under reduced motion. The ink itself
-     never changes color: at the default intensity the surface under a
-     lit letter stays above 5:1 against it. */
+     lit from beneath for a moment, then let go: on this ground, real
+     light. Three of these are the ones to tune: --glow-opacity is the
+     intensity at peak, --glow-blur is how far the light spreads (in ems,
+     so it scales with the type), and --glow-hold is how long a letter
+     stays lit after the pointer has left it. --glow-in and --glow-out are
+     the fade either side of that, --glow-reach is how near the pointer
+     has to pass to light a letter, and --glow-static-opacity is the
+     strength of the one still halo shown in place of all this under
+     reduced motion. The ink itself never changes color. */
   --glow-color: var(--accent);
-  --glow-opacity: 0.4;
-  --glow-blur: 0.2em;
+  --glow-opacity: 0.75;
+  --glow-blur: 0.22em;
   --glow-hold: 1500ms;
   --glow-in: 260ms;
   --glow-out: 600ms;
   --glow-reach: 8px;
-  --glow-static-opacity: 0.22;
+  --glow-static-opacity: 0.3;
 
-  /* Focus: the one non-shadow cue every interactive element shares. */
-  --focus-width: 3px;
+  /* Focus: the one cue every interactive element shares. */
+  --focus-width: 2px;
   --focus-offset: 3px;
   --focus-color: var(--accent);
 
-  /* Stacking: only what has to sit above the page. Dialogs and sheets
-     use the browser's own top layer and need no number here. */
+  /* Stacking: only what has to sit above the page. Dialogs and menus use
+     the browser's own top layer and need no number here. */
   --z-toast: 60;
 }
 
@@ -211,9 +204,9 @@
   breakpoint. instrument is kept as its own step: the large measured
   figure, wherever a page shows one number as the instrument reading.
 
-  Radii: generous everywhere. sm for wells and chips inside a card, md
-  for inputs and notices, lg for cards, xl for the largest panels, pill
-  for buttons, toggles, and badges.
+  Radii: sm for wells and chips inside a card, md for inputs and
+  notices, lg for cards, xl for the largest panels, pill for buttons,
+  toggles, and badges: the round forms echo the rings.
 
   Easing: one signature curve, a confident deceleration with no bounce.
   Everything that moves in this interface settles on it. ease-fade is
@@ -244,10 +237,10 @@
   --tracking-label: 0.12em;
 
   --radius-*: initial;
-  --radius-sm: 0.75rem;
-  --radius-md: 1rem;
-  --radius-lg: 1.5rem;
-  --radius-xl: 2rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
   --radius-pill: 999px;
 
   --spacing: 0.25rem;
@@ -276,6 +269,11 @@
   --color-on-accent: var(--on-accent);
   --color-danger: var(--danger);
   --color-danger-strong: var(--danger-strong);
+  --color-drift: var(--drift);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
 
   --shadow-*: initial;
   --inset-shadow-*: initial;
@@ -286,12 +284,16 @@
   --font-mono: var(--font-jetbrains-mono);
 }
 
-/* Shadow sizes scale down on small screens: the same relationships, at
-   three quarters of the distance on a phone and a little less again on
-   the narrowest ones, so a raised card never eats the gutter. */
+/* Panels sit lower on small screens: the same relationships, at three
+   quarters of the distance on a phone and a little less again on the
+   narrowest ones. */
 @media (max-width: 40rem) {
   :root {
     --depth: 0.75;
+    /* The headline glow is gentler on a small screen: less light, kept closer in. */
+    --glow-opacity: 0.45;
+    --glow-blur: 0.15em;
+    --glow-static-opacity: 0.2;
   }
 }
 
@@ -301,12 +303,14 @@
   }
 }
 
-/* Anyone who has asked their system for more contrast gets a deeper
-   shadow and a darker secondary ink. Component styles add a real outline
+/* Anyone who has asked their system for more contrast gets a brighter
+   secondary ink and stronger edges. Component styles add a real outline
    to every surface under the same query (see components.css). */
 @media (prefers-contrast: more) {
   :root {
-    --text-muted: #36404f;
-    --shadow-dark: rgba(118, 134, 160, 0.85);
+    --text-muted: #cdd1e4;
+    --line: rgba(232, 234, 246, 0.3);
+    --line-strong: rgba(232, 234, 246, 0.55);
+    --surface: #0d0f1a;
   }
 }

@@ -6,7 +6,7 @@ import { cn } from "./cn";
  * as a real description list. Rows are separated by the groove.
  */
 export function DataList({ className, children }: { className?: string; children: ReactNode }) {
-  return <dl className={cn("nm-datalist", className)}>{children}</dl>;
+  return <dl className={cn("ot-datalist", className)}>{children}</dl>;
 }
 
 type DataRowProps = {
@@ -19,9 +19,9 @@ type DataRowProps = {
 
 export function DataRow({ label, numeric = true, children }: DataRowProps) {
   return (
-    <div className="nm-datarow">
+    <div className="ot-datarow">
       <dt>{label}</dt>
-      <dd className={numeric ? "nm-num" : undefined}>{children}</dd>
+      <dd className={numeric ? "ot-num" : undefined}>{children}</dd>
     </div>
   );
 }

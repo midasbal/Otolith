@@ -103,6 +103,8 @@ const ICONS = {
       <circle cx="8.5" cy="16" r="2.5" />
     </>
   ),
+  pause: <path d="M9 6v12M15 6v12" />,
+  play: <path d="M8.5 6.2v11.6L18 12 8.5 6.2Z" />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;
@@ -151,7 +153,7 @@ export function Spinner({ size = 18, className }: { size?: number; className?: s
       stroke="currentColor"
       strokeWidth={2.5}
       strokeLinecap="round"
-      className={className ? `nm-spinner ${className}` : "nm-spinner"}
+      className={className ? `ot-spinner ${className}` : "ot-spinner"}
     >
       <circle cx="12" cy="12" r="9" opacity={0.25} />
       <path d="M21 12a9 9 0 0 0-9-9" />

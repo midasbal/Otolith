@@ -5,9 +5,9 @@ export type SurfaceVariant = "raised" | "pressed" | "flat";
 export type SurfaceDepth = "sm" | "md" | "lg";
 
 const SURFACE_CLASS: Record<SurfaceVariant, Record<SurfaceDepth, string>> = {
-  raised: { sm: "nm-raised-sm", md: "nm-raised", lg: "nm-raised-lg" },
-  pressed: { sm: "nm-pressed-sm", md: "nm-pressed", lg: "nm-pressed-lg" },
-  flat: { sm: "nm-flat", md: "nm-flat", lg: "nm-flat" },
+  raised: { sm: "ot-raised-sm", md: "ot-raised", lg: "ot-raised-lg" },
+  pressed: { sm: "ot-pressed-sm", md: "ot-pressed", lg: "ot-pressed-lg" },
+  flat: { sm: "ot-flat", md: "ot-flat", lg: "ot-flat" },
 };
 
 /** The class for one of the three surface treatments at a given depth. */
@@ -29,7 +29,7 @@ type CardProps<T extends ElementType> = {
  */
 export function Card<T extends ElementType = "div">({ as, variant, depth, className, ...rest }: CardProps<T>) {
   const Tag: ElementType = as ?? "div";
-  return <Tag className={cn("nm-card", surfaceClass(variant, depth), className)} {...rest} />;
+  return <Tag className={cn("ot-card", surfaceClass(variant, depth), className)} {...rest} />;
 }
 
 type IconWellProps = ComponentProps<"span"> & {
@@ -39,5 +39,5 @@ type IconWellProps = ComponentProps<"span"> & {
 
 /** A small well for one icon or one short number. Inset by default. */
 export function IconWell({ raised = false, className, ...rest }: IconWellProps) {
-  return <span className={cn("nm-icon-well", raised && "nm-icon-well-raised", className)} {...rest} />;
+  return <span className={cn("ot-icon-well", raised && "ot-icon-well-raised", className)} {...rest} />;
 }

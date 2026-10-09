@@ -14,7 +14,7 @@
   3. Raised and pressed are the same four shadow layers (see tokens.css),
      so a control eases between them instead of snapping.
 
-  All classes carry the nm- prefix, so none can collide with a Tailwind
+  All classes carry the ot- prefix, so none can collide with a Tailwind
   utility. They live in the components layer, below utilities: a layout
   utility on the same element (a margin, a width) always wins.
 */
@@ -24,81 +24,84 @@
      The three treatments, in three sizes each. Raised lifts off the
      page, pressed sinks into it, flat is level with it. */
 
-  .nm-raised-sm,
-  .nm-raised,
-  .nm-raised-lg,
-  .nm-pressed-sm,
-  .nm-pressed,
-  .nm-pressed-lg,
-  .nm-flat {
-    background-color: var(--bg);
+  .ot-raised-sm,
+  .ot-raised,
+  .ot-raised-lg,
+  .ot-pressed-sm,
+  .ot-pressed,
+  .ot-pressed-lg,
+  .ot-flat {
+    background-color: transparent;
   }
 
-  .nm-raised-sm {
+  .ot-raised-sm {
+    background-color: var(--surface);
     box-shadow: var(--raised-sm);
   }
-  .nm-raised {
+  .ot-raised {
+    background-color: var(--surface);
     box-shadow: var(--raised-md);
   }
-  .nm-raised-lg {
+  .ot-raised-lg {
+    background-color: var(--surface);
     box-shadow: var(--raised-lg);
   }
-  .nm-pressed-sm {
+  .ot-pressed-sm {
+    background-color: var(--well);
     box-shadow: var(--pressed-sm);
   }
-  .nm-pressed {
+  .ot-pressed {
+    background-color: var(--well);
     box-shadow: var(--pressed-md);
   }
-  .nm-pressed-lg {
+  .ot-pressed-lg {
+    background-color: var(--well);
     box-shadow: var(--pressed-lg);
   }
-  .nm-flat {
+  .ot-flat {
     box-shadow: var(--flat);
   }
 
   /* ── Layout ─────────────────────────────────────────────────────── */
 
-  .nm-container {
+  .ot-container {
     width: 100%;
     max-width: var(--container);
     margin-inline: auto;
     padding-inline: var(--space-gutter);
   }
 
-  .nm-section {
-    padding-block: var(--space-section);
-  }
-
   /* The one divider: a groove cut into the surface. */
-  .nm-divider {
+  .ot-divider {
     height: 2px;
     border-radius: var(--radius-pill);
     box-shadow: var(--groove);
   }
 
   /* First in the tab order on every page, off screen until focused. */
-  .nm-skip-link {
+  .ot-skip-link {
     position: absolute;
     top: var(--space-4);
     left: var(--space-4);
     z-index: var(--z-toast);
     padding: var(--space-3) var(--space-5);
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--surface-strong);
     color: var(--text);
     font-size: var(--text-sm);
     font-weight: 500;
     box-shadow: var(--raised-md);
     transform: translateY(-300%);
   }
-  .nm-skip-link:focus-visible {
+  .ot-skip-link:focus-visible {
     transform: none;
   }
 
   /* ── Type helpers ───────────────────────────────────────────────── */
 
-  .nm-caps {
+  .ot-caps {
     color: var(--text-muted);
+    font-family: var(--font-mono);
     font-size: var(--text-xs);
     font-weight: 500;
     line-height: var(--text-xs--line-height);
@@ -106,7 +109,7 @@
     text-transform: uppercase;
   }
 
-  .nm-num {
+  .ot-num {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
@@ -114,30 +117,29 @@
 
   /* ── Card ───────────────────────────────────────────────────────── */
 
-  .nm-card {
+  .ot-card {
     min-width: 0;
     padding: var(--space-card);
     border-radius: var(--radius-lg);
-    background-color: var(--bg);
     color: var(--text);
   }
 
   /* A small inset well holding one icon or one number: the anchor of a
      feature tile or a step card. */
-  .nm-icon-well {
+  .ot-icon-well {
     display: grid;
     flex: none;
     place-items: center;
     width: 3rem;
     height: 3rem;
     border-radius: var(--radius-md);
-    background-color: var(--bg);
+    background-color: var(--well);
     color: var(--accent);
     box-shadow: var(--pressed-sm);
   }
   /* Inside a pressed card the well is raised instead, so it still reads
      against its surroundings. */
-  .nm-icon-well-raised {
+  .ot-icon-well-raised {
     box-shadow: var(--raised-sm);
   }
 
@@ -147,7 +149,7 @@
      stays matte and sets its label and icon in the danger ink. All
      three press inward on :active. */
 
-  .nm-btn {
+  .ot-btn {
     --btn-height: var(--control-md);
     --btn-pad: var(--space-6);
     display: inline-flex;
@@ -158,7 +160,7 @@
     min-height: var(--btn-height);
     padding: var(--space-2) var(--btn-pad);
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--surface);
     color: var(--text);
     font-family: var(--font-sans);
     font-size: var(--text-sm);
@@ -177,67 +179,67 @@
       opacity var(--duration-fast) var(--ease-settle);
   }
 
-  .nm-btn-sm {
+  .ot-btn-sm {
     --btn-height: var(--control-sm);
     --btn-pad: var(--space-4);
   }
-  .nm-btn-lg {
+  .ot-btn-lg {
     --btn-height: var(--control-lg);
     --btn-pad: var(--space-8);
     font-size: var(--text-base);
   }
-  .nm-btn-icon {
+  .ot-btn-icon {
     --btn-pad: 0;
     flex: none;
     width: var(--btn-height);
     padding-block: 0;
   }
 
-  .nm-btn-primary {
+  .ot-btn-primary {
     background-color: var(--accent);
     color: var(--on-accent);
   }
-  .nm-btn-danger {
+  .ot-btn-danger {
     color: var(--danger);
   }
 
   @media (hover: hover) {
-    .nm-btn:not(:disabled, [aria-disabled="true"]):hover {
+    .ot-btn:not(:disabled, [aria-disabled="true"]):hover {
       box-shadow: var(--raised-md);
     }
-    .nm-btn-primary:not(:disabled, [aria-disabled="true"]):hover {
+    .ot-btn-primary:not(:disabled, [aria-disabled="true"]):hover {
       background-color: var(--accent-strong);
     }
-    .nm-btn-danger:not(:disabled, [aria-disabled="true"]):hover {
+    .ot-btn-danger:not(:disabled, [aria-disabled="true"]):hover {
       color: var(--danger-strong);
     }
   }
 
-  .nm-btn:not(:disabled, [aria-disabled="true"]):active {
+  .ot-btn:not(:disabled, [aria-disabled="true"]):active {
     box-shadow: var(--pressed-sm);
   }
-  .nm-btn-primary:not(:disabled, [aria-disabled="true"]):active {
+  .ot-btn-primary:not(:disabled, [aria-disabled="true"]):active {
     background-color: var(--accent-strong);
     box-shadow: var(--pressed-fill);
   }
-  .nm-btn-danger:not(:disabled, [aria-disabled="true"]):active {
+  .ot-btn-danger:not(:disabled, [aria-disabled="true"]):active {
     color: var(--danger-strong);
   }
 
-  .nm-btn:disabled,
-  .nm-btn[aria-disabled="true"] {
+  .ot-btn:disabled,
+  .ot-btn[aria-disabled="true"] {
     opacity: 0.5;
     cursor: not-allowed;
   }
   /* Busy is not dimmed: the label is now the status ("Waiting for
      passkey..."), so it keeps its full contrast. The button sits pressed
      in, as it was left, with a spinner and a progress cursor. */
-  .nm-btn[aria-busy="true"] {
+  .ot-btn[aria-busy="true"] {
     opacity: 1;
     cursor: progress;
     box-shadow: var(--pressed-sm);
   }
-  .nm-btn-primary[aria-busy="true"] {
+  .ot-btn-primary[aria-busy="true"] {
     background-color: var(--accent-strong);
     box-shadow: var(--pressed-fill);
   }
@@ -245,7 +247,7 @@
   /* ── Text link ──────────────────────────────────────────────────────
      Always underlined: the underline, not the color, is what says link. */
 
-  .nm-link {
+  .ot-link {
     border-radius: var(--radius-sm);
     color: var(--accent);
     font-weight: 500;
@@ -256,33 +258,33 @@
     cursor: pointer;
     transition: color var(--duration-fast) var(--ease-settle);
   }
-  .nm-link-muted {
+  .ot-link-muted {
     color: var(--text-muted);
   }
   @media (hover: hover) {
-    .nm-link:not(:disabled):hover {
+    .ot-link:not(:disabled):hover {
       color: var(--accent-strong);
       text-decoration-thickness: 2px;
     }
-    .nm-link-muted:not(:disabled):hover {
+    .ot-link-muted:not(:disabled):hover {
       color: var(--text);
     }
   }
-  .nm-link:disabled {
+  .ot-link:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
   /* A link inside a list of links (the footer): its place in the list
      already says what it is, so it stays quiet until hovered. */
-  .nm-quiet-link {
+  .ot-quiet-link {
     border-radius: var(--radius-sm);
     color: var(--text-muted);
     text-decoration: none;
     transition: color var(--duration-fast) var(--ease-settle);
   }
   @media (hover: hover) {
-    .nm-quiet-link:hover {
+    .ot-quiet-link:hover {
       color: var(--text);
       text-decoration: underline;
       text-underline-offset: 0.25em;
@@ -293,7 +295,7 @@
      Level with the surface at rest, pressed in on hover, and pressed in
      with the accent and a marker when it is the current page. */
 
-  .nm-navlink {
+  .ot-navlink {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
@@ -311,16 +313,16 @@
       color var(--duration-fast) var(--ease-settle);
   }
   @media (hover: hover) {
-    .nm-navlink:hover {
+    .ot-navlink:hover {
       color: var(--text);
       box-shadow: var(--pressed-sm);
     }
   }
-  .nm-navlink[aria-current="page"] {
+  .ot-navlink[aria-current="page"] {
     color: var(--accent);
     box-shadow: var(--pressed-sm);
   }
-  .nm-navlink[aria-current="page"]::before {
+  .ot-navlink[aria-current="page"]::before {
     content: "";
     flex: none;
     width: 0.375rem;
@@ -330,24 +332,24 @@
   }
   /* A link that carries its own icon: the icon takes the accent when the
      link is current, and stands in for the marker dot. */
-  .nm-navlink-icon {
+  .ot-navlink-icon {
     gap: var(--space-3);
     min-height: var(--control-md);
   }
-  .nm-navlink-icon[aria-current="page"]::before {
+  .ot-navlink-icon[aria-current="page"]::before {
     content: none;
   }
 
   /* ── Badge ──────────────────────────────────────────────────────── */
 
-  .nm-badge {
+  .ot-badge {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
     width: fit-content;
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--well);
     color: var(--text-muted);
     font-size: var(--text-xs);
     font-weight: 500;
@@ -357,12 +359,18 @@
     white-space: nowrap;
     box-shadow: var(--pressed-sm);
   }
-  .nm-badge-dot {
+  .ot-badge-dot {
     flex: none;
     width: 0.375rem;
     height: 0.375rem;
     border-radius: 50%;
     background-color: var(--accent);
+  }
+  .ot-badge[data-tone="drift"] {
+    color: var(--drift);
+  }
+  .ot-badge[data-tone="drift"] .ot-badge-dot {
+    background-color: var(--drift);
   }
 
   /* ── Field ──────────────────────────────────────────────────────────
@@ -370,23 +378,23 @@
      shadow alone does not identify a field, so the label is never
      optional, and the well carries a unit or an icon wherever one fits. */
 
-  .nm-field {
+  .ot-field {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: var(--space-2);
   }
-  .nm-label {
+  .ot-label {
     color: var(--text);
     font-size: var(--text-sm);
     font-weight: 500;
   }
-  .nm-hint {
+  .ot-hint {
     color: var(--text-muted);
     font-size: var(--text-sm);
     line-height: var(--text-sm--line-height);
   }
-  .nm-field-error {
+  .ot-field-error {
     display: flex;
     align-items: flex-start;
     gap: var(--space-2);
@@ -394,12 +402,12 @@
     font-size: var(--text-sm);
     line-height: var(--text-sm--line-height);
   }
-  .nm-field-error > svg {
+  .ot-field-error > svg {
     flex: none;
     margin-top: 0.125rem;
   }
 
-  .nm-well {
+  .ot-well {
     position: relative;
     display: flex;
     min-width: 0;
@@ -408,24 +416,24 @@
     min-height: var(--control-md);
     padding: 0 var(--space-4);
     border-radius: var(--radius-md);
-    background-color: var(--bg);
+    background-color: var(--well);
     color: var(--text);
     box-shadow: var(--pressed-sm);
   }
-  .nm-well[data-invalid="true"] {
+  .ot-well[data-invalid="true"] {
     outline: 2px solid var(--danger);
     outline-offset: 2px;
   }
-  .nm-well:focus-within {
+  .ot-well:focus-within {
     outline: var(--focus-width) solid var(--focus-color);
     outline-offset: var(--focus-offset);
   }
-  .nm-well:has(> :disabled) {
+  .ot-well:has(> :disabled) {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
-  .nm-input {
+  .ot-input {
     min-width: 0;
     flex: 1;
     align-self: stretch;
@@ -439,22 +447,22 @@
     font-feature-settings: "tnum" 1;
     appearance: textfield;
   }
-  .nm-input::-webkit-outer-spin-button,
-  .nm-input::-webkit-inner-spin-button {
+  .ot-input::-webkit-outer-spin-button,
+  .ot-input::-webkit-inner-spin-button {
     margin: 0;
     -webkit-appearance: none;
   }
-  .nm-input::placeholder {
+  .ot-input::placeholder {
     color: var(--text-muted);
     opacity: 1;
   }
-  .nm-input:focus-visible {
+  .ot-input:focus-visible {
     outline: none;
   }
-  .nm-input:disabled {
+  .ot-input:disabled {
     cursor: not-allowed;
   }
-  .nm-affix {
+  .ot-affix {
     flex: none;
     color: var(--text-muted);
     font-size: var(--text-sm);
@@ -472,14 +480,14 @@
      and carries a check. The two can be the same row or different rows,
      and neither is told by a shadow alone. */
 
-  .nm-select {
+  .ot-select {
     cursor: pointer;
     transition: box-shadow var(--duration-fast) var(--ease-settle);
   }
-  .nm-select[data-open="true"] {
+  .ot-select[data-open="true"] {
     box-shadow: var(--pressed-md);
   }
-  .nm-select-trigger {
+  .ot-select-trigger {
     min-width: 0;
     flex: 1;
     align-self: stretch;
@@ -492,29 +500,29 @@
     white-space: nowrap;
     cursor: inherit;
   }
-  .nm-select-trigger::after {
+  .ot-select-trigger::after {
     content: "";
     position: absolute;
     inset: 0;
   }
-  .nm-select-trigger:focus-visible {
+  .ot-select-trigger:focus-visible {
     outline: none;
   }
-  .nm-select-trigger:disabled {
+  .ot-select-trigger:disabled {
     cursor: not-allowed;
   }
-  .nm-select-chevron {
+  .ot-select-chevron {
     flex: none;
     color: var(--text-muted);
     pointer-events: none;
     transition: transform var(--duration-fast) var(--ease-settle);
   }
-  .nm-select[data-open="true"] .nm-select-chevron {
+  .ot-select[data-open="true"] .ot-select-chevron {
     transform: rotate(180deg);
   }
   /* The native select that holds the value: in the page, for a form and
      for the change event, and nowhere a person can reach. */
-  .nm-select-native {
+  .ot-select-native {
     position: absolute;
     bottom: 0;
     left: 0;
@@ -529,7 +537,7 @@
 
   /* The list. It opens in the top layer and is placed by the component
      (top, left, and the room it has), below the trigger or above it. */
-  .nm-listbox {
+  .ot-listbox {
     position: fixed;
     inset: auto;
     z-index: 60;
@@ -541,7 +549,7 @@
     overscroll-behavior: contain;
     border: 0;
     border-radius: var(--radius-lg);
-    background-color: var(--bg);
+    background-color: var(--surface-strong);
     color: var(--text);
     box-shadow: var(--raised-md);
     list-style: none;
@@ -554,21 +562,21 @@
       display var(--duration-fast) allow-discrete,
       overlay var(--duration-fast) allow-discrete;
   }
-  .nm-listbox[data-side="top"] {
+  .ot-listbox[data-side="top"] {
     transform-origin: bottom center;
   }
-  .nm-listbox:popover-open {
+  .ot-listbox:popover-open {
     opacity: 1;
     transform: none;
   }
   @starting-style {
-    .nm-listbox:popover-open {
+    .ot-listbox:popover-open {
       opacity: 0;
       transform: scale(0.96);
     }
   }
 
-  .nm-option {
+  .ot-option {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -587,35 +595,35 @@
       box-shadow var(--duration-fast) var(--ease-settle),
       color var(--duration-fast) var(--ease-settle);
   }
-  .nm-option + .nm-option {
+  .ot-option + .ot-option {
     margin-top: var(--space-1);
   }
   /* Under a finger every row is a full-size target. */
   @media (pointer: coarse) {
-    .nm-option {
+    .ot-option {
       min-height: var(--control-md);
     }
   }
-  .nm-option-label {
+  .ot-option-label {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .nm-option-check {
+  .ot-option-check {
     flex: none;
     visibility: hidden;
   }
-  .nm-option[data-active="true"] {
+  .ot-option[data-active="true"] {
     color: var(--text);
     box-shadow: var(--pressed-sm);
   }
-  .nm-option[aria-selected="true"] {
+  .ot-option[aria-selected="true"] {
     color: var(--accent);
   }
-  .nm-option[aria-selected="true"] .nm-option-check {
+  .ot-option[aria-selected="true"] .ot-option-check {
     visibility: visible;
   }
-  .nm-option[aria-disabled="true"] {
+  .ot-option[aria-disabled="true"] {
     opacity: 0.5;
     cursor: not-allowed;
   }
@@ -625,7 +633,7 @@
      track is a groove, filled with the accent up to --fill; the thumb is
      a raised knob with an accent center. */
 
-  .nm-slider {
+  .ot-slider {
     --fill: 50%;
     --track-height: 0.75rem;
     --thumb-size: 1.75rem;
@@ -639,14 +647,14 @@
     touch-action: pan-y;
     appearance: none;
   }
-  .nm-slider:focus-visible {
+  .ot-slider:focus-visible {
     outline: none;
   }
 
-  .nm-slider::-webkit-slider-runnable-track {
+  .ot-slider::-webkit-slider-runnable-track {
     height: var(--track-height);
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--well);
     background-image: linear-gradient(
       to right,
       var(--accent) var(--fill),
@@ -654,42 +662,42 @@
     );
     box-shadow: var(--pressed-sm);
   }
-  .nm-slider::-webkit-slider-thumb {
+  .ot-slider::-webkit-slider-thumb {
     width: var(--thumb-size);
     height: var(--thumb-size);
     margin-top: calc((var(--track-height) - var(--thumb-size)) / 2);
     border-radius: 50%;
-    background-color: var(--bg);
+    background-color: var(--knob);
     background-image: radial-gradient(circle, var(--accent) 0 22%, transparent 24%);
     box-shadow: var(--raised-sm);
     appearance: none;
   }
-  .nm-slider:focus-visible::-webkit-slider-thumb {
+  .ot-slider:focus-visible::-webkit-slider-thumb {
     outline: var(--focus-width) solid var(--focus-color);
     outline-offset: var(--focus-offset);
   }
 
-  .nm-slider::-moz-range-track {
+  .ot-slider::-moz-range-track {
     height: var(--track-height);
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--well);
     box-shadow: var(--pressed-sm);
   }
-  .nm-slider::-moz-range-progress {
+  .ot-slider::-moz-range-progress {
     height: var(--track-height);
     border-radius: var(--radius-pill);
     background-color: var(--accent);
   }
-  .nm-slider::-moz-range-thumb {
+  .ot-slider::-moz-range-thumb {
     width: var(--thumb-size);
     height: var(--thumb-size);
     border: 0;
     border-radius: 50%;
-    background-color: var(--bg);
+    background-color: var(--knob);
     background-image: radial-gradient(circle, var(--accent) 0 22%, transparent 24%);
     box-shadow: var(--raised-sm);
   }
-  .nm-slider:focus-visible::-moz-range-thumb {
+  .ot-slider:focus-visible::-moz-range-thumb {
     outline: var(--focus-width) solid var(--focus-color);
     outline-offset: var(--focus-offset);
   }
@@ -702,14 +710,14 @@
      and End, and assistive-technology adjustment do not go through
      pointer events and are unchanged. */
   @media (pointer: coarse) {
-    .nm-slider {
+    .ot-slider {
       --thumb-size: 2.25rem;
       pointer-events: none;
     }
-    .nm-slider::-webkit-slider-thumb {
+    .ot-slider::-webkit-slider-thumb {
       pointer-events: auto;
     }
-    .nm-slider::-moz-range-thumb {
+    .ot-slider::-moz-range-thumb {
       pointer-events: auto;
     }
   }
@@ -720,7 +728,7 @@
      state reads from color and from position, not from the shadow. The
      knob carries a center mark, so its position is visible on its own. */
 
-  .nm-toggle {
+  .ot-toggle {
     --toggle-width: 3.25rem;
     --toggle-height: 1.875rem;
     --toggle-gap: 0.1875rem;
@@ -730,14 +738,14 @@
     width: var(--toggle-width);
     height: var(--toggle-height);
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--well);
     cursor: pointer;
     box-shadow: var(--pressed-sm);
     transition:
       background-color var(--duration-base) var(--ease-settle),
       box-shadow var(--duration-base) var(--ease-settle);
   }
-  .nm-toggle::after {
+  .ot-toggle::after {
     content: "";
     position: absolute;
     top: var(--toggle-gap);
@@ -745,23 +753,23 @@
     width: calc(var(--toggle-height) - 2 * var(--toggle-gap));
     height: calc(var(--toggle-height) - 2 * var(--toggle-gap));
     border-radius: 50%;
-    background-color: var(--bg);
+    background-color: var(--knob);
     background-image: radial-gradient(circle, var(--text-muted) 0 20%, transparent 22%);
     box-shadow: var(--raised-sm);
     transition:
       transform var(--duration-base) var(--ease-settle),
       box-shadow var(--duration-base) var(--ease-settle);
   }
-  .nm-toggle[aria-checked="true"] {
+  .ot-toggle[aria-checked="true"] {
     background-color: var(--accent);
     box-shadow: var(--pressed-fill);
   }
-  .nm-toggle[aria-checked="true"]::after {
+  .ot-toggle[aria-checked="true"]::after {
     transform: translateX(calc(var(--toggle-width) - var(--toggle-height)));
     background-image: radial-gradient(circle, var(--accent) 0 20%, transparent 22%);
     box-shadow: var(--raised-on-fill);
   }
-  .nm-toggle:disabled {
+  .ot-toggle:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
@@ -770,17 +778,17 @@
      A groove holding a row of segments. The current one is raised out of
      the groove and takes the accent and a marker. */
 
-  .nm-segmented {
+  .ot-segmented {
     display: inline-flex;
     max-width: 100%;
     gap: var(--space-1);
     padding: var(--space-1);
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--well);
     box-shadow: var(--pressed-sm);
     list-style: none;
   }
-  .nm-segment {
+  .ot-segment {
     display: inline-flex;
     min-width: 0;
     flex: 1 1 auto;
@@ -799,21 +807,21 @@
       box-shadow var(--duration-base) var(--ease-settle),
       color var(--duration-base) var(--ease-settle);
   }
-  button.nm-segment {
+  button.ot-segment {
     cursor: pointer;
   }
   @media (hover: hover) {
-    button.nm-segment:not([aria-selected="true"]):hover {
+    button.ot-segment:not([aria-selected="true"]):hover {
       color: var(--text);
     }
   }
-  .nm-segment[aria-selected="true"],
-  .nm-segment[aria-current] {
+  .ot-segment[aria-selected="true"],
+  .ot-segment[aria-current] {
     color: var(--accent);
     box-shadow: var(--raised-sm);
   }
-  .nm-segment[aria-selected="true"]::before,
-  .nm-segment[aria-current]::before {
+  .ot-segment[aria-selected="true"]::before,
+  .ot-segment[aria-current]::before {
     content: "";
     flex: none;
     width: 0.375rem;
@@ -821,7 +829,7 @@
     border-radius: 50%;
     background-color: currentColor;
   }
-  .nm-segment[data-state="done"] {
+  .ot-segment[data-state="done"] {
     color: var(--text);
   }
 
@@ -830,34 +838,34 @@
      trap, Escape, and the inert page behind it. The backdrop is the
      surface itself, softened, never a dark scrim. */
 
-  .nm-dialog {
+  .ot-dialog {
     width: calc(100% - 2 * var(--space-4));
     max-width: 30rem;
     max-height: calc(100dvh - 2 * var(--space-4));
     margin: auto;
     overflow-y: auto;
     border-radius: var(--radius-xl);
-    background-color: var(--bg);
+    background-color: var(--surface-strong);
     color: var(--text);
     box-shadow: var(--raised-lg);
   }
   /* The padding sits on an inner panel, not on the dialog itself, so a
      click that lands on the dialog element can only be the backdrop. */
-  .nm-dialog-panel {
+  .ot-dialog-panel {
     padding: var(--space-card);
   }
-  .nm-dialog::backdrop {
+  .ot-dialog::backdrop {
     background-color: color-mix(in srgb, var(--bg) 78%, transparent);
     backdrop-filter: blur(6px);
   }
-  .nm-dialog[open] {
-    animation: nm-rise var(--duration-base) var(--ease-settle) both;
+  .ot-dialog[open] {
+    animation: ot-rise var(--duration-base) var(--ease-settle) both;
   }
-  .nm-dialog[open]::backdrop {
-    animation: nm-fade var(--duration-base) var(--ease-settle) both;
+  .ot-dialog[open]::backdrop {
+    animation: ot-fade var(--duration-base) var(--ease-settle) both;
   }
 
-  .nm-sheet {
+  .ot-sheet {
     width: min(22rem, 100% - var(--space-10));
     max-width: none;
     height: 100dvh;
@@ -865,8 +873,8 @@
     margin: 0 0 0 auto;
     border-radius: var(--radius-xl) 0 0 var(--radius-xl);
   }
-  .nm-sheet[open] {
-    animation-name: nm-slide-in;
+  .ot-sheet[open] {
+    animation-name: ot-slide-in;
   }
 
   html:has(dialog[open]) {
@@ -875,7 +883,7 @@
 
   /* ── Toast ──────────────────────────────────────────────────────── */
 
-  .nm-toast-viewport {
+  .ot-toast-viewport {
     position: fixed;
     right: var(--space-gutter);
     bottom: var(--space-gutter);
@@ -887,22 +895,22 @@
     gap: var(--space-3);
     pointer-events: none;
   }
-  .nm-toast {
+  .ot-toast {
     display: flex;
     max-width: min(24rem, 100%);
     align-items: flex-start;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
-    background-color: var(--bg);
+    background-color: var(--surface-strong);
     color: var(--text);
     font-size: var(--text-sm);
     line-height: var(--text-sm--line-height);
     box-shadow: var(--raised-md);
     pointer-events: auto;
-    animation: nm-rise var(--duration-base) var(--ease-settle) both;
+    animation: ot-rise var(--duration-base) var(--ease-settle) both;
   }
-  .nm-toast-body {
+  .ot-toast-body {
     min-width: 0;
     flex: 1;
     padding-block: var(--space-1);
@@ -913,45 +921,45 @@
      the icon and its color; a danger notice also sets its text in the
      danger color, so the three cues always arrive together. */
 
-  .nm-notice {
+  .ot-notice {
     display: flex;
     min-width: 0;
     align-items: flex-start;
     gap: var(--space-3);
     padding: var(--space-4) var(--space-5);
     border-radius: var(--radius-md);
-    background-color: var(--bg);
+    background-color: var(--well);
     color: var(--text);
     font-size: var(--text-sm);
     line-height: var(--text-sm--line-height);
     box-shadow: var(--pressed-sm);
   }
-  .nm-notice-icon {
+  .ot-notice-icon {
     flex: none;
     margin-top: 0.0625rem;
     color: var(--accent);
   }
-  .nm-notice-body {
+  .ot-notice-body {
     min-width: 0;
     flex: 1;
   }
-  .nm-notice[data-tone="danger"],
-  .nm-toast[data-tone="danger"] {
+  .ot-notice[data-tone="danger"],
+  .ot-toast[data-tone="danger"] {
     color: var(--danger);
   }
-  .nm-notice[data-tone="danger"] .nm-notice-icon,
-  .nm-toast[data-tone="danger"] .nm-notice-icon {
+  .ot-notice[data-tone="danger"] .ot-notice-icon,
+  .ot-toast[data-tone="danger"] .ot-notice-icon {
     color: var(--danger);
   }
 
   /* ── Lists and tables ───────────────────────────────────────────────
      Rows are separated by the groove, never by a border. */
 
-  .nm-datalist {
+  .ot-datalist {
     display: flex;
     flex-direction: column;
   }
-  .nm-datarow {
+  .ot-datarow {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -959,15 +967,15 @@
     gap: var(--space-1) var(--space-4);
     padding-block: var(--space-3);
   }
-  .nm-datarow + .nm-datarow {
+  .ot-datarow + .ot-datarow {
     box-shadow: var(--groove);
   }
-  .nm-datarow > dt {
+  .ot-datarow > dt {
     min-width: 0;
     color: var(--text-muted);
     font-size: var(--text-sm);
   }
-  .nm-datarow > dd {
+  .ot-datarow > dd {
     min-width: 0;
     margin-left: auto;
     color: var(--text);
@@ -976,12 +984,12 @@
     overflow-wrap: anywhere;
   }
 
-  .nm-table {
+  .ot-table {
     width: 100%;
     border-spacing: 0;
     font-size: var(--text-sm);
   }
-  .nm-table th {
+  .ot-table th {
     padding-bottom: var(--space-3);
     color: var(--text-muted);
     font-size: var(--text-xs);
@@ -990,15 +998,15 @@
     text-align: left;
     text-transform: uppercase;
   }
-  .nm-table td {
+  .ot-table td {
     padding-block: var(--space-3);
     box-shadow: var(--groove);
   }
-  .nm-table th + th,
-  .nm-table td + td {
+  .ot-table th + th,
+  .ot-table td + td {
     padding-left: var(--space-4);
   }
-  .nm-table [data-numeric] {
+  .ot-table [data-numeric] {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
@@ -1007,39 +1015,39 @@
 
   /* ── Loading, empty ─────────────────────────────────────────────── */
 
-  .nm-skeleton {
+  .ot-skeleton {
     display: block;
     min-height: 1rem;
     border-radius: var(--radius-sm);
-    background-color: var(--bg);
+    background-color: var(--well);
     box-shadow: var(--pressed-sm);
-    animation: nm-breathe 1800ms ease-in-out infinite;
+    animation: ot-breathe 1800ms ease-in-out infinite;
   }
 
-  .nm-spinner {
+  .ot-spinner {
     flex: none;
-    animation: nm-spin 900ms linear infinite;
+    animation: ot-spin 900ms linear infinite;
   }
 
-  .nm-status {
+  .ot-status {
     display: flex;
     align-items: center;
     gap: var(--space-3);
     color: var(--text-muted);
     font-size: var(--text-sm);
   }
-  .nm-status > .nm-spinner {
+  .ot-status > .ot-spinner {
     color: var(--accent);
   }
 
-  .nm-empty {
+  .ot-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-8) var(--space-6);
     border-radius: var(--radius-lg);
-    background-color: var(--bg);
+    background-color: var(--well);
     color: var(--text-muted);
     font-size: var(--text-sm);
     line-height: var(--text-sm--line-height);
@@ -1052,7 +1060,7 @@
      is the share targeted. The gap between the end of the arc and the
      notch is the drift, readable without any second color. */
 
-  .nm-donut {
+  .ot-donut {
     --donut-size: 11rem;
     position: relative;
     flex: none;
@@ -1060,21 +1068,21 @@
     max-width: 100%;
     aspect-ratio: 1;
   }
-  .nm-donut-groove {
+  .ot-donut-groove {
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background-color: var(--bg);
+    background-color: var(--well);
     box-shadow: var(--pressed-md);
   }
-  .nm-donut-svg {
+  .ot-donut-svg {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     transform: rotate(-90deg);
   }
-  .nm-donut-arc {
+  .ot-donut-arc {
     fill: none;
     stroke: var(--accent);
     stroke-linecap: round;
@@ -1082,7 +1090,7 @@
       stroke-dasharray var(--duration-settle) var(--ease-settle),
       stroke-dashoffset var(--duration-settle) var(--ease-settle);
   }
-  .nm-donut-rest {
+  .ot-donut-rest {
     fill: none;
     stroke: var(--text-muted);
     stroke-linecap: round;
@@ -1090,40 +1098,76 @@
       stroke-dasharray var(--duration-settle) var(--ease-settle),
       stroke-dashoffset var(--duration-settle) var(--ease-settle);
   }
-  .nm-donut-tick {
+  .ot-donut-tick {
     stroke: var(--text);
     stroke-linecap: round;
   }
-  .nm-donut-cap {
+  .ot-donut-cap {
     position: absolute;
     inset: 17%;
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background-color: var(--bg);
+    background-color: var(--surface);
     text-align: center;
     box-shadow: var(--raised-sm);
   }
 
   /* ── Drift gauge ────────────────────────────────────────────────────
      A straight groove centered on the target. The tall notch is the
-     target; a short notch marks each threshold; the knob is the drift
-     now, and the accent bar runs from the target out to it. */
+     target; a short notch marks each threshold, and the stretch from it
+     to the target, the band, is shaded; the knob is the drift now, and
+     the accent bar runs from the target out to it.
 
-  .nm-gauge {
+     A threshold is placed by --gauge-at (a percentage along the track).
+     When the reading is far out, that lands almost on the target, so two
+     things are held open here. The band keeps a least width
+     (--gauge-band-min): the notch and the shading stop that far short of
+     the target. And the labels never meet: a threshold's label sits
+     under its notch while there is room, is held --gauge-gap away from
+     the target's label when there is not, and stops at the end of the
+     track. The labels are monospaced, so a label is exactly as many ch
+     wide as it has characters (--gauge-chars, --gauge-target-chars), and
+     all of this is arithmetic the browser does without measuring. */
+
+  .ot-gauge {
     --gauge-marker: 50%;
     --gauge-knob: 1.375rem;
+    --gauge-band-min: 0.4375rem;
+    --gauge-gap: 0.625rem;
+    --gauge-target-chars: 6;
     position: relative;
     padding-block: var(--space-3);
   }
-  .nm-gauge-track {
+  .ot-gauge-track {
     position: relative;
     height: 0.75rem;
     border-radius: var(--radius-pill);
-    background-color: var(--bg);
+    background-color: var(--well);
     box-shadow: var(--pressed-sm);
   }
-  .nm-gauge-fill {
+  .ot-gauge-band,
+  .ot-gauge-notch:not([data-kind="target"]),
+  .ot-gauge-scale > :not([data-kind="target"]) {
+    /* Where this threshold is drawn: its own place, or the least band width out from the target. */
+    --gauge-low: min(var(--gauge-at), calc(50% - var(--gauge-band-min)));
+    --gauge-high: max(var(--gauge-at), calc(50% + var(--gauge-band-min)));
+  }
+  .ot-gauge-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: color-mix(in srgb, var(--text) 30%, transparent);
+  }
+  .ot-gauge-band[data-side="low"] {
+    left: var(--gauge-low);
+    right: 50%;
+  }
+  .ot-gauge-band[data-side="high"] {
+    left: 50%;
+    right: calc(100% - var(--gauge-high));
+  }
+  .ot-gauge-fill {
     position: absolute;
     top: 0.1875rem;
     bottom: 0.1875rem;
@@ -1135,7 +1179,7 @@
       left var(--duration-settle) var(--ease-settle),
       width var(--duration-settle) var(--ease-settle);
   }
-  .nm-gauge-notch {
+  .ot-gauge-notch {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -1144,13 +1188,19 @@
     border-radius: var(--radius-pill);
     background-color: var(--text-muted);
   }
-  .nm-gauge-notch[data-kind="target"] {
+  .ot-gauge-notch[data-side="low"] {
+    left: var(--gauge-low);
+  }
+  .ot-gauge-notch[data-side="high"] {
+    left: var(--gauge-high);
+  }
+  .ot-gauge-notch[data-kind="target"] {
     top: calc(var(--space-2) * -1);
     bottom: calc(var(--space-2) * -1);
     left: 50%;
     background-color: var(--text);
   }
-  .nm-gauge-knob {
+  .ot-gauge-knob {
     position: absolute;
     top: 50%;
     left: var(--gauge-marker);
@@ -1158,38 +1208,60 @@
     height: var(--gauge-knob);
     margin: calc(var(--gauge-knob) / -2) 0 0 calc(var(--gauge-knob) / -2);
     border-radius: 50%;
-    background-color: var(--bg);
+    background-color: var(--knob);
     background-image: radial-gradient(circle, var(--accent) 0 24%, transparent 26%);
     box-shadow: var(--raised-sm);
     transition: left var(--duration-settle) var(--ease-settle);
   }
-  .nm-gauge-scale {
+  .ot-gauge-scale {
     position: relative;
     height: 1.25rem;
     margin-top: var(--space-3);
     color: var(--text-muted);
     font-size: var(--text-xs);
   }
-  .nm-gauge-scale > span {
+  .ot-gauge-scale > span {
     position: absolute;
     top: 0;
-    transform: translateX(-50%);
     white-space: nowrap;
+  }
+  .ot-gauge-scale > [data-kind="target"] {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  /* Centered under its notch; no nearer the target's label than the gap; no further out than the end of the track. */
+  .ot-gauge-scale > [data-side="low"] {
+    right: min(
+      max(
+        calc(100% - var(--gauge-low) - var(--gauge-chars) * 0.5ch),
+        calc(50% + var(--gauge-target-chars) * 0.5ch + var(--gauge-gap))
+      ),
+      calc(100% - var(--gauge-chars) * 1ch)
+    );
+  }
+  .ot-gauge-scale > [data-side="high"] {
+    left: min(
+      max(
+        calc(var(--gauge-high) - var(--gauge-chars) * 0.5ch),
+        calc(50% + var(--gauge-target-chars) * 0.5ch + var(--gauge-gap))
+      ),
+      calc(100% - var(--gauge-chars) * 1ch)
+    );
   }
 
   /* ── Transaction hash ───────────────────────────────────────────── */
 
-  .nm-hash {
+  .ot-hash {
     display: flex;
     min-width: 0;
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
     border-radius: var(--radius-md);
-    background-color: var(--bg);
+    background-color: var(--well);
     box-shadow: var(--pressed-sm);
   }
-  .nm-hash-value {
+  .ot-hash-value {
     min-width: 0;
     flex: 1;
     color: var(--text);
@@ -1204,33 +1276,33 @@
    Transform and opacity only, so every one of these runs on the
    compositor. All are stopped by the reduced-motion rule in base.css. */
 
-@keyframes nm-rise {
+@keyframes ot-rise {
   from {
     opacity: 0;
     transform: translateY(0.5rem);
   }
 }
 
-@keyframes nm-fade {
+@keyframes ot-fade {
   from {
     opacity: 0;
   }
 }
 
-@keyframes nm-slide-in {
+@keyframes ot-slide-in {
   from {
     opacity: 0;
     transform: translateX(2rem);
   }
 }
 
-@keyframes nm-breathe {
+@keyframes ot-breathe {
   50% {
     opacity: 0.55;
   }
 }
 
-@keyframes nm-spin {
+@keyframes ot-spin {
   to {
     transform: rotate(360deg);
   }
@@ -1242,32 +1314,32 @@
 
 @media (prefers-contrast: more) {
   :is(
-      .nm-raised-sm,
-      .nm-raised,
-      .nm-raised-lg,
-      .nm-pressed-sm,
-      .nm-pressed,
-      .nm-pressed-lg,
-      .nm-btn,
-      .nm-icon-well,
-      .nm-badge,
-      .nm-well,
-      .nm-toggle,
-      .nm-segmented,
-      .nm-dialog,
-      .nm-toast,
-      .nm-notice,
-      .nm-empty,
-      .nm-skeleton,
-      .nm-donut-groove,
-      .nm-gauge-track,
-      .nm-hash,
-      .nm-listbox
+      .ot-raised-sm,
+      .ot-raised,
+      .ot-raised-lg,
+      .ot-pressed-sm,
+      .ot-pressed,
+      .ot-pressed-lg,
+      .ot-btn,
+      .ot-icon-well,
+      .ot-badge,
+      .ot-well,
+      .ot-toggle,
+      .ot-segmented,
+      .ot-dialog,
+      .ot-toast,
+      .ot-notice,
+      .ot-empty,
+      .ot-skeleton,
+      .ot-donut-groove,
+      .ot-gauge-track,
+      .ot-hash,
+      .ot-listbox
     ):not(:focus-visible, :focus-within) {
     outline: 1px solid var(--text-muted);
     outline-offset: -1px;
   }
-  .nm-option[data-active="true"] {
+  .ot-option[data-active="true"] {
     outline: 2px solid var(--text);
     outline-offset: -2px;
   }
@@ -1279,10 +1351,10 @@
    the data-open attribute the component sets, and simply appears. */
 
 @supports not selector(:popover-open) {
-  .nm-listbox {
+  .ot-listbox {
     display: none;
   }
-  .nm-listbox[data-open="true"] {
+  .ot-listbox[data-open="true"] {
     display: block;
     opacity: 1;
     transform: none;
@@ -1297,150 +1369,154 @@
 
 @media (forced-colors: active) {
   :is(
-    .nm-raised-sm,
-    .nm-raised,
-    .nm-raised-lg,
-    .nm-pressed-sm,
-    .nm-pressed,
-    .nm-pressed-lg,
-    .nm-icon-well,
-    .nm-badge,
-    .nm-well,
-    .nm-segmented,
-    .nm-dialog,
-    .nm-toast,
-    .nm-notice,
-    .nm-empty,
-    .nm-skeleton,
-    .nm-donut-groove,
-    .nm-donut-cap,
-    .nm-gauge-track,
-    .nm-hash
+    .ot-raised-sm,
+    .ot-raised,
+    .ot-raised-lg,
+    .ot-pressed-sm,
+    .ot-pressed,
+    .ot-pressed-lg,
+    .ot-icon-well,
+    .ot-badge,
+    .ot-well,
+    .ot-segmented,
+    .ot-dialog,
+    .ot-toast,
+    .ot-notice,
+    .ot-empty,
+    .ot-skeleton,
+    .ot-donut-groove,
+    .ot-donut-cap,
+    .ot-gauge-track,
+    .ot-hash
   ) {
     border: 1px solid CanvasText;
   }
 
-  .nm-btn,
-  .nm-toggle {
+  .ot-btn,
+  .ot-toggle {
     border: 1px solid ButtonBorder;
   }
-  .nm-btn-primary {
+  .ot-btn-primary {
     border-color: Highlight;
     background-color: Highlight;
     color: HighlightText;
     forced-color-adjust: none;
   }
-  .nm-btn:disabled,
-  .nm-btn[aria-disabled="true"] {
+  .ot-btn:disabled,
+  .ot-btn[aria-disabled="true"] {
     border-color: GrayText;
     color: GrayText;
   }
-  .nm-btn[aria-busy="true"] {
+  .ot-btn[aria-busy="true"] {
     border-color: ButtonBorder;
     color: ButtonText;
   }
-  .nm-btn-primary[aria-busy="true"] {
+  .ot-btn-primary[aria-busy="true"] {
     border-color: Highlight;
     color: HighlightText;
   }
 
-  .nm-navlink[aria-current="page"],
-  .nm-segment[aria-selected="true"],
-  .nm-segment[aria-current] {
+  .ot-navlink[aria-current="page"],
+  .ot-segment[aria-selected="true"],
+  .ot-segment[aria-current] {
     border: 2px solid Highlight;
   }
 
   /* Select: the open trigger and the list take real edges; the highlighted
      row is the system highlight, and the selected row keeps its check. */
-  .nm-select[data-open="true"] {
+  .ot-select[data-open="true"] {
     border-color: Highlight;
   }
-  .nm-listbox {
+  .ot-listbox {
     border: 1px solid CanvasText;
     background-color: Canvas;
   }
-  .nm-option,
-  .nm-option[aria-selected="true"] {
+  .ot-option,
+  .ot-option[aria-selected="true"] {
     color: CanvasText;
   }
-  .nm-option[data-active="true"] {
+  .ot-option[data-active="true"] {
     background-color: Highlight;
     color: HighlightText;
     box-shadow: none;
     forced-color-adjust: none;
   }
-  .nm-option[aria-disabled="true"] {
+  .ot-option[aria-disabled="true"] {
     color: GrayText;
     opacity: 1;
   }
 
-  .nm-toggle::after {
+  .ot-toggle::after {
     background-color: ButtonText;
     forced-color-adjust: none;
   }
-  .nm-toggle[aria-checked="true"] {
+  .ot-toggle[aria-checked="true"] {
     background-color: Highlight;
     forced-color-adjust: none;
   }
-  .nm-toggle[aria-checked="true"]::after {
+  .ot-toggle[aria-checked="true"]::after {
     background-color: HighlightText;
   }
 
   /* The slider keeps its fill: the track is outlined and filled with the
      highlight color up to the thumb, and the thumb is a solid knob. */
-  .nm-slider::-webkit-slider-runnable-track {
+  .ot-slider::-webkit-slider-runnable-track {
     border: 1px solid ButtonText;
     background-color: Canvas;
     background-image: linear-gradient(to right, Highlight var(--fill), Canvas var(--fill));
     forced-color-adjust: none;
   }
-  .nm-slider::-webkit-slider-thumb {
+  .ot-slider::-webkit-slider-thumb {
     border: 2px solid Canvas;
     background: ButtonText;
     forced-color-adjust: none;
   }
-  .nm-slider::-moz-range-track {
+  .ot-slider::-moz-range-track {
     border: 1px solid ButtonText;
     background-color: Canvas;
   }
-  .nm-slider::-moz-range-progress {
+  .ot-slider::-moz-range-progress {
     background-color: Highlight;
     forced-color-adjust: none;
   }
-  .nm-slider::-moz-range-thumb {
+  .ot-slider::-moz-range-thumb {
     border: 2px solid Canvas;
     background: ButtonText;
     forced-color-adjust: none;
   }
-  .nm-slider:focus-visible::-webkit-slider-thumb,
-  .nm-slider:focus-visible::-moz-range-thumb {
+  .ot-slider:focus-visible::-webkit-slider-thumb,
+  .ot-slider:focus-visible::-moz-range-thumb {
     outline-color: Highlight;
   }
 
-  .nm-divider {
+  .ot-divider {
     height: 0;
     border-top: 1px solid CanvasText;
   }
-  .nm-datarow + .nm-datarow,
-  .nm-table td {
+  .ot-datarow + .ot-datarow,
+  .ot-table td {
     border-top: 1px solid CanvasText;
   }
 
-  .nm-badge-dot,
-  .nm-gauge-fill,
-  .nm-gauge-knob {
+  .ot-badge-dot,
+  .ot-gauge-fill,
+  .ot-gauge-knob {
     background: Highlight;
     forced-color-adjust: none;
   }
-  .nm-gauge-notch {
+  .ot-gauge-notch {
     background: CanvasText;
     forced-color-adjust: none;
   }
-  .nm-donut-arc {
+  .ot-gauge-band {
+    background: GrayText;
+    forced-color-adjust: none;
+  }
+  .ot-donut-arc {
     stroke: Highlight;
   }
-  .nm-donut-rest,
-  .nm-donut-tick {
+  .ot-donut-rest,
+  .ot-donut-tick {
     stroke: CanvasText;
   }
 }

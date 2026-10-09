@@ -57,7 +57,7 @@ export function Dialog({
       ref={ref}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
-      className={cn("nm-dialog", variant === "sheet" && "nm-sheet", className)}
+      className={cn("ot-dialog", variant === "sheet" && "ot-sheet", className)}
       onClose={onClose}
       onClick={(event) => {
         // The panel below covers the dialog's whole box, so the dialog
@@ -65,7 +65,7 @@ export function Dialog({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="nm-dialog-panel">
+      <div className="ot-dialog-panel">
         <div className="flex items-start justify-between gap-4">
           <h2 id={titleId} className="font-display text-md font-medium text-text">
             {title}
@@ -75,7 +75,7 @@ export function Dialog({
           </IconButton>
         </div>
         {description ? (
-          <p id={descriptionId} className="nm-hint mt-3">
+          <p id={descriptionId} className="ot-hint mt-3">
             {description}
           </p>
         ) : null}

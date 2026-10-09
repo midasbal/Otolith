@@ -29,9 +29,9 @@ type NoticeProps = {
  */
 export function Notice({ tone = "info", role, title, children, action, className }: NoticeProps) {
   return (
-    <div role={role} data-tone={tone} className={cn("nm-notice", className)}>
-      <Icon name={TONE_ICON[tone]} className="nm-notice-icon" />
-      <div className="nm-notice-body">
+    <div role={role} data-tone={tone} className={cn("ot-notice", className)}>
+      <Icon name={TONE_ICON[tone]} className="ot-notice-icon" />
+      <div className="ot-notice-body">
         {title ? <p className="font-medium">{title}</p> : null}
         <div>{children}</div>
         {action ? <div className="mt-3">{action}</div> : null}
@@ -43,7 +43,7 @@ export function Notice({ tone = "info", role, title, children, action, className
 /** A loading line: spinner plus what is being loaded, announced politely. */
 export function LoadingState({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p role="status" className={cn("nm-status", className)}>
+    <p role="status" className={cn("ot-status", className)}>
       <Spinner />
       <span>{children}</span>
     </p>
@@ -88,7 +88,7 @@ type EmptyStateProps = {
 /** Nothing to show yet: a pressed well saying so, and what comes next. */
 export function EmptyState({ icon = "info", children, action, className }: EmptyStateProps) {
   return (
-    <div className={cn("nm-empty", className)}>
+    <div className={cn("ot-empty", className)}>
       <Icon name={icon} size={24} />
       <div className="max-w-md">{children}</div>
       {action}
@@ -98,5 +98,5 @@ export function EmptyState({ icon = "info", children, action, className }: Empty
 
 /** A placeholder block for content that has a known shape while it loads. */
 export function Skeleton({ className }: { className?: string }) {
-  return <span aria-hidden="true" className={cn("nm-skeleton", className)} />;
+  return <span aria-hidden="true" className={cn("ot-skeleton", className)} />;
 }

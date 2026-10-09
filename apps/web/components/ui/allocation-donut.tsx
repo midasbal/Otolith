@@ -61,11 +61,11 @@ export function AllocationDonut({
     <div
       role="img"
       aria-label={label}
-      className={cn("nm-donut", className)}
+      className={cn("ot-donut", className)}
       style={size ? ({ "--donut-size": size } as CSSProperties) : undefined}
     >
-      <div className="nm-donut-groove" />
-      <svg viewBox="0 0 100 100" className="nm-donut-svg" aria-hidden="true" focusable="false">
+      <div className="ot-donut-groove" />
+      <svg viewBox="0 0 100 100" className="ot-donut-svg" aria-hidden="true" focusable="false">
         {remainder && restLength > 0 ? (
           <circle
             cx="50"
@@ -75,7 +75,7 @@ export function AllocationDonut({
             strokeWidth={REST_WIDTH}
             strokeDasharray={`${restLength} ${100 - restLength}`}
             strokeDashoffset={-restStart}
-            className="nm-donut-rest"
+            className="ot-donut-rest"
           />
         ) : null}
         {held > 0 ? (
@@ -87,7 +87,7 @@ export function AllocationDonut({
             strokeWidth={ARC_WIDTH}
             strokeDasharray={`${arcLength} ${100 - arcLength}`}
             strokeDashoffset={-CAP_PERCENT}
-            className="nm-donut-arc"
+            className="ot-donut-arc"
           />
         ) : null}
         {target !== undefined ? (
@@ -98,11 +98,11 @@ export function AllocationDonut({
             y2="50"
             strokeWidth={2.5}
             transform={`rotate(${Math.min(1, Math.max(0, target)) * 360} 50 50)`}
-            className="nm-donut-tick"
+            className="ot-donut-tick"
           />
         ) : null}
       </svg>
-      <div className="nm-donut-cap">{children}</div>
+      <div className="ot-donut-cap">{children}</div>
     </div>
   );
 }

@@ -20,7 +20,7 @@ export function Slider({ className, style, min = 0, max = 100, value, ...rest }:
       min={min}
       max={max}
       value={value}
-      className={cn("nm-slider", className)}
+      className={cn("ot-slider", className)}
       style={{ ...style, "--fill": `${fill}%` } as CSSProperties}
       {...rest}
     />

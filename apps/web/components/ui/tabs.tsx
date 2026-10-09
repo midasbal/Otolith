@@ -46,7 +46,7 @@ export function Tabs({ label, tabs, defaultTab, className }: TabsProps) {
 
   return (
     <div className={className}>
-      <div role="tablist" aria-label={label} className="nm-segmented" onKeyDown={handleKeyDown}>
+      <div role="tablist" aria-label={label} className="ot-segmented" onKeyDown={handleKeyDown}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -60,7 +60,7 @@ export function Tabs({ label, tabs, defaultTab, className }: TabsProps) {
             aria-selected={tab.id === active}
             aria-controls={`${baseId}-panel-${tab.id}`}
             tabIndex={tab.id === active ? 0 : -1}
-            className="nm-segment"
+            className="ot-segment"
             onClick={() => setActive(tab.id)}
           >
             {tab.label}
@@ -110,7 +110,7 @@ export function Stepper({ label, steps, current, className }: StepperProps) {
   const currentIndex = steps.findIndex((step) => step.id === current);
 
   return (
-    <ol aria-label={label} className={cn("nm-segmented", className)}>
+    <ol aria-label={label} className={cn("ot-segmented", className)}>
       {steps.map((step, index) => {
         const done = index < currentIndex;
         return (
@@ -118,11 +118,11 @@ export function Stepper({ label, steps, current, className }: StepperProps) {
             key={step.id}
             aria-current={step.id === current ? "step" : undefined}
             data-state={done ? "done" : undefined}
-            className="nm-segment"
+            className="ot-segment"
           >
             {done ? <Icon name="check" size={14} className="flex-none" /> : null}
             <span>
-              <span className={done ? "sr-only" : "nm-num"}>{index + 1}.</span> {step.label}
+              <span className={done ? "sr-only" : "ot-num"}>{index + 1}.</span> {step.label}
               {done ? <span className="sr-only"> (done)</span> : null}
             </span>
           </li>

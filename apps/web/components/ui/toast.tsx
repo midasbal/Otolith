@@ -59,7 +59,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="nm-toast-viewport">
+      <div className="ot-toast-viewport">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
@@ -90,9 +90,9 @@ function ToastItem({ toast, onDismiss }: { toast: ToastEntry; onDismiss: (id: nu
   );
 
   return (
-    <div role={toast.tone === "danger" ? "alert" : "status"} data-tone={toast.tone} className="nm-toast" {...hold}>
-      <Icon name={TONE_ICON[toast.tone]} className="nm-notice-icon" />
-      <div className="nm-toast-body">{toast.message}</div>
+    <div role={toast.tone === "danger" ? "alert" : "status"} data-tone={toast.tone} className="ot-toast" {...hold}>
+      <Icon name={TONE_ICON[toast.tone]} className="ot-notice-icon" />
+      <div className="ot-toast-body">{toast.message}</div>
       <IconButton label="Dismiss" size="sm" onClick={() => onDismiss(toast.id)}>
         <Icon name="close" size={14} />
       </IconButton>

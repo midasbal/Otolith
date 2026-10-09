@@ -14,11 +14,11 @@ type ButtonStyleProps = {
 
 function buttonClass({ variant = "secondary", size = "md" }: ButtonStyleProps, className?: string) {
   return cn(
-    "nm-btn",
-    variant === "primary" && "nm-btn-primary",
-    variant === "danger" && "nm-btn-danger",
-    size === "sm" && "nm-btn-sm",
-    size === "lg" && "nm-btn-lg",
+    "ot-btn",
+    variant === "primary" && "ot-btn-primary",
+    variant === "danger" && "ot-btn-danger",
+    size === "sm" && "ot-btn-sm",
+    size === "lg" && "ot-btn-lg",
     className,
   );
 }
@@ -93,7 +93,7 @@ type IconButtonProps = Omit<ButtonProps, "children" | "aria-label"> & {
 /** A round button holding only an icon. The label is required. */
 export function IconButton({ label, className, children, ...rest }: IconButtonProps) {
   return (
-    <Button aria-label={label} title={label} className={cn("nm-btn-icon", className)} {...rest}>
+    <Button aria-label={label} title={label} className={cn("ot-btn-icon", className)} {...rest}>
       {children}
     </Button>
   );
@@ -106,7 +106,7 @@ type TextButtonProps = ComponentProps<"button"> & {
 
 /** A button that reads as an inline link: accent, always underlined. */
 export function TextButton({ muted = false, className, type = "button", ...rest }: TextButtonProps) {
-  return <button type={type} className={cn("nm-link", muted && "nm-link-muted", className)} {...rest} />;
+  return <button type={type} className={cn("ot-link", muted && "ot-link-muted", className)} {...rest} />;
 }
 
 type TextLinkProps = Omit<ComponentProps<"a">, "href"> & {
@@ -119,7 +119,7 @@ type TextLinkProps = Omit<ComponentProps<"a">, "href"> & {
 
 /** An inline link: accent, always underlined. */
 export function TextLink({ href, muted = false, native = false, className, children, ...rest }: TextLinkProps) {
-  const classes = cn("nm-link", muted && "nm-link-muted", className);
+  const classes = cn("ot-link", muted && "ot-link-muted", className);
   if (native || href.startsWith("http") || href.startsWith("#")) {
     return (
       <a href={href} className={classes} {...rest}>
