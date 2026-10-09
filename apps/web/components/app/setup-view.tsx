@@ -11,6 +11,7 @@ import { Notice } from "@/components/ui/states";
 import { Stepper } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { formatBps, formatDurationSeconds } from "@/lib/stellar/format";
+import { BackgroundToggle } from "@/components/background/background";
 import { ConnectPrompt, Screen, ScreenHeader, TransactionReceipt } from "./common";
 import type { InstallState } from "./types";
 
@@ -92,9 +93,13 @@ export function SetupView(props: SetupViewProps) {
       <ScreenHeader
         title="Set target weights"
         action={
-          <TextLink href="/app" native className="text-sm">
-            Back to dashboard
-          </TextLink>
+          <div className="flex items-center gap-3">
+            <TextLink href="/app" native className="text-sm">
+              Back to dashboard
+            </TextLink>
+            {/* This flow has no sidebar, so the control that pauses the background sits here. */}
+            <BackgroundToggle />
+          </div>
         }
       />
 
@@ -167,7 +172,7 @@ function SplitStep({
           className="mx-auto"
         >
           <div>
-            <p className="nm-num text-sm text-text">
+            <p className="ot-num text-sm text-text">
               {xlmPercent} / {usdcPercent}
             </p>
           </div>
@@ -175,8 +180,8 @@ function SplitStep({
 
         <div className="min-w-0">
           <div className="flex items-center justify-between gap-4">
-            <span className="nm-label">{sellSymbol}</span>
-            <span className="nm-num text-md text-accent">{xlmPercent}%</span>
+            <span className="ot-label">{sellSymbol}</span>
+            <span className="ot-num text-md text-accent">{xlmPercent}%</span>
           </div>
           <Slider
             className="mt-3"
@@ -188,8 +193,8 @@ function SplitStep({
             aria-label={`${sellSymbol} target percentage`}
           />
           <div className="mt-3 flex items-center justify-between gap-4">
-            <span className="nm-label">{buySymbol}</span>
-            <span className="nm-num text-md text-accent">{usdcPercent}%</span>
+            <span className="ot-label">{buySymbol}</span>
+            <span className="ot-num text-md text-accent">{usdcPercent}%</span>
           </div>
         </div>
       </div>
@@ -209,8 +214,8 @@ function SplitStep({
 
       <p className="text-sm leading-relaxed text-text-muted">
         Otolith will keep your portfolio at{" "}
-        <span className="nm-num text-text">{xlmPercent}%</span> {sellSymbol} and{" "}
-        <span className="nm-num text-text">{usdcPercent}%</span> {buySymbol}.
+        <span className="ot-num text-text">{xlmPercent}%</span> {sellSymbol} and{" "}
+        <span className="ot-num text-text">{usdcPercent}%</span> {buySymbol}.
       </p>
 
       <div className="flex justify-end">
@@ -256,7 +261,7 @@ function ParamsStep({
       </div>
 
       <div className="flex items-center justify-between gap-4">
-        <span id="setup-advanced-label" className="nm-label">
+        <span id="setup-advanced-label" className="ot-label">
           Advanced settings
         </span>
         <Toggle checked={advancedOpen} onClick={onToggleAdvanced} aria-labelledby="setup-advanced-label" />

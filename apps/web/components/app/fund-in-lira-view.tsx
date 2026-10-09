@@ -33,9 +33,9 @@ const copy = "mt-2 text-sm leading-relaxed text-text-muted";
 /** The stages a deposit reported, each with its transaction where it has one. */
 function StageList({ stages, done }: { stages: DepositStageEvent[]; done: boolean }) {
   return (
-    <ol className="nm-datalist">
+    <ol className="ot-datalist">
       {stages.map((event) => (
-        <li key={event.stage} className="nm-datarow flex-nowrap items-start justify-start gap-3">
+        <li key={event.stage} className="ot-datarow flex-nowrap items-start justify-start gap-3">
           <Icon name={done ? "check" : "info"} size={18} className="mt-0.5 flex-none text-accent" />
           <div className="flex min-w-0 flex-col gap-1">
             <span className="text-sm text-text">{event.label}</span>
@@ -45,7 +45,7 @@ function StageList({ stages, done }: { stages: DepositStageEvent[]; done: boolea
                 target="_blank"
                 rel="noreferrer"
                 muted
-                className="nm-num w-fit text-xs [overflow-wrap:anywhere]"
+                className="ot-num w-fit text-xs [overflow-wrap:anywhere]"
               >
                 {event.txHash}
               </TextLink>
@@ -133,9 +133,9 @@ export function FundInLiraView({
             />
           )}
         </Field>
-        <div className="nm-field">
-          <span className="nm-label">Estimated USDC</span>
-          <span className="nm-num flex min-h-[var(--control-md)] items-center truncate text-sm text-text">
+        <div className="ot-field">
+          <span className="ot-label">Estimated USDC</span>
+          <span className="ot-num flex min-h-[var(--control-md)] items-center truncate text-sm text-text">
             {estimating ? "..." : estimate ? `~${estimate}` : "-"}
           </span>
         </div>
@@ -146,9 +146,9 @@ export function FundInLiraView({
       </Button>
 
       {submitting ? (
-        <ol className="nm-datalist" aria-label="Deposit progress">
+        <ol className="ot-datalist" aria-label="Deposit progress">
           {STAGE_ORDER.slice(0, 2).map((stage) => (
-            <li key={stage} className="nm-datarow flex-nowrap items-start justify-start gap-3">
+            <li key={stage} className="ot-datarow flex-nowrap items-start justify-start gap-3">
               <Spinner size={16} className="mt-0.5 flex-none text-accent" />
               <span className="min-w-0 text-sm text-text-muted">{STAGE_LABELS[stage]}</span>
             </li>

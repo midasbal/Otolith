@@ -1,10 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BackgroundToggle } from "@/components/background/background";
 import type { ReactNode } from "react";
 import { TestnetBadge } from "@/components/ui/badge";
 import { Button, IconButton, TextButton } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Icon, type IconName } from "@/components/ui/icons";
+import { Mark } from "@/components/ui/mark";
 import { Notice } from "@/components/ui/states";
 
 /*
@@ -34,7 +35,7 @@ function ShellLogo() {
         href="/app"
         className="flex items-center gap-2.5 rounded-md font-display text-md font-medium tracking-display text-text"
       >
-        <Image src="/otolith-logo.png" alt="" width={40} height={40} className="h-10 w-10" />
+        <Mark className="h-9 w-9" />
         Otolith
       </Link>
       <TestnetBadge />
@@ -51,7 +52,7 @@ function ShellNav({ links, onNavigate }: { links: ShellLink[]; onNavigate?: () =
           href={link.href}
           aria-current={link.active ? "page" : undefined}
           onClick={onNavigate}
-          className="nm-navlink nm-navlink-icon w-full"
+          className="ot-navlink ot-navlink-icon w-full"
         >
           <Icon name={LINK_ICONS[link.href] ?? "dashboard"} size={18} />
           {link.label}
@@ -84,11 +85,11 @@ export function AccountStatusView({
 }: AccountStatusViewProps) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="nm-caps">Account</p>
+      <p className="ot-caps">Account</p>
 
       {address ? (
         <div className="flex flex-col items-start gap-3">
-          <span className="nm-pressed-sm nm-num w-full truncate rounded-md px-4 py-2.5 text-sm text-text" title={address}>
+          <span className="ot-pressed-sm ot-num w-full truncate rounded-md px-4 py-2.5 text-sm text-text" title={address}>
             {addressLabel}
           </span>
           <Button size="sm" onClick={onDisconnect}>
@@ -131,13 +132,16 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
       {/* lg and up: the persistent sidebar, a raised panel that stays in
           view while the main content scrolls. */}
       <aside className="hidden w-72 shrink-0 p-4 lg:sticky lg:top-0 lg:flex lg:h-screen">
-        <div className="nm-raised flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto rounded-xl p-5">
+        <div className="ot-raised flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto rounded-xl p-5">
           <div className="flex flex-1 flex-col gap-8">
-            <ShellLogo />
+            <div className="flex items-start justify-between gap-2">
+              <ShellLogo />
+              <BackgroundToggle />
+            </div>
             <ShellNav links={links} />
           </div>
           <div className="flex flex-col gap-5">
-            <div className="nm-divider" />
+            <div className="ot-divider" />
             {account}
           </div>
         </div>
@@ -145,11 +149,14 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
 
       {/* Below lg: a top bar, and the same navigation in a sheet. */}
       <div className="px-[var(--space-gutter)] pt-4 lg:hidden">
-        <div className="nm-raised flex items-center justify-between gap-3 rounded-xl px-3 py-3 sm:px-5">
+        <div className="ot-raised flex items-center justify-between gap-3 rounded-xl px-3 py-3 sm:px-5">
           <ShellLogo />
-          <IconButton label="Menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={onToggleMenu}>
-            <Icon name="menu" />
-          </IconButton>
+          <div className="flex items-center gap-2">
+            <BackgroundToggle />
+            <IconButton label="Menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={onToggleMenu}>
+              <Icon name="menu" />
+            </IconButton>
+          </div>
         </div>
       </div>
 
@@ -157,7 +164,7 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
         {menuOpen ? (
           <div className="flex flex-col gap-6">
             <ShellNav links={links} onNavigate={onCloseMenu} />
-            <div className="nm-divider" />
+            <div className="ot-divider" />
             {account}
           </div>
         ) : null}

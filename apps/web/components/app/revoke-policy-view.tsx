@@ -60,7 +60,7 @@ export function RevokePolicyView({ state, confirming, onAskConfirm, onCancel, on
   return (
     <Card className="flex flex-col items-start gap-4">
       <div>
-        <p className="nm-caps">Revoke</p>
+        <p className="ot-caps">Revoke</p>
         <p className={copy}>
           Revoking removes this account&rsquo;s standing rebalance
           authorization. No further rebalance can be triggered until you set

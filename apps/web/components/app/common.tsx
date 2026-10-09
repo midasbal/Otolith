@@ -19,10 +19,14 @@ export function explorerTxUrl(hash: string): string {
   return `${EXPLORER_TX}${hash}`;
 }
 
-/** The column every app screen sits in. */
+/**
+ * The column every app screen sits in. It is marked as a quiet zone, so
+ * the background dims itself behind the whole column: the panels, and
+ * the text that sits between them.
+ */
 export function Screen({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn("mx-auto flex w-full max-w-3xl flex-col gap-8 px-[var(--space-gutter)] py-10 sm:py-14", className)}>
+    <div data-quiet="" className={cn("mx-auto flex w-full max-w-3xl flex-col gap-8 px-[var(--space-gutter)] py-10 sm:py-14", className)}>
       {children}
     </div>
   );
@@ -108,7 +112,7 @@ export function PolicyTermsList({ terms, className }: { terms: PolicyTerms; clas
 export function TransactionReceipt({ hash, className }: { hash: string; className?: string }) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <p className="nm-caps">Transaction hash</p>
+      <p className="ot-caps">Transaction hash</p>
       <TxHash value={hash} />
       <TextLink href={explorerTxUrl(hash)} target="_blank" rel="noreferrer" className="w-fit text-sm">
         View on stellar.expert

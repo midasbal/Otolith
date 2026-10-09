@@ -28,7 +28,7 @@ function PriceReadout({ price }: { price: number | null }) {
   if (price === null) {
     return <p className="text-base text-text-muted">price not available</p>;
   }
-  return <p className="nm-num text-xl text-text">${formatUsd(price)}</p>;
+  return <p className="ot-num text-xl text-text">${formatUsd(price)}</p>;
 }
 
 export function ExploreView({ assets, pricesState }: { assets: ExploreAsset[]; pricesState: LivePricesState }) {
@@ -52,7 +52,7 @@ export function ExploreView({ assets, pricesState }: { assets: ExploreAsset[]; p
             <Card key={asset.symbol} className="flex flex-col gap-5">
               <div className="min-w-0">
                 <h2 className="truncate font-display text-base font-medium text-text">{asset.name}</h2>
-                <p className="nm-caps mt-1">{asset.symbol}</p>
+                <p className="ot-caps mt-1">{asset.symbol}</p>
               </div>
 
               <div>

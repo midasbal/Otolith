@@ -8,6 +8,7 @@ import { Icon, type IconName } from "@/components/ui/icons";
 import { EmptyState, ErrorState, LoadingState, Notice } from "@/components/ui/states";
 import { formatBalanceAmount, formatBps, formatUsd } from "@/lib/stellar/format";
 import { ConnectPrompt, PolicyTermsList, Screen, ScreenHeader, TransactionReceipt } from "./common";
+import { PortfolioField, rebalanceDue } from "./portfolio-field";
 import type { BalancesState, PolicyState, PolicyTerms, RebalanceState, TriggerState, ValuationState } from "./types";
 
 /*
@@ -65,12 +66,20 @@ export function DashboardConnectView({ connecting, error, onCreate, onConnect }:
   );
 }
 
-/** Allocation now against target, and drift against the band. */
-function AllocationPanel({ result }: { result: Valued }) {
+/**
+ * Allocation now against target, and drift against the band. `due` is
+ * whether the rebalance check calls for a rebalance (see rebalanceDue):
+ * the badge takes the drift color only then, the same moment the
+ * background does. (Exported for the gallery's extreme cases.)
+ */
+export function AllocationPanel({ result, due }: { result: Valued; due: boolean }) {
   const sellSymbol = result.sellAsset.code;
   const buySymbol = result.buyAsset.code;
   const sellNowBps = 10000 - result.currentBuyWeightBps;
   const sellTargetBps = 10000 - result.targetBuyWeightBps;
+  // Exactly on target counts as within the band here, not as holding more than target.
+  const bandState = result.driftBps === 0 ? "within_band" : result.bandState;
+  const flagged = due && bandState === "past_band";
 
   return (
     <div className="grid items-center gap-x-8 gap-y-6 sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -82,10 +91,10 @@ function AllocationPanel({ result }: { result: Valued }) {
         className="mx-auto"
       >
         <div>
-          <p className="nm-num text-sm text-text">
+          <p className="ot-num text-sm text-text">
             {(sellNowBps / 100).toFixed(1)} / {(result.currentBuyWeightBps / 100).toFixed(1)}
           </p>
-          <p className="nm-caps">
+          <p className="ot-caps">
             {sellSymbol} / {buySymbol}
           </p>
         </div>
@@ -93,10 +102,13 @@ function AllocationPanel({ result }: { result: Valued }) {
 
       <div className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="nm-label">Drift</span>
-          <Badge dot={result.bandState === "past_band"}>{BAND_LABEL[result.bandState]}</Badge>
+          <span className="ot-label">Drift</span>
+          {/* Marked only while a rebalance is called for; above target, however far, it stays neutral. */}
+          <Badge dot={flagged} tone={flagged ? "drift" : undefined}>
+            {BAND_LABEL[bandState]}
+          </Badge>
         </div>
-        <p className="nm-num mt-1 text-lg text-text">{formatDriftBps(result.driftBps)}</p>
+        <p className="ot-num mt-1 text-lg text-text">{formatDriftBps(result.driftBps)}</p>
         <DriftGauge
           value={result.driftBps}
           notches={[{ at: -result.bandThresholdBps, label: `-${formatBps(result.bandThresholdBps)}` }]}
@@ -108,21 +120,21 @@ function AllocationPanel({ result }: { result: Valued }) {
           {formatBps(result.targetBuyWeightBps)} {buySymbol}
         </p>
         <p className="mt-2 text-sm leading-relaxed text-text-muted">
-          {driftStatusCopy(result.bandState, buySymbol)}
+          {driftStatusCopy(bandState, buySymbol)}
         </p>
       </div>
     </div>
   );
 }
 
-function PortfolioCard({ terms, valuationState }: { terms: PolicyTerms; valuationState: ValuationState }) {
+function PortfolioCard({ terms, valuationState, due }: { terms: PolicyTerms; valuationState: ValuationState; due: boolean }) {
   const valued =
     valuationState.status === "loaded" && valuationState.result.kind === "valued" ? valuationState.result : null;
 
   return (
     <Card className="flex flex-col gap-6">
       <div>
-        <p className="nm-caps">Portfolio value</p>
+        <p className="ot-caps">Portfolio value</p>
 
         {valuationState.status === "idle" || valuationState.status === "loading" ? (
           <LoadingState className="mt-3">Reading live prices...</LoadingState>
@@ -140,7 +152,7 @@ function PortfolioCard({ terms, valuationState }: { terms: PolicyTerms; valuatio
 
         {valued ? (
           <>
-            <p className="nm-num mt-2 text-instrument text-text [overflow-wrap:anywhere]">
+            <p className="ot-num mt-2 text-instrument text-text [overflow-wrap:anywhere]">
               ${formatUsd(valued.totalUsdValue)}
             </p>
             <p className="mt-2 text-sm text-text-muted">
@@ -152,15 +164,15 @@ function PortfolioCard({ terms, valuationState }: { terms: PolicyTerms; valuatio
 
       {valued ? (
         <>
-          <div className="nm-divider" />
-          <AllocationPanel result={valued} />
+          <div className="ot-divider" />
+          <AllocationPanel result={valued} due={due} />
         </>
       ) : null}
 
-      <div className="nm-divider" />
+      <div className="ot-divider" />
 
       <div>
-        <p className="nm-caps">Your policy</p>
+        <p className="ot-caps">Your policy</p>
         <PolicyTermsList terms={terms} className="mt-2" />
       </div>
 
@@ -233,8 +245,9 @@ export function DashboardView({
 }: DashboardViewProps) {
   return (
     <Screen>
+      <PortfolioField rebalanceState={rebalanceState} triggerState={triggerState} />
       <ScreenHeader title="Dashboard">
-        Connected as <span className="nm-num text-text">{accountLabel}</span>.
+        Connected as <span className="ot-num text-text">{accountLabel}</span>.
       </ScreenHeader>
 
       {walletError ? (
@@ -271,7 +284,7 @@ export function DashboardView({
         ) : null}
 
         {policyState.status === "loaded" && policyState.result.kind === "installed" ? (
-          <PortfolioCard terms={policyState.result.params} valuationState={valuationState} />
+          <PortfolioCard terms={policyState.result.params} valuationState={valuationState} due={rebalanceDue(rebalanceState)} />
         ) : null}
       </section>
 
@@ -370,8 +383,8 @@ export function DashboardView({
 
         {balancesState.status === "loaded" && balancesState.result.kind === "funded" ? (
           <Card>
-            <table className="nm-table">
-              <caption className="nm-caps pb-3 text-left">Balances</caption>
+            <table className="ot-table">
+              <caption className="ot-caps pb-3 text-left">Balances</caption>
               <thead>
                 <tr>
                   <th scope="col">Asset</th>

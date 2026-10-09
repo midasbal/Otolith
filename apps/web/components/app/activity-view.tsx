@@ -52,7 +52,7 @@ export function ActivityView({ accountLabel, state, onRetry, explorerAccountUrl,
     <Screen>
       <ScreenHeader title="Activity">
         Recent rebalances for{" "}
-        <span className="nm-num text-text">{accountLabel}</span>, read directly
+        <span className="ot-num text-text">{accountLabel}</span>, read directly
         from the public Stellar network. Each one is a single, atomic, on-chain transaction:
         anyone can verify it, and your funds never leave this account.
       </ScreenHeader>
@@ -87,15 +87,15 @@ export function ActivityView({ accountLabel, state, onRetry, explorerAccountUrl,
                 {state.result.entries.map((entry) => (
                   <Card key={entry.hash} as="li" className="flex flex-col gap-4">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="nm-caps">Rebalance</p>
+                      <p className="ot-caps">Rebalance</p>
                       <p className="text-sm text-text-muted">{formatTimestamp(entry.timestamp)}</p>
                     </div>
 
                     <p className="text-base leading-relaxed text-text">
                       Sold{" "}
-                      <span className="nm-num">{formatBalanceAmount(entry.sellAmount)}</span>{" "}
+                      <span className="ot-num">{formatBalanceAmount(entry.sellAmount)}</span>{" "}
                       XLM, received{" "}
-                      <span className="nm-num">{formatBalanceAmount(entry.buyAmount)}</span>{" "}
+                      <span className="ot-num">{formatBalanceAmount(entry.buyAmount)}</span>{" "}
                       USDC. One atomic on-chain transaction.
                     </p>
 

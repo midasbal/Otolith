@@ -45,9 +45,9 @@ export function SettingsView({ address, explorerAccountUrl, copyButton, policySt
       <ScreenHeader title="Settings">Account and policy details for this connection.</ScreenHeader>
 
       <Card className="flex flex-col gap-3">
-        <p className="nm-caps">Account</p>
-        <div className="nm-hash">
-          <span className="nm-hash-value" title={address}>
+        <p className="ot-caps">Account</p>
+        <div className="ot-hash">
+          <span className="ot-hash-value" title={address}>
             {address}
           </span>
           {copyButton}
@@ -65,7 +65,7 @@ export function SettingsView({ address, explorerAccountUrl, copyButton, policySt
         {policyState.status === "loaded" && policyState.result.kind === "not-installed" ? (
           <Card className="flex flex-col items-start gap-4">
             <div>
-              <p className="nm-caps">Policy</p>
+              <p className="ot-caps">Policy</p>
               <p className="mt-2 text-sm leading-relaxed text-text-muted">
                 No rebalance policy is installed on this account yet.
               </p>
@@ -78,7 +78,7 @@ export function SettingsView({ address, explorerAccountUrl, copyButton, policySt
 
         {policyState.status === "loaded" && policyState.result.kind === "installed" ? (
           <Card>
-            <p className="nm-caps">Policy</p>
+            <p className="ot-caps">Policy</p>
             <PolicyTermsList terms={policyState.result.params} className="mt-2" />
           </Card>
         ) : null}

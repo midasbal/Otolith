@@ -17,7 +17,7 @@ export default function AppShellLayout({
 
   return (
     <WalletProvider>
-      <a href="#main" className="nm-skip-link">
+      <a href="#main" className="ot-skip-link">
         Skip to content
       </a>
       {isFocusedRoute(pathname) ? (
