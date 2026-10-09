@@ -19,6 +19,7 @@ import { ToastProvider, useToast } from "@/components/ui/toast";
 import { Toggle } from "@/components/ui/toggle";
 import { TxHash } from "@/components/ui/tx-hash";
 import { APP_SCREENS, AppScreenPreview, type AppState } from "./app-states";
+import { BackgroundLab } from "./background-lab";
 
 /*
   The development gallery (see app/dev/ui/page.tsx for why it never
@@ -95,12 +96,12 @@ function ColorToken({ name, on, role }: { name: string; on: string; role: string
     <Card depth="sm" className="flex flex-col gap-3">
       <span
         aria-hidden="true"
-        className="nm-raised-sm block h-16 rounded-md"
+        className="ot-raised-sm block h-16 rounded-md"
         style={{ backgroundColor: `var(${name})` }}
       />
       <div>
-        <p className="nm-num text-sm text-text">{name}</p>
-        <p className="nm-num text-xs text-text-muted">
+        <p className="ot-num text-sm text-text">{name}</p>
+        <p className="ot-num text-xs text-text-muted">
           {value} {name === on ? "" : `· ${contrast(value, against)} on ${on}`}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-text-muted">{role}</p>
@@ -110,13 +111,13 @@ function ColorToken({ name, on, role }: { name: string; on: string; role: string
 }
 
 const SHADOW_LEVELS = [
-  { className: "nm-raised-sm", token: "--raised-sm" },
-  { className: "nm-raised", token: "--raised-md" },
-  { className: "nm-raised-lg", token: "--raised-lg" },
-  { className: "nm-flat", token: "--flat" },
-  { className: "nm-pressed-sm", token: "--pressed-sm" },
-  { className: "nm-pressed", token: "--pressed-md" },
-  { className: "nm-pressed-lg", token: "--pressed-lg" },
+  { className: "ot-raised-sm", token: "--raised-sm" },
+  { className: "ot-raised", token: "--raised-md" },
+  { className: "ot-raised-lg", token: "--raised-lg" },
+  { className: "ot-flat", token: "--flat" },
+  { className: "ot-pressed-sm", token: "--pressed-sm" },
+  { className: "ot-pressed", token: "--pressed-md" },
+  { className: "ot-pressed-lg", token: "--pressed-lg" },
 ];
 
 const RADII = ["--radius-sm", "--radius-md", "--radius-lg", "--radius-xl", "--radius-pill"];
@@ -134,7 +135,7 @@ const TYPE_STEPS = [
 ];
 
 function TokenValue({ name }: { name: string }) {
-  return <span className="nm-num text-xs text-text-muted">{useToken(name)}</span>;
+  return <span className="ot-num text-xs text-text-muted">{useToken(name)}</span>;
 }
 
 function TokensTab() {
@@ -164,7 +165,7 @@ function TokensTab() {
           {SHADOW_LEVELS.map((level) => (
             <div key={level.token} className="flex flex-col items-center gap-3">
               <span aria-hidden="true" className={`${level.className} block h-20 w-full rounded-lg`} />
-              <span className="nm-num text-xs text-text-muted">{level.token}</span>
+              <span className="ot-num text-xs text-text-muted">{level.token}</span>
             </div>
           ))}
         </div>
@@ -176,10 +177,10 @@ function TokensTab() {
             <div key={radius} className="flex flex-col items-center gap-3">
               <span
                 aria-hidden="true"
-                className="nm-raised-sm block h-16 w-full"
+                className="ot-raised-sm block h-16 w-full"
                 style={{ borderRadius: `var(${radius})` }}
               />
-              <span className="nm-num text-xs text-text">{radius}</span>
+              <span className="ot-num text-xs text-text">{radius}</span>
               <TokenValue name={radius} />
             </div>
           ))}
@@ -191,11 +192,11 @@ function TokensTab() {
           {TYPE_STEPS.map((step) => (
             <div key={step.token} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
               <span
-                className={`${step.className} min-w-0 text-text ${step.mono ? "nm-num" : "font-display font-medium"}`}
+                className={`${step.className} min-w-0 text-text ${step.mono ? "ot-num" : "font-display font-medium"}`}
               >
                 {step.sample}
               </span>
-              <span className="nm-num text-xs text-text-muted">{step.token}</span>
+              <span className="ot-num text-xs text-text-muted">{step.token}</span>
             </div>
           ))}
         </Card>
@@ -205,7 +206,7 @@ function TokensTab() {
         <Card>
           <DataList>
             {["--duration-fast", "--duration-base", "--duration-settle", "--ease-settle"].map((token) => (
-              <DataRow key={token} label={<span className="nm-num">{token}</span>}>
+              <DataRow key={token} label={<span className="ot-num">{token}</span>}>
                 <TokenValue name={token} />
               </DataRow>
             ))}
@@ -389,7 +390,7 @@ function ComponentsTab() {
           </Field>
           <Field label="Slippage tolerance" hint="With a unit inside the well.">
             {(control) => (
-              <Select {...control} defaultValue="1.00" trailing="%" className="nm-num">
+              <Select {...control} defaultValue="1.00" trailing="%" className="ot-num">
                 <option value="0.30">0.30</option>
                 <option value="0.50">0.50</option>
                 <option value="1.00">1.00</option>
@@ -426,15 +427,15 @@ function ComponentsTab() {
               </Select>
             )}
           </Field>
-          <div className="nm-field">
-            <span className="nm-label">The list&rsquo;s rows</span>
-            <p className="nm-hint">At rest, highlighted, selected, both at once, and unavailable.</p>
+          <div className="ot-field">
+            <span className="ot-label">The list&rsquo;s rows</span>
+            <p className="ot-hint">At rest, highlighted, selected, both at once, and unavailable.</p>
             {/* A still copy of the open list, for looking at: the same
                 classes and attributes the real one sets, with no behavior. */}
             <ul
               role="listbox"
               aria-hidden="true"
-              className="nm-listbox"
+              className="ot-listbox"
               data-open="true"
               style={{ position: "static", width: "100%", opacity: 1, transform: "none" }}
             >
@@ -442,13 +443,13 @@ function ComponentsTab() {
                 <li
                   key={row.label}
                   role="option"
-                  className="nm-option"
+                  className="ot-option"
                   aria-selected={row.selected}
                   aria-disabled={row.disabled ? true : undefined}
                   data-active={row.active ? "true" : undefined}
                 >
-                  <span className="nm-option-label">{row.label}</span>
-                  <Icon name="check" size={16} className="nm-option-check" />
+                  <span className="ot-option-label">{row.label}</span>
+                  <Icon name="check" size={16} className="ot-option-check" />
                 </li>
               ))}
             </ul>
@@ -484,8 +485,8 @@ function ComponentsTab() {
         <Card className="flex flex-col gap-6">
           <div>
             <div className="flex items-center justify-between gap-4">
-              <span className="nm-label">XLM</span>
-              <span className="nm-num text-md text-accent">{split}%</span>
+              <span className="ot-label">XLM</span>
+              <span className="ot-num text-md text-accent">{split}%</span>
             </div>
             <Slider
               className="mt-3"
@@ -497,13 +498,13 @@ function ComponentsTab() {
               aria-label="XLM target percentage"
             />
             <div className="mt-3 flex items-center justify-between gap-4">
-              <span className="nm-label">USDC</span>
-              <span className="nm-num text-md text-accent">{100 - split}%</span>
+              <span className="ot-label">USDC</span>
+              <span className="ot-num text-md text-accent">{100 - split}%</span>
             </div>
           </div>
-          <div className="nm-divider" />
+          <div className="ot-divider" />
           <div className="flex items-center justify-between gap-4">
-            <span id="gallery-advanced" className="nm-label">
+            <span id="gallery-advanced" className="ot-label">
               Advanced settings
             </span>
             <Toggle
@@ -513,7 +514,7 @@ function ComponentsTab() {
             />
           </div>
           <div className="flex items-center justify-between gap-4">
-            <span id="gallery-disabled-toggle" className="nm-label">
+            <span id="gallery-disabled-toggle" className="ot-label">
               Disabled toggle
             </span>
             <Toggle checked disabled aria-labelledby="gallery-disabled-toggle" />
@@ -559,13 +560,13 @@ function ComponentsTab() {
         />
         <Dialog open={dialog === "sheet"} onClose={() => setDialog("none")} title="Menu" variant="sheet">
           <nav aria-label="Gallery sheet" className="flex flex-col gap-2">
-            <a href="#top" aria-current="page" className="nm-navlink">
+            <a href="#top" aria-current="page" className="ot-navlink">
               Dashboard
             </a>
-            <a href="#top" className="nm-navlink">
+            <a href="#top" className="ot-navlink">
               Activity
             </a>
-            <a href="#top" className="nm-navlink">
+            <a href="#top" className="ot-navlink">
               Settings
             </a>
           </nav>
@@ -594,7 +595,7 @@ function ComponentsTab() {
       <Section title="Lists and tables">
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
-            <p className="nm-caps">Your policy</p>
+            <p className="ot-caps">Your policy</p>
             <DataList className="mt-2">
               <DataRow label="Target allocation">50.00% XLM / 50.00% USDC</DataRow>
               <DataRow label="Drift band">2.00%</DataRow>
@@ -605,8 +606,8 @@ function ComponentsTab() {
             </DataList>
           </Card>
           <Card>
-            <p className="nm-caps">Balances</p>
-            <table className="nm-table mt-4">
+            <p className="ot-caps">Balances</p>
+            <table className="ot-table mt-4">
               <thead>
                 <tr>
                   <th scope="col">Asset</th>
@@ -642,16 +643,16 @@ function ComponentsTab() {
             className="mx-auto"
           >
             <div>
-              <p className="nm-num text-lg text-text">46.20%</p>
-              <p className="nm-caps">USDC</p>
+              <p className="ot-num text-lg text-text">46.20%</p>
+              <p className="ot-caps">USDC</p>
             </div>
           </AllocationDonut>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="nm-label">Drift</span>
+              <span className="ot-label">Drift</span>
               <Badge dot>Past band</Badge>
             </div>
-            <p className="nm-num mt-1 text-lg text-text">-3.80%</p>
+            <p className="ot-num mt-1 text-lg text-text">-3.80%</p>
             <DriftGauge
               value={-380}
               notches={[{ at: -200, label: "-2.00%" }]}
@@ -718,15 +719,15 @@ function ScreensTab() {
 
       {APP_SCREENS.map((screen) => (
         <Section key={screen.id} title={screen.label} note={screen.href}>
-          <ul className="nm-datalist">
+          <ul className="ot-datalist">
             {screen.states.map((state) => (
-              <li key={state.id} className="nm-datarow">
+              <li key={state.id} className="ot-datarow">
                 <TextLink href={screenHref(screen.id, state.id)}>{state.label}</TextLink>
                 <Badge>{KIND_LABELS[state.kind]}</Badge>
               </li>
             ))}
             {screen.chrome ? (
-              <li className="nm-datarow">
+              <li className="ot-datarow">
                 <TextLink href={screenHref(screen.id, screen.states[screen.states.length - 1].id, true)}>
                   Menu sheet open (small screens)
                 </TextLink>
@@ -748,9 +749,17 @@ type GalleryProps = {
   tab?: string;
   /** Show the screen with its small-screen menu sheet open. */
   menu?: boolean;
+  /** Show the background lab full screen. `state` sets how it starts. */
+  background?: string;
+  /** The lab with nothing over the field, for exporting stills. */
+  bare?: boolean;
 };
 
-export function Gallery({ screen, state, tab, menu = false }: GalleryProps) {
+export function Gallery({ screen, state, tab, menu = false, background, bare = false }: GalleryProps) {
+  if (background) {
+    return <BackgroundLab initialState={state} bare={bare} />;
+  }
+
   const screenEntry = APP_SCREENS.find((entry) => entry.id === screen);
   const stateEntry = screenEntry?.states.find((entry) => entry.id === state) ?? screenEntry?.states[0];
 
@@ -760,7 +769,7 @@ export function Gallery({ screen, state, tab, menu = false }: GalleryProps) {
 
   return (
     <ToastProvider>
-      <main id="top" className="nm-container flex flex-col gap-10 py-12">
+      <main id="top" className="ot-container flex flex-col gap-10 py-12">
         <header className="flex flex-col gap-3">
           <Badge>Development only</Badge>
           <h1 className="font-display text-2xl font-medium tracking-display text-text">Otolith UI gallery</h1>

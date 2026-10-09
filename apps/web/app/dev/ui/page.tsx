@@ -30,7 +30,8 @@ function single(value: Query[string]): string | undefined {
  *
  * `?screen=dashboard&state=ready` shows one app screen in one state on
  * its own, in the chrome its real route has; `&menu` opens the sheet the
- * small-screen top bar leads to. The query is read inside the
+ * small-screen top bar leads to. `?bg=annuli` shows the background lab
+ * full screen. The query is read inside the
  * development branch only, so the production page stays a static 404.
  */
 export default async function DevUiPage({ searchParams }: DevUiPageProps) {
@@ -43,6 +44,8 @@ export default async function DevUiPage({ searchParams }: DevUiPageProps) {
         state={single(query.state)}
         tab={single(query.tab)}
         menu={query.menu !== undefined}
+        background={single(query.bg)}
+        bare={query.bare !== undefined}
       />
     );
   }
