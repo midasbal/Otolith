@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BackgroundToggle } from "@/components/background/background";
+import { ThemeToggle } from "@/components/ui/theme";
 import type { ReactNode } from "react";
 import { TestnetBadge } from "@/components/ui/badge";
 import { Button, IconButton, TextButton } from "@/components/ui/button";
@@ -35,7 +35,7 @@ function ShellLogo() {
         href="/app"
         className="flex items-center gap-2.5 rounded-md font-display text-md font-medium tracking-display text-text"
       >
-        <Mark className="h-9 w-9" />
+        <Mark />
         Otolith
       </Link>
       <TestnetBadge />
@@ -136,7 +136,7 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
           <div className="flex flex-1 flex-col gap-8">
             <div className="flex items-start justify-between gap-2">
               <ShellLogo />
-              <BackgroundToggle />
+              <ThemeToggle />
             </div>
             <ShellNav links={links} />
           </div>
@@ -152,7 +152,7 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
         <div className="ot-raised flex items-center justify-between gap-3 rounded-xl px-3 py-3 sm:px-5">
           <ShellLogo />
           <div className="flex items-center gap-2">
-            <BackgroundToggle />
+            <ThemeToggle />
             <IconButton label="Menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={onToggleMenu}>
               <Icon name="menu" />
             </IconButton>

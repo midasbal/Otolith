@@ -71,6 +71,44 @@
     padding-inline: var(--space-gutter);
   }
 
+  /* ── The logo ───────────────────────────────────────────────────────
+     Drawn from the same numbers at every size (components/logo). Give it
+     a width; its height follows. The outlined half's line is 4 of the
+     logo's 1700 units, and never thinner than a line that can be seen;
+     and when the whole logo is small, the integral is drawn a little
+     heavier, so its hairlines survive. Both are measured against the
+     logo's own width, which is why it is a container. */
+  .ot-logo {
+    display: inline-block;
+    flex: none;
+    aspect-ratio: 1700 / 720;
+    container-type: inline-size;
+    line-height: 0;
+  }
+  .ot-logo > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .ot-logo-line {
+    stroke-width: var(--logo-line, 1.15px);
+    stroke-width: max(var(--logo-line, 1.15px), 0.2353cqw);
+    vector-effect: non-scaling-stroke;
+  }
+  .ot-logo-glyph {
+    stroke: currentColor;
+    stroke-linejoin: round;
+    stroke-width: 0;
+    stroke-width: max(0px, 0.9px - 0.225cqw);
+    vector-effect: non-scaling-stroke;
+  }
+  /* The site's mark, beside the wordmark. */
+  .ot-mark {
+    width: 4rem;
+    --logo-line: 1.5px;
+  }
+
   /* The one divider: a groove cut into the surface. */
   .ot-divider {
     height: 2px;

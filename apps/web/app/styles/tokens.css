@@ -1,70 +1,76 @@
 /*
   Design tokens: the single source of truth for the Otolith interface.
 
-  Deep water. The page is one dark ground, and behind everything on it
-  runs Annuli, the growth-ring field (components/background). Content
-  sits over that field on quiet panels: a slightly lifted surface with a
-  hairline edge. A raised element is such a panel; a pressed element, and
-  every input, is a darker well cut into it. There are no textures and no
-  gradients standing in for a material, and nothing is blurred.
+  Ink on cream, as the logo is drawn, or the same two exchanged. The page
+  is one flat ground, and behind the landing page runs the logo itself,
+  as a scene (components/background). Content sits over it on quiet
+  panels: a slightly lifted surface with a hairline edge. A raised
+  element is such a panel; a pressed element, and every input, is a well
+  cut into it. There are no textures and no gradients standing in for a
+  material, and nothing is blurred.
 
-  One accent, a violet drawn from the rings themselves: the primary
-  action, focus, and whatever is current. A single red exists beside it
-  for errors and destructive actions, and a warm coral, the color the
-  rings take on when a portfolio drifts, is used only to say "past the
-  band".
+  Two themes, one set of names. Light is the default; dark is used when
+  the system asks for it, or when the reader chooses it with the toggle
+  in the header (which sets data-theme on the root and overrides the
+  system either way). Every component reads these names and never a raw
+  color, so it works in both without knowing which it is in.
 
-  Every component reads from these tokens, never from a raw color, size,
-  shadow, or timing value. To retune the interface, change a value here.
+  One accent, a violet, for the primary action and for focus, and for
+  whatever is current. A red exists beside it for errors and destructive
+  actions, and a warm brown-orange (coral on dark) is used only to say
+  "past the band".
+
+  To retune the interface, change a value here, in both themes.
 */
 
 :root {
-  /* Ground and ink. --bg is the page, and the exact color the background
-     field fades to. --text is a pearl (16.5:1 on --bg); --text-muted is
-     the secondary ink (9.0:1). Both stay well past 4.5:1 on a panel too. */
-  --bg: #06070c;
-  --text: #e8eaf6;
-  --text-muted: #a9aec6;
+  color-scheme: light;
 
-  /* Panels. --surface is what a raised element is made of: nearly opaque,
-     so text on it never depends on what the field is doing behind it.
-     --surface-strong is fully opaque, for anything that floats over other
-     content (a dialog, a menu). --well is the darker cut of an input or a
-     badge. --knob is the small moving part of a control. */
-  --surface: rgba(13, 15, 26, 0.86);
-  --surface-strong: #0d0f1a;
-  --well: rgba(2, 3, 7, 0.62);
-  --knob: #e8eaf6;
+  /* Ground and ink: the logo's cream and its ink (13.9:1). --text-muted
+     is the secondary ink (6.2:1); nothing is set fainter than it. */
+  --bg: #f1ebe6;
+  --text: #231e1d;
+  --text-muted: #5d5552;
+
+  /* Panels. --surface is what a raised element is made of: a shade
+     lighter than the ground and nearly opaque, so text on it never
+     depends on what the scene is doing behind it. --surface-strong is
+     fully opaque, for anything that floats over other content (a dialog,
+     a menu). --well is the cut of an input or a badge. --knob is the
+     small moving part of a control. */
+  --surface: rgba(250, 247, 243, 0.88);
+  --surface-strong: #faf7f3;
+  --well: rgba(35, 30, 29, 0.055);
+  --knob: #ffffff;
 
   /* Edges: the hairline every panel carries, and a stronger one for
-     wells and for hover. Measured on --bg the hairline is 1.3:1, far
-     below the 3:1 a boundary needs to count on its own, which is why no
-     state in the interface is ever signalled by an edge alone. */
-  --line: rgba(232, 234, 246, 0.11);
-  --line-strong: rgba(232, 234, 246, 0.24);
+     wells and for hover. The hairline is far below the 3:1 a boundary
+     needs to count on its own, which is why no state in the interface is
+     ever signalled by an edge alone. */
+  --line: rgba(35, 30, 29, 0.14);
+  --line-strong: rgba(35, 30, 29, 0.3);
 
-  /* The accent: 6.1:1 as text or a focus ring on --bg. It fills the
-     primary action under the dark ink (--on-accent, 6.1:1), since white
-     on it would not pass. --accent-strong is its hover step. */
-  --accent: #8f7dff;
-  --accent-strong: #a99bff;
-  --on-accent: #06070c;
+  /* The accent: 5.3:1 as text or a focus ring on --bg, and it fills the
+     primary action under white (--on-accent, 6.2:1). --accent-strong is
+     its hover step. */
+  --accent: #5a43e6;
+  --accent-strong: #4a34cf;
+  --on-accent: #ffffff;
 
   /* Danger: errors and destructive actions (revoke) only, and always
-     paired with an icon and text. 8.6:1 on --bg. An ink, never a fill. */
-  --danger: #ff8a8a;
-  --danger-strong: #ffb0b0;
+     paired with an icon and text. 5.9:1 on --bg. An ink, never a fill. */
+  --danger: #a8281f;
+  --danger-strong: #8a1f18;
 
-  /* Drift: the warm tone of a portfolio past its band, the same one the
-     rings take on. 7.6:1 on --bg. Always beside a label that says so. */
-  --drift: #ff8279;
+  /* Drift: a portfolio past its band. 5.1:1 on --bg. Always beside a
+     label that says so. */
+  --drift: #a4471c;
 
-  /* Kept for the few rules that still name them: the two tones a panel's
-     edge is drawn from. */
-  --shadow-light: rgba(232, 234, 246, 0.07);
-  --shadow-dark: rgba(0, 0, 0, 0.6);
+  /* The tones a panel's edge and shadow are drawn from. */
+  --shadow-light: rgba(255, 255, 255, 0.7);
+  --shadow-dark: rgba(35, 30, 29, 0.16);
   --shadow-fill-light: rgba(255, 255, 255, 0.28);
-  --shadow-fill-dark: rgba(6, 7, 12, 0.34);
+  --shadow-fill-dark: rgba(20, 12, 60, 0.3);
 
   /* Depth: one multiplier on every shadow distance, so panels sit lower
      on a small screen (see the media queries at the foot of this file). */
@@ -193,6 +199,63 @@
 }
 
 /*
+  The dark theme. The same list twice, because CSS has no way to say
+  "either of these" for a block of declarations: once for a system that
+  asks for dark (unless the reader has chosen light), once for a reader
+  who has chosen dark. Keep the two in step.
+*/
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* Cream on a warm near-black: text 16.4:1, secondary 8.7:1. */
+    --bg: #0f0d0d;
+    --text: #f1ebe6;
+    --text-muted: #b5aca6;
+    --surface: rgba(24, 21, 21, 0.88);
+    --surface-strong: #181515;
+    --well: rgba(0, 0, 0, 0.5);
+    --knob: #f1ebe6;
+    --line: rgba(241, 235, 230, 0.11);
+    --line-strong: rgba(241, 235, 230, 0.24);
+    /* The accent lightened until it passes on the dark ground (6.0:1), with the ground's own ink on it. */
+    --accent: #8f7dff;
+    --accent-strong: #a99bff;
+    --on-accent: #0f0d0d;
+    --danger: #ff8a8a;
+    --danger-strong: #ffb0b0;
+    --drift: #ff8279;
+    --shadow-light: rgba(241, 235, 230, 0.07);
+    --shadow-dark: rgba(0, 0, 0, 0.6);
+    --shadow-fill-light: rgba(255, 255, 255, 0.28);
+    --shadow-fill-dark: rgba(15, 13, 13, 0.34);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* Cream on a warm near-black: text 16.4:1, secondary 8.7:1. */
+  --bg: #0f0d0d;
+  --text: #f1ebe6;
+  --text-muted: #b5aca6;
+  --surface: rgba(24, 21, 21, 0.88);
+  --surface-strong: #181515;
+  --well: rgba(0, 0, 0, 0.5);
+  --knob: #f1ebe6;
+  --line: rgba(241, 235, 230, 0.11);
+  --line-strong: rgba(241, 235, 230, 0.24);
+  /* The accent lightened until it passes on the dark ground (6.0:1), with the ground's own ink on it. */
+  --accent: #8f7dff;
+  --accent-strong: #a99bff;
+  --on-accent: #0f0d0d;
+  --danger: #ff8a8a;
+  --danger-strong: #ffb0b0;
+  --drift: #ff8279;
+  --shadow-light: rgba(241, 235, 230, 0.07);
+  --shadow-dark: rgba(0, 0, 0, 0.6);
+  --shadow-fill-light: rgba(255, 255, 255, 0.28);
+  --shadow-fill-dark: rgba(15, 13, 13, 0.34);
+}
+
+/*
   The type scale, radii, and tracking live in a static @theme block
   rather than :root, so each one exists twice from a single definition:
   as a Tailwind utility (text-sm, rounded-lg) and as a plain custom
@@ -228,7 +291,7 @@
   --text-xl--line-height: 1.25;
   --text-2xl: clamp(1.75rem, 1.3rem + 2vw, 2.4375rem);
   --text-2xl--line-height: 1.15;
-  --text-display: clamp(2.25rem, 1.35rem + 4.2vw, 3.8125rem);
+  --text-display: clamp(2.25rem, 1.35rem + 4.2vw, 3rem);
   --text-display--line-height: 1.05;
   --text-instrument: clamp(2.75rem, 1.6rem + 5vw, 4.75rem);
   --text-instrument--line-height: 1;
@@ -303,14 +366,29 @@
   }
 }
 
-/* Anyone who has asked their system for more contrast gets a brighter
-   secondary ink and stronger edges. Component styles add a real outline
-   to every surface under the same query (see components.css). */
+/* Anyone who has asked their system for more contrast gets a stronger
+   secondary ink, stronger edges and opaque panels, in whichever theme.
+   Component styles add a real outline to every surface under the same
+   query (see components.css). */
 @media (prefers-contrast: more) {
   :root {
-    --text-muted: #cdd1e4;
-    --line: rgba(232, 234, 246, 0.3);
-    --line-strong: rgba(232, 234, 246, 0.55);
-    --surface: #0d0f1a;
+    --text-muted: #3f3835;
+    --line: rgba(35, 30, 29, 0.36);
+    --line-strong: rgba(35, 30, 29, 0.62);
+    --surface: #faf7f3;
+  }
+  :root[data-theme="dark"] {
+    --text-muted: #d6cfca;
+    --line: rgba(241, 235, 230, 0.3);
+    --line-strong: rgba(241, 235, 230, 0.55);
+    --surface: #181515;
+  }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --text-muted: #d6cfca;
+    --line: rgba(241, 235, 230, 0.3);
+    --line-strong: rgba(241, 235, 230, 0.55);
+    --surface: #181515;
   }
 }

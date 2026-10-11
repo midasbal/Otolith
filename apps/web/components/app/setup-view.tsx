@@ -11,7 +11,7 @@ import { Notice } from "@/components/ui/states";
 import { Stepper } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { formatBps, formatDurationSeconds } from "@/lib/stellar/format";
-import { BackgroundToggle } from "@/components/background/background";
+import { ThemeToggle } from "@/components/ui/theme";
 import { ConnectPrompt, Screen, ScreenHeader, TransactionReceipt } from "./common";
 import type { InstallState } from "./types";
 
@@ -97,8 +97,8 @@ export function SetupView(props: SetupViewProps) {
             <TextLink href="/app" native className="text-sm">
               Back to dashboard
             </TextLink>
-            {/* This flow has no sidebar, so the control that pauses the background sits here. */}
-            <BackgroundToggle />
+            {/* This flow has no sidebar, so the theme control sits here. */}
+            <ThemeToggle />
           </div>
         }
       />

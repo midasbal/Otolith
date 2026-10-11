@@ -3,6 +3,7 @@ import { BackgroundToggle } from "@/components/background/background";
 import { TestnetBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Mark } from "@/components/ui/mark";
+import { ThemeToggle } from "@/components/ui/theme";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -30,7 +31,7 @@ export function LandingHeader() {
             href="/"
             className="flex items-center gap-2.5 rounded-md font-display text-md font-medium tracking-display text-text"
           >
-            <Mark className="h-9 w-9" />
+            <Mark />
             Otolith
           </Link>
           <TestnetBadge />
@@ -40,8 +41,9 @@ export function LandingHeader() {
           <NavLinks />
         </nav>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <BackgroundToggle className="hidden lg:inline-flex" />
+          <ThemeToggle />
           <ButtonLink href="/app" variant="primary">
             Open app
           </ButtonLink>

@@ -1,14 +1,13 @@
 /*
   Base styles: the page itself, before any component.
 
-  The page is one flat field of --bg. No background image, no gradient,
-  nothing layered behind the content: a soft surface only reads as soft
-  when the plane it rises from is perfectly even.
+  The page is one flat field of --bg, in whichever theme (tokens.css sets
+  the colors, and color-scheme with them, so form controls and scrollbars
+  follow).
 */
 
 @layer base {
   html {
-    color-scheme: dark;
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
   }
