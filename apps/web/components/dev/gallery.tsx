@@ -18,8 +18,11 @@ import { Stepper, Tabs } from "@/components/ui/tabs";
 import { ToastProvider, useToast } from "@/components/ui/toast";
 import { Toggle } from "@/components/ui/toggle";
 import { TxHash } from "@/components/ui/tx-hash";
+import { RebalanceDemo } from "@/components/landing/rebalance-demo";
+import { Logo, Mark } from "@/components/ui/mark";
+import { ThemeToggle } from "@/components/ui/theme";
 import { APP_SCREENS, AppScreenPreview, type AppState } from "./app-states";
-import { BackgroundLab } from "./background-lab";
+import { LogoLab } from "./logo-lab";
 
 /*
   The development gallery (see app/dev/ui/page.tsx for why it never
@@ -663,6 +666,28 @@ function ComponentsTab() {
         </Card>
       </Section>
 
+      <Section
+        title="Logo"
+        note="One drawing at every size. The outlined half's line never thins below a visible one, and the integral is drawn a little heavier when the whole logo is small."
+      >
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-6 text-text">
+          <Logo title="Otolith" style={{ width: "24rem" }} />
+          <Logo style={{ width: "10rem" }} />
+          <Mark />
+          <Logo style={{ width: "2.5rem" }} />
+        </div>
+      </Section>
+
+      <Section
+        title="Rebalance demo"
+        note="The hero's dial and the drift simulator as one example: the ring sets the target split, the knob is where the holdings are. Not on the landing page yet."
+      >
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
+          <RebalanceDemo />
+          <RebalanceDemo />
+        </div>
+      </Section>
+
       <Section title="Hash">
         <TxHash value={MOCK_HASH} className="max-w-2xl" />
       </Section>
@@ -749,15 +774,17 @@ type GalleryProps = {
   tab?: string;
   /** Show the screen with its small-screen menu sheet open. */
   menu?: boolean;
-  /** Show the background lab full screen. `state` sets how it starts. */
+  /** Show the background's lab full screen: the logo scene on its own. */
   background?: string;
-  /** The lab with nothing over the field, for exporting stills. */
+  /** The lab with nothing over the scene. */
   bare?: boolean;
+  /** The lab standing still at one of the scene's pictures (0 to 4), fitted to the window: for exporting the stills. */
+  still?: string;
 };
 
-export function Gallery({ screen, state, tab, menu = false, background, bare = false }: GalleryProps) {
+export function Gallery({ screen, state, tab, menu = false, background, bare = false, still }: GalleryProps) {
   if (background) {
-    return <BackgroundLab initialState={state} bare={bare} />;
+    return <LogoLab bare={bare} still={still === undefined ? undefined : Number(still)} />;
   }
 
   const screenEntry = APP_SCREENS.find((entry) => entry.id === screen);
@@ -771,7 +798,10 @@ export function Gallery({ screen, state, tab, menu = false, background, bare = f
     <ToastProvider>
       <main id="top" className="ot-container flex flex-col gap-10 py-12">
         <header className="flex flex-col gap-3">
-          <Badge>Development only</Badge>
+          <div className="flex items-center justify-between gap-3">
+            <Badge>Development only</Badge>
+            <ThemeToggle />
+          </div>
           <h1 className="font-display text-2xl font-medium tracking-display text-text">Otolith UI gallery</h1>
           <p className="max-w-2xl text-base leading-relaxed text-text-muted">
             Every token and primitive in the design system, and every app screen in every state, on mock data. This

@@ -14,39 +14,56 @@ import {
 import { IconButton } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Icon } from "@/components/ui/icons";
+import { useTheme } from "@/components/ui/theme";
 import { usePrefersReducedMotion } from "@/components/ui/use-reduced-motion";
-import type { BackgroundState, Engine, PageReading, QuietZone } from "./engine";
+import type { BackgroundState, Engine, PageReading, QuietZone, Stage } from "./engine";
 
 /*
   The background, as the page uses it.
 
-  One fixed canvas behind everything, running Annuli. Under it lies a
-  still of the same scene, an image: what a visitor sees before the scene
-  has loaded, and all they see without WebGL, on a software renderer, or
-  when they have asked for less motion. The scene is loaded on its own,
+  One fixed canvas behind the landing page, drawing the logo scene: the
+  Otolith logo, which comes apart and back together as the page's five
+  chapters scroll by (see logo-scene.ts). The scene is loaded on its own,
   once the browser is idle, so it never stands between the visitor and
-  the page's first paint.
+  the page's first paint. Until it arrives, and wherever it cannot run,
+  the page shows the logo itself, drawn in its hero as an SVG, exactly
+  where the scene will draw it.
 
-  Behind the app the field is the same one, but calm: dimmer, with fewer
-  particles, and not changing as the page scrolls, so the data in front
-  of it stays easy to read.
+  The page talks to the scene by marking itself up:
 
-  The page talks to the scene in two ways. It marks itself up: a section
-  carrying data-chapter says which scene belongs to it, and a block
-  carrying data-quiet is text the field should dim itself behind. And
-  through useBackground() a component can say what the portfolio is
-  doing: balanced, drifting, or just rebalanced.
+    data-chapter   on a section: which of the scene's five pictures
+                   belongs to it.
+    data-stage     on an empty box inside that section: the room the page
+                   keeps clear for the picture. The scene fits the logo to
+                   that box.
+    data-quiet     on a block of text that sits directly on the ground:
+                   the scene dims itself behind it.
+
+  The scene does not scroll with the page. Each chapter has one place on
+  the screen: where its stage box is when the page stands at that
+  chapter. The picture is drawn there while the chapter is read, and
+  travels to the next chapter's place as that one arrives. (Drawing it
+  wherever the box is from frame to frame would have it trail the page
+  by a frame on every phone.)
+
+  With less motion asked for, the same scene is drawn, standing still:
+  one picture to a chapter, exchanged as the page reaches it, and nothing
+  moving in between. Under forced colors nothing is drawn at all.
 
   The canvas takes no pointer events and no focus. BackgroundToggle is
   the visible control that pauses and resumes the motion; it sits in the
   page's own header and footer rather than floating over content, and
   the choice is remembered from page to page.
+
+  Through useBackground() a component can say what the portfolio is
+  doing: balanced, drifting, or just rebalanced. The app's screens do;
+  nothing is drawn behind them yet.
 */
 
 type BackgroundController = {
-  /** What the portfolio is doing. The field shows this, and nothing else changes it. */
+  /** What the portfolio is doing. The scene shows this, and nothing else changes it. */
   setState(state: BackgroundState): void;
-  /** A rebalance was submitted: one bright ring crosses the field. The state stays as it was set. */
+  /** A rebalance was submitted. The state stays as it was set. */
   pulse(): void;
 };
 
@@ -101,43 +118,89 @@ function writePaused(paused: boolean) {
   window.dispatchEvent(new Event(PAUSE_EVENT));
 }
 
+/** Where an element is laid out in the document, whatever is scrolled and whatever is being animated into place. */
+function placeOf(element: HTMLElement): [number, number] {
+  let x = 0;
+  let y = 0;
+  for (let node: HTMLElement | null = element; node; node = node.offsetParent as HTMLElement | null) {
+    x += node.offsetLeft + (node === element ? 0 : node.clientLeft);
+    y += node.offsetTop + (node === element ? 0 : node.clientTop);
+  }
+  return [x, y];
+}
+
+type Chapter = {
+  /** Which of the scene's pictures. */
+  scene: number;
+  /** The scroll position at which the page stands at this chapter. */
+  at: number;
+};
+
 /**
- * What the engine asks the page each frame: which chapter is in view, and
- * where the text is. It only reads. The lists of elements are refreshed
- * twice a second, so a page that renders late or changes is picked up.
+ * What the engine asks the page each frame: which chapter it stands at,
+ * where each chapter's picture goes, and where the text is. It only
+ * reads. The page is measured twice a second and whenever the window
+ * changes size, so a page that renders late or changes is picked up;
+ * between measurements a frame costs one scroll position and the text
+ * blocks' boxes.
  */
 function createReader(): () => PageReading {
-  let sections: HTMLElement[] = [];
   let blocks: HTMLElement[] = [];
-  let listedAt = -Infinity;
+  let chapters: Chapter[] = [];
+  let stages: Array<Stage | null> = [];
+  let measuredAt = -Infinity;
+  let measuredFor = "";
+
+  const measure = (height: number) => {
+    const sections = [...document.querySelectorAll<HTMLElement>("[data-chapter]")];
+    blocks = [...document.querySelectorAll<HTMLElement>("[data-quiet]")];
+    const end = Math.max(0, document.documentElement.scrollHeight - height);
+    chapters = [];
+    stages = [];
+    sections.forEach((section, index) => {
+      const scene = Number(section.dataset.chapter) || 0;
+      // The page stands at a chapter when the chapter's top is at the top of the screen; at the first with the
+      // page at its top, and at the last with the page at its end.
+      let at = index === 0 ? 0 : index === sections.length - 1 ? end : placeOf(section)[1];
+      at = Math.max(0, Math.min(end, at));
+      if (index > 0) at = Math.max(at, chapters[index - 1].at + 1);
+      chapters.push({ scene, at });
+      // The chapter's place on the screen: where its stage box is, with the page standing there.
+      const box = section.querySelector<HTMLElement>("[data-stage]");
+      if (box && box.offsetWidth > 0 && box.offsetHeight > 0) {
+        const [x, y] = placeOf(box);
+        stages[scene] = [x, y - at, x + box.offsetWidth, y - at + box.offsetHeight];
+      } else {
+        stages[scene] = null;
+      }
+    });
+  };
 
   return () => {
     const now = performance.now();
-    if (now - listedAt > 500) {
-      listedAt = now;
-      sections = [...document.querySelectorAll<HTMLElement>("[data-chapter]")];
-      blocks = [...document.querySelectorAll<HTMLElement>("[data-quiet]")];
-    }
     const height = window.innerHeight;
-    const middle = height / 2;
+    const size = `${window.innerWidth}x${height}`;
+    if (now - measuredAt > 500 || size !== measuredFor) {
+      measuredAt = now;
+      measuredFor = size;
+      measure(height);
+    }
 
-    // Each section names its scene; between two sections the scene eases from one to the other.
+    // A chapter's picture holds while the chapter is read, and gives way to the next over the last stretch
+    // of scrolling before the page stands at that one.
     let chapter = 0;
-    if (sections.length > 0) {
-      const marks = sections.map((section) => {
-        const box = section.getBoundingClientRect();
-        return { at: box.top + box.height / 2, scene: Number(section.dataset.chapter) || 0 };
-      });
-      chapter = marks[marks.length - 1].scene;
-      if (middle <= marks[0].at) chapter = marks[0].scene;
-      else {
-        for (let i = 0; i < marks.length - 1; i++) {
-          if (middle >= marks[i].at && middle < marks[i + 1].at) {
-            const f = (middle - marks[i].at) / (marks[i + 1].at - marks[i].at);
-            chapter = marks[i].scene + (marks[i + 1].scene - marks[i].scene) * f;
-            break;
-          }
-        }
+    if (chapters.length > 0) {
+      const y = window.scrollY;
+      const last = chapters[chapters.length - 1];
+      chapter = y >= last.at ? last.scene : chapters[0].scene;
+      for (let i = 0; i < chapters.length - 1; i++) {
+        const here = chapters[i];
+        const next = chapters[i + 1];
+        if (y < here.at || y >= next.at) continue;
+        const run = Math.min(height * 0.7, next.at - here.at);
+        const f = Math.max(0, Math.min(1, (y - (next.at - run)) / run));
+        chapter = here.scene + (next.scene - here.scene) * f;
+        break;
       }
     }
 
@@ -147,10 +210,10 @@ function createReader(): () => PageReading {
       const box = block.getBoundingClientRect();
       const shown = Math.min(box.bottom, height) - Math.max(box.top, 0);
       if (shown <= 0 || box.width === 0) continue;
-      visible.push({ zone: [box.left - 16, box.top - 16, box.right + 16, box.bottom + 16], area: shown * box.width });
+      visible.push({ zone: [box.left - 12, box.top - 12, box.right + 12, box.bottom + 12], area: shown * box.width });
     }
     visible.sort((a, b) => b.area - a.area);
-    return { chapter, quiet: visible.slice(0, 4).map((entry) => entry.zone) };
+    return { chapter, quiet: visible.slice(0, 4).map((entry) => entry.zone), stages };
   };
 }
 
@@ -166,58 +229,91 @@ function readForcedColors(): boolean {
   return window.matchMedia(FORCED_COLORS).matches;
 }
 
+/**
+ * Says on the root element whether the scene is up, so the page's own
+ * pictures can step aside for it ("live") or stand in for it ("none").
+ * Nothing is said until one or the other is known.
+ */
+function announce(scene: "live" | "none" | null) {
+  if (scene) document.documentElement.dataset.scene = scene;
+  else delete document.documentElement.dataset.scene;
+}
+
+declare global {
+  interface Window {
+    /** The running scene, in development only: for measuring and recording it. */
+    __bg?: Engine;
+  }
+}
+
 type BackgroundProps = {
   children: ReactNode;
-  /** Draw the field here whatever the route. For the development gallery's previews. */
+  /** Treat this as the landing page (the scene is drawn) or as the app (nothing is, yet) whatever the route. For the development gallery's previews. */
   force?: "landing" | "app";
 };
 
 export function Background({ children, force }: BackgroundProps) {
   const pathname = usePathname();
-  // The development gallery draws its own, where it wants one.
-  const enabled = force !== undefined || !pathname.startsWith("/dev");
-  const calm = force ? force === "app" : pathname.startsWith("/app");
+  // The scene belongs to the landing page. Behind the app there is only the ground, for now.
+  const enabled = force ? force === "landing" : pathname === "/";
   const reduced = usePrefersReducedMotion();
   const forcedColors = useSyncExternalStore(subscribeForcedColors, readForcedColors, () => false);
   const paused = useSyncExternalStore(subscribePaused, readPaused, () => false);
+  const theme = useTheme();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
-  const wanted = useRef<{ state: BackgroundState; paused: boolean; calm: number }>({ state: "balanced", paused: false, calm: 0 });
+  const wanted = useRef<{ state: BackgroundState; paused: boolean; dark: boolean }>({ state: "balanced", paused: false, dark: false });
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
-    // With less motion asked for, the still is the whole of it: no scene is loaded at all.
-    // Under forced colors nothing of the field is shown, so nothing is run.
+    // Under forced colors nothing of the scene is shown, so nothing is run.
     const canvas = canvasRef.current;
-    if (!enabled || reduced || forcedColors || !canvas) return;
+    if (!enabled || forcedColors || !canvas) return;
     let cancelled = false;
     let engine: Engine | null = null;
 
     const start = async () => {
-      const [{ createBackground }, { ANNULI }] = await Promise.all([import("./engine"), import("./annuli")]);
-      if (cancelled) return;
       try {
-        engine = createBackground(canvas, ANNULI, {
-          reducedMotion: false,
+        const [{ createBackground }, { logoScene }, { loadLogoField }] = await Promise.all([
+          import("./engine"),
+          import("./logo-scene"),
+          import("./logo-field"),
+        ]);
+        const field = await loadLogoField();
+        if (cancelled) return;
+        engine = createBackground(canvas, logoScene(field), {
+          // With less motion asked for the scene stands still: a picture to each chapter.
+          reducedMotion: reduced,
           read: createReader(),
-          // A device that cannot keep the scene up at all: back to the still picture.
+          dark: wanted.current.dark,
+          // A device that cannot keep the scene up at all: back to the page's own pictures.
           onGiveUp: () => {
             delete canvas.dataset.ready;
+            announce("none");
             setAnimated(false);
           },
         });
       } catch (error) {
-        // A shader that will not compile on this GPU: the still picture stays.
+        // A shader that will not compile on this GPU, or the logo's field not arriving.
         console.error(error);
       }
+      if (cancelled) {
+        engine?.destroy();
+        return;
+      }
       engineRef.current = engine;
-      if (!engine) return;
-      engine.setLook({ calm: wanted.current.calm });
+      if (!engine) {
+        announce("none");
+        return;
+      }
+      engine.setLook({ dark: wanted.current.dark });
       engine.setState(wanted.current.state);
       engine.setPaused(wanted.current.paused);
       canvas.dataset.ready = "true";
-      setAnimated(true);
+      announce("live");
+      setAnimated(!reduced);
+      if (process.env.NODE_ENV !== "production") window.__bg = engine;
     };
 
     // After the page has painted and the browser has a moment. (Safari has no idle callback.)
@@ -232,8 +328,10 @@ export function Background({ children, force }: BackgroundProps) {
       else window.clearTimeout(idle);
       engine?.destroy();
       engineRef.current = null;
-      // The canvas steps back, and the still picture under it is what shows.
+      if (process.env.NODE_ENV !== "production") delete window.__bg;
+      // The canvas steps back, and the page's own pictures are what show.
       delete canvas.dataset.ready;
+      announce(null);
       setAnimated(false);
     };
   }, [enabled, reduced, forcedColors]);
@@ -244,9 +342,9 @@ export function Background({ children, force }: BackgroundProps) {
   }, [paused]);
 
   useEffect(() => {
-    wanted.current.calm = calm ? 1 : 0;
-    engineRef.current?.setLook({ calm: calm ? 1 : 0 });
-  }, [calm]);
+    wanted.current.dark = theme === "dark";
+    engineRef.current?.setLook({ dark: theme === "dark" });
+  }, [theme]);
 
   const motion = useMemo(() => ({ animated, paused }), [animated, paused]);
 
@@ -255,7 +353,7 @@ export function Background({ children, force }: BackgroundProps) {
       setState(state) {
         wanted.current.state = state;
         engineRef.current?.setState(state);
-        // Also written on the canvas, where a test (or a curious reader) can see what the field was told.
+        // Also written on the canvas, where a test (or a curious reader) can see what the scene was told.
         if (canvasRef.current) canvasRef.current.dataset.state = state;
       },
       pulse() {
@@ -270,12 +368,7 @@ export function Background({ children, force }: BackgroundProps) {
   return (
     <BackgroundContext.Provider value={controller}>
       <MotionContext.Provider value={motion}>
-        {enabled ? (
-          <>
-            <div aria-hidden="true" className="bg-still" data-look={calm ? "calm" : undefined} />
-            <canvas ref={canvasRef} aria-hidden="true" className="bg-canvas" />
-          </>
-        ) : null}
+        {enabled ? <canvas ref={canvasRef} aria-hidden="true" className="bg-canvas" /> : null}
         {children}
       </MotionContext.Provider>
     </BackgroundContext.Provider>

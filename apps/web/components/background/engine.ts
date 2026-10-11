@@ -52,12 +52,21 @@ export type Frame = {
   pulseOrigin: [number, number];
   /** A sprung tilt, in radians: leans with the pointer, scroll and drift, then settles. */
   tilt: number;
+  /** True when this frame is a still: the scene is resting (paused, or less motion asked for) and no time is passing. */
+  still: boolean;
+  /** 0 in the light theme, 1 in the dark, eased between when the theme changes. */
+  dark: number;
+  /** Where the page has left room for the scene, a box to each chapter (left, top, right, bottom), where it has. */
+  stages: Array<Stage | null>;
 };
+
+/** A box the page keeps clear for the scene, in CSS pixels from the top left of the viewport. */
+export type Stage = [number, number, number, number];
 
 export type QuietZone = [number, number, number, number];
 
 /** What the page tells the engine each frame. Read-only: it must not write to the DOM. */
-export type PageReading = { chapter: number; quiet: QuietZone[] };
+export type PageReading = { chapter: number; quiet: QuietZone[]; stages?: Array<Stage | null> };
 
 export type ConceptInstance = {
   draw(frame: Frame): void;
@@ -73,6 +82,10 @@ export type ConceptDef = {
   name: string;
   /** The time, in seconds, of the still frame shown under reduced motion. */
   stillTime: number;
+  /** For a scene whose picture is told by the page's chapters: while it rests,
+      it is redrawn for the chapter that comes into view, so each chapter has
+      its own still. Without this a resting scene keeps the chapter it had. */
+  stillsFollowScroll?: boolean;
   create(gl: WebGLRenderingContext, env: { coarse: boolean; css: [number, number] }): ConceptInstance;
 };
 
@@ -88,8 +101,8 @@ export type Engine = {
   step(dt: number): void;
   /** Overrides the pointer with a scripted one (CSS pixels, and how present it is), or hands it back with null. */
   setPointer(point: [number, number] | null, presence?: number): void;
-  /** How subdued the scene is, and whether it carries grain. */
-  setLook(look: { calm?: number; grain?: number }): void;
+  /** How subdued the scene is, whether it carries grain, and which theme it is drawn in. */
+  setLook(look: { calm?: number; grain?: number; dark?: boolean }): void;
   /** For testing the adaptive quality: pretends each frame costs this many milliseconds per million pixels drawn. */
   setSimulatedCost(msPerMegapixel: number): void;
   stats(): {
@@ -115,7 +128,7 @@ const MIN_QUALITY = 0.5;
 export function createBackground(
   canvas: HTMLCanvasElement,
   def: ConceptDef,
-  options: { reducedMotion: boolean; read?: () => PageReading; onGiveUp?: () => void },
+  options: { reducedMotion: boolean; read?: () => PageReading; onGiveUp?: () => void; dark?: boolean },
 ): Engine | null {
   const gl = canvas.getContext("webgl", {
     alpha: false,
@@ -157,6 +170,8 @@ export function createBackground(
   let scriptedPresence = 1;
   let calm = 0;
   let grain = 1;
+  let darkTarget = options.dark ? 1 : 0;
+  let dark = darkTarget;
   let scrollY = window.scrollY / Math.max(1, window.innerHeight);
   let scrollSpeed = 0;
   let tilt = 0;
@@ -181,6 +196,11 @@ export function createBackground(
   // Set when even the smallest buffer cannot be drawn at a usable rate:
   // the loop stops for good and the last frame stays up as a still.
   let gaveUp = false;
+  // Where the buffer stood, and how slow the frames were, when it first had to shrink: what the smallest buffer is
+  // measured against, to tell a slow GPU from a rate that is being held down.
+  let slowFrom: { quality: number; mean: number } | null = null;
+  // The frame time the scene is held at by something other than its own drawing, once that is known.
+  let heldAt: number | null = null;
   // The chapter last drawn, kept while the scene rests (see handleScroll),
   // and where the quiet zones were when it was drawn.
   let chapter: number | null = null;
@@ -224,6 +244,9 @@ export function createBackground(
       pulse,
       pulseOrigin,
       tilt,
+      still: raf === 0 && !manual,
+      dark,
+      stages: reading.stages ?? [],
     });
     // A redraw without an advance (a resize, a still frame) must not count as time passing.
     lastDt = 0;
@@ -247,6 +270,10 @@ export function createBackground(
     scrollY = y;
     scrollSpeed += (Math.max(-4, Math.min(4, speed)) - scrollSpeed) * (1 - Math.exp(-dt * 6));
 
+    // The theme changes over a moment, not at once.
+    dark += (darkTarget - dark) * (1 - Math.exp(-dt * 7));
+    if (Math.abs(darkTarget - dark) < 0.002) dark = darkTarget;
+
     // State: drift builds slowly; a rebalance brings it back quickly.
     pulse += dt;
     const rate = pulse < 2 ? 4 : 0.9;
@@ -265,6 +292,18 @@ export function createBackground(
   // further at once when it is far over budget; a long run of fast
   // windows grows it back one step. If the smallest buffer is still far
   // too slow, the animation gives way to a still frame.
+  //
+  // Not every slow frame is the scene's doing. A browser saving battery,
+  // or a phone in its low power mode, shows every second frame whatever
+  // is drawn. Shrinking the buffer then buys nothing and only blurs the
+  // picture, so if the smallest buffer comes no faster than the full one
+  // did, the buffer goes back to where it was and stays there for as
+  // long as the frames keep to that rate.
+  const giveUp = () => {
+    gaveUp = true;
+    sync();
+    options.onGiveUp?.();
+  };
   const judge = (ms: number) => {
     windowSum += ms;
     windowCount++;
@@ -273,26 +312,43 @@ export function createBackground(
     windowSum = 0;
     windowCount = 0;
 
+    if (heldAt !== null) {
+      if (mean > heldAt * 0.8 && mean < heldAt * 1.3) {
+        // Still at the held rate: nothing drawn here decides it. Only a rate too slow to watch ends the animation.
+        stuckWindows = mean > 42 ? stuckWindows + 1 : 0;
+        if (stuckWindows >= 6) giveUp();
+        return;
+      }
+      // Faster or slower than that again: adapt as usual.
+      heldAt = null;
+      slowWindows = fastWindows = stuckWindows = 0;
+    }
+
     if (mean > 19.5) {
       slowWindows++;
       fastWindows = 0;
     } else if (mean < 17.2) {
       fastWindows++;
       slowWindows = 0;
+      slowFrom = null;
     }
 
     if (quality <= MIN_QUALITY && mean > 42) {
       stuckWindows++;
-      if (stuckWindows >= 6) {
-        gaveUp = true;
-        sync();
-        options.onGiveUp?.();
-      }
+      if (stuckWindows >= 6) giveUp();
       return;
     }
     stuckWindows = 0;
 
-    if (slowWindows >= 2 && quality > MIN_QUALITY) {
+    if (slowWindows >= 2 && quality <= MIN_QUALITY && slowFrom && mean > slowFrom.mean * 0.88) {
+      // The smallest buffer is no faster than the one it started from: the rate is held, not earned.
+      heldAt = mean;
+      quality = slowFrom.quality;
+      slowFrom = null;
+      slowWindows = 0;
+      resize();
+    } else if (slowWindows >= 2 && quality > MIN_QUALITY) {
+      slowFrom ??= { quality, mean };
       const steps = mean > 50 ? 4 : mean > 30 ? 2 : 1;
       quality = Math.max(MIN_QUALITY, quality - 0.125 * steps);
       slowWindows = 0;
@@ -345,6 +401,8 @@ export function createBackground(
   const handleVisibility = () => {
     visible = !document.hidden;
     sync();
+    // A resting scene is one frame, drawn once; a browser may let go of it while the tab is away.
+    if (visible && !raf && !lost && !gaveUp) draw(!def.stillsFollowScroll);
   };
   // While the scene rests (paused, or a still under reduced motion) the
   // page can still scroll, and the text moves over a picture that does
@@ -355,7 +413,7 @@ export function createBackground(
     if (raf || scrollDraw || lost || gaveUp) return;
     scrollDraw = requestAnimationFrame(() => {
       scrollDraw = 0;
-      if (!raf) draw(true);
+      if (!raf) draw(!def.stillsFollowScroll);
     });
   };
   // The text can also move with no scroll at all (another page, content
@@ -363,7 +421,7 @@ export function createBackground(
   // and redraws only if the text is somewhere new.
   const rest = window.setInterval(() => {
     if (raf || lost || gaveUp || document.hidden || !options.read) return;
-    if (quietKey(options.read().quiet) !== drawnQuiet) draw(true);
+    if (quietKey(options.read().quiet) !== drawnQuiet) draw(!def.stillsFollowScroll);
   }, 400);
   const handleLost = (event: Event) => {
     event.preventDefault();
@@ -438,6 +496,11 @@ export function createBackground(
     setLook(look) {
       if (look.calm !== undefined) calm = look.calm;
       if (look.grain !== undefined) grain = look.grain;
+      if (look.dark !== undefined) {
+        darkTarget = look.dark ? 1 : 0;
+        // A scene that is not running takes the theme at once.
+        if (!raf) dark = darkTarget;
+      }
       if (!raf) draw();
     },
     setSimulatedCost(msPerMegapixel) {

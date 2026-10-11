@@ -1,25 +1,25 @@
 /*
-  Landing-only styles: the chapters, the hero's allocation dial, the level,
-  the drift simulator, and the chapter marker.
+  Landing-only styles: the chapters, the chapter marker, the level, and
+  the drift simulator with its allocation dial.
 
-  The page is a sequence of chapters over the growth-ring field. Each
-  chapter is about a screen tall and names the scene the field should
-  show behind it (see components/background); text that sits directly on
-  the field is marked so the field dims itself there.
+  The page is a sequence of chapters, told behind by the logo scene. Each
+  chapter is about a screen tall, names the picture the scene should show
+  for it, and keeps a stage clear for that picture (see
+  components/background and background.css); text that sits directly on
+  the ground is marked so the scene dims itself there.
 
-  The dial is the hero's instrument: the same rings, drawn as a control.
-  A plate of faint growth rings, a track cut into it, an accent arc for
-  one asset's share and a thin arc for the other's, a notch for the
-  target with the band marked either side, and a knob that starts well
-  outside the band and settles just inside it. Under it, a level says
-  the same thing a second way: a bubble coming to rest between two marks.
-  After that the dial is the visitor's: the ring is a slider, and its
-  knob, dragged round the track or moved with the keyboard, sets the
-  target split. It is labelled as an example, and it is one.
+  The dial is the simulator's instrument: a plate, a track cut into it,
+  an accent arc for one asset's share and a thin arc for the other's, a
+  notch on the rim for the target with the band marked either side, and
+  a knob where the holdings are. The ring is a slider: its knob, dragged
+  round the track or moved with the keyboard, sets the target split.
+  Under it, a level says the same thing a second way: a bubble between
+  two marks. It is labelled as an example, and it is one.
 
   Every position on the ring comes from custom properties the component
-  sets on .hero-dial, so a change of split is a change of value here and
-  the transitions below carry it. Under reduced motion they are instant.
+  sets on .ot-dial, so a change of split or of drift is a change of value
+  here and the transitions below carry it. Under reduced motion they are
+  instant.
 */
 
 @layer components {
@@ -33,6 +33,18 @@
     gap: var(--space-10);
     padding-block: var(--space-section);
     scroll-margin-top: var(--space-6);
+  }
+  /* The hero starts close under the header. */
+  .ot-chapter-hero {
+    padding-top: var(--space-10);
+  }
+  /* The last chapter is as tall as it needs to be and no taller, and
+     ends with room around the logo it closes on: the page's last screen
+     is that logo above the footer. */
+  .ot-chapter-last {
+    min-height: 0;
+    gap: var(--space-section);
+    padding-bottom: var(--space-12);
   }
   .ot-chapter-label {
     display: flex;
@@ -162,16 +174,47 @@
     box-shadow: 0 0 0.625rem color-mix(in srgb, var(--drift) 55%, transparent);
   }
 
-  /* ── The drift simulator ──────────────────────────────────────────── */
+  /* ── The drift simulator ────────────────────────────────────────────
+     A card of its own width: with room, the dial stands beside its
+     readout; without, above it. */
 
   .ot-demo {
     display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    container-type: inline-size;
+  }
+  .ot-demo-body {
+    display: grid;
+    gap: var(--space-6);
+  }
+  @container (min-width: 34rem) {
+    .ot-demo-body {
+      grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+      align-items: center;
+      gap: var(--space-10);
+    }
+  }
+  .ot-demo-dial {
+    display: flex;
+    width: min(100%, 16rem);
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-inline: auto;
+  }
+  .ot-demo-readout {
+    display: flex;
+    min-width: 0;
     flex-direction: column;
     gap: var(--space-5);
   }
   .ot-demo-level {
     height: 2rem;
     flex: none;
+  }
+  /* Beside its label, the level takes the rest of the row. */
+  .ot-demo-readout .ot-demo-level {
+    flex: 1;
   }
   /* Drift is slow; the return is quick. */
   .ot-demo .ot-level-travel {
@@ -184,51 +227,39 @@
     color: var(--drift);
   }
 
-  /* ── The hero dial ────────────────────────────────────────────────── */
+  /* ── The allocation dial ──────────────────────────────────────────── */
 
-  .hero-dial-region {
-    display: flex;
-    width: min(100%, 24rem);
-    flex-direction: column;
-    gap: var(--space-5);
-    margin-inline: auto;
-  }
-
-  .hero-dial {
+  .ot-dial {
     position: relative;
     width: 100%;
     aspect-ratio: 1;
   }
 
-  .hero-dial-plate,
-  .hero-dial-groove,
-  .hero-dial-cap {
+  .ot-dial-plate,
+  .ot-dial-groove,
+  .ot-dial-cap {
     position: absolute;
     border-radius: 50%;
   }
-  /* The plate: growth rings around a nucleus set off-center, as in the mark. */
-  .hero-dial-plate {
+  .ot-dial-plate {
     inset: 0;
-    background:
-      radial-gradient(circle at 57% 58%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%),
-      repeating-radial-gradient(circle at 57% 58%, transparent 0 0.5625rem, var(--line) 0.5625rem 0.625rem),
-      var(--surface-strong);
-    box-shadow: var(--raised-lg);
+    background-color: var(--surface-strong);
+    box-shadow: var(--raised-md);
   }
   /* The track runs from 25% to 41% of the plate's radius-box; the SVG
      below draws in the same box (a 100-unit square over the plate), so
      an arc of radius 33 rides down its middle. A finger on the track
-     turns the dial rather than scrolling the page; everywhere else on
-     the hero scrolls as usual. */
-  .hero-dial-groove {
+     turns the dial rather than scrolling the page; everywhere else the
+     page scrolls as usual. */
+  .ot-dial-groove {
     inset: 9%;
-    background-color: #04050a;
+    background-color: var(--well);
     box-shadow: var(--pressed-md);
     cursor: pointer;
     touch-action: none;
     user-select: none;
   }
-  .hero-dial-cap {
+  .ot-dial-cap {
     inset: 25%;
     display: flex;
     flex-direction: column;
@@ -239,14 +270,14 @@
     text-align: center;
     box-shadow: var(--raised-md);
   }
-  .hero-dial-value {
+  .ot-dial-value {
     color: var(--text);
-    font-size: var(--text-xl);
-    line-height: var(--text-xl--line-height);
+    font-size: var(--text-lg);
+    line-height: var(--text-lg--line-height);
     white-space: pre;
   }
 
-  .hero-dial-svg {
+  .ot-dial-svg {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -257,37 +288,41 @@
     pointer-events: none;
     transform: rotate(-90deg);
   }
-  .hero-dial-arc,
-  .hero-dial-rest {
+  .ot-dial-arc,
+  .ot-dial-rest {
     fill: none;
     stroke-linecap: round;
     transition:
+      stroke var(--duration-base) var(--ease-settle),
       stroke-dasharray var(--duration-base) var(--ease-settle),
       stroke-dashoffset var(--duration-base) var(--ease-settle),
       opacity var(--duration-base) var(--ease-settle);
   }
   /* The two shares differ in weight as well as in color, so which arc
-     is which never rests on telling the accent from a grey. */
-  .hero-dial-arc {
+     is which never rests on telling the accent from a grey. Past the
+     band the held share takes the drift color, as the level's bubble
+     does; the knob is outside the band ticks by then, and the line of
+     text says so. */
+  .ot-dial-arc {
     stroke: var(--accent);
-    filter: drop-shadow(0 0 0.3rem color-mix(in srgb, var(--accent) 70%, transparent));
-    animation: hero-dial-arc var(--duration-settle) var(--ease-settle) 600ms backwards;
   }
-  .hero-dial-rest {
+  .ot-dial[data-out="true"] .ot-dial-arc {
+    stroke: var(--drift);
+  }
+  .ot-dial-rest {
     stroke: var(--text-muted);
-    animation: hero-dial-rest var(--duration-settle) var(--ease-settle) 600ms backwards;
   }
 
-  .hero-dial-ticks {
+  .ot-dial-ticks {
     transform: rotate(var(--dial-target));
     transform-origin: 50px 50px;
     transition: transform var(--duration-base) var(--ease-settle);
   }
-  .hero-dial-tick {
+  .ot-dial-tick {
     stroke: var(--text);
     stroke-linecap: round;
   }
-  .hero-dial-tick[data-kind="band"] {
+  .ot-dial-tick[data-kind="band"] {
     stroke: var(--text-muted);
   }
 
@@ -302,7 +337,7 @@
      scrollable width; an arm the size of the whole dial, turned
      diagonal, would reach past the dial's corners and, on a phone, past
      the edge of the screen.) */
-  .hero-dial-orbit {
+  .ot-dial-orbit {
     position: absolute;
     top: 10.5%;
     bottom: 10.5%;
@@ -311,9 +346,8 @@
     pointer-events: none;
     transform: rotate(var(--dial-knob));
     transition: transform var(--duration-base) var(--ease-settle);
-    animation: hero-dial-orbit var(--duration-settle) var(--ease-settle) 600ms backwards;
   }
-  .hero-dial-knob {
+  .ot-dial-knob {
     position: absolute;
     top: 0;
     left: 0;
@@ -323,8 +357,8 @@
     background-color: var(--knob);
     background-image: radial-gradient(circle, var(--accent) 0 26%, transparent 28%);
     box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.5),
-      0 0 0.875rem color-mix(in srgb, var(--accent) 65%, transparent);
+      0 0 0 1px var(--line-strong),
+      var(--raised-sm);
     cursor: grab;
     pointer-events: auto;
     /* A finger on the knob drags the knob; it does not scroll the page. */
@@ -332,120 +366,70 @@
     user-select: none;
     transform: rotate(calc(var(--dial-knob) * -1));
     transition: transform var(--duration-base) var(--ease-settle);
-    animation: hero-dial-knob var(--duration-settle) var(--ease-settle) 600ms backwards;
   }
   /* The focus ring belongs to the keyboard. Focus that a press put on the
      knob draws none, until a key is used. */
-  .hero-dial-knob[data-pointer-focus="true"]:focus-visible {
+  .ot-dial-knob[data-pointer-focus="true"]:focus-visible {
     outline: none;
   }
   /* A little more to take hold of than the knob shows. */
-  .hero-dial-knob::after {
+  .ot-dial-knob::after {
     content: "";
     position: absolute;
-    inset: -0.375rem;
+    inset: -0.5rem;
     border-radius: 50%;
+  }
+  /* Drift is slow and the return is quick, as on the level. */
+  .ot-dial[data-pace="drift"] :is(.ot-dial-orbit, .ot-dial-knob, .ot-dial-arc, .ot-dial-rest) {
+    transition-duration: 2400ms;
+  }
+  .ot-dial[data-pace="return"] :is(.ot-dial-orbit, .ot-dial-knob, .ot-dial-arc, .ot-dial-rest) {
+    transition-duration: 900ms;
   }
   /* While it is being dragged the ring follows the pointer exactly, with
      nothing easing behind it; a press or a key still settles. */
-  .hero-dial[data-dragging="true"] :is(.hero-dial-orbit, .hero-dial-knob, .hero-dial-ticks, .hero-dial-arc, .hero-dial-rest) {
+  .ot-dial[data-dragging="true"] :is(.ot-dial-orbit, .ot-dial-knob, .ot-dial-ticks, .ot-dial-arc, .ot-dial-rest) {
     transition-duration: 0s;
   }
-  .hero-dial[data-dragging="true"] :is(.hero-dial-groove, .hero-dial-knob) {
+  .ot-dial[data-dragging="true"] :is(.ot-dial-groove, .ot-dial-knob) {
     cursor: grabbing;
-  }
-
-  /* The two fixed readouts either side of the level, in a row under the
-     dial. They arrive once the knob has settled, so they never claim
-     "within band" while it is still outside the ticks. */
-  .hero-dial-readouts {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3) var(--space-4);
-  }
-  .hero-dial-chip {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-height: var(--control-sm);
-    padding: var(--space-1) var(--space-4);
-    border-radius: var(--radius-pill);
-    background-color: var(--surface-strong);
-    box-shadow: var(--raised-sm);
-    animation: ot-rise var(--duration-base) var(--ease-settle) 1700ms backwards;
-  }
-  .hero-dial-drift {
-    color: var(--text);
-    font-size: var(--text-sm);
-  }
-  .hero-dial-level {
-    min-width: 4.5rem;
   }
 
   /* The key under the dial: which arc is which, and the two shares the
      ring sets. The figures are tabular and always two characters wide
      (the component pads them), so nothing shifts as they change. */
-  .hero-dial-legend {
+  .ot-dial-legend {
     display: flex;
     justify-content: space-between;
     gap: var(--space-4);
     color: var(--text-muted);
     font-size: var(--text-sm);
   }
-  .hero-dial-legend > span {
+  .ot-dial-legend > span {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
   }
-  .hero-dial-key {
+  .ot-dial-key {
     flex: none;
     width: 0.875rem;
     border-radius: var(--radius-pill);
   }
-  .hero-dial-key[data-asset="sell"] {
+  .ot-dial-key[data-asset="sell"] {
     height: 0.4375rem;
     background-color: var(--accent);
   }
-  .hero-dial-key[data-asset="buy"] {
+  .ot-dial-key[data-asset="buy"] {
     height: 0.1875rem;
     background-color: var(--text-muted);
   }
-  .hero-dial-percent {
+  .ot-dial-percent {
     color: var(--text);
     white-space: pre;
   }
 }
 
-/* Drift and settle. Each animation starts from where the ring would be
-   at the opening drift (the -from properties the component sets) and
-   runs to wherever it rests now. */
-@keyframes hero-dial-arc {
-  from {
-    stroke-dasharray: var(--dial-arc-from);
-  }
-}
-
-@keyframes hero-dial-rest {
-  from {
-    stroke-dasharray: var(--dial-rest-from);
-    stroke-dashoffset: var(--dial-rest-offset-from);
-  }
-}
-
-@keyframes hero-dial-orbit {
-  from {
-    transform: rotate(var(--dial-knob-from));
-  }
-}
-
-@keyframes hero-dial-knob {
-  from {
-    transform: rotate(calc(var(--dial-knob-from) * -1));
-  }
-}
-
+/* The level's entrance: from where the bubble starts to where it rests. */
 @keyframes ot-level-settle {
   from {
     left: calc(var(--level-from) * 100%);
@@ -453,28 +437,27 @@
 }
 
 @media (forced-colors: active) {
-  .hero-dial-plate,
-  .hero-dial-groove,
-  .hero-dial-cap,
-  .hero-dial-chip,
+  .ot-dial-plate,
+  .ot-dial-groove,
+  .ot-dial-cap,
   .ot-hud {
     border: 1px solid CanvasText;
     background: Canvas;
   }
-  .hero-dial-arc {
+  .ot-dial-arc,
+  .ot-dial[data-out="true"] .ot-dial-arc {
     stroke: Highlight;
-    filter: none;
   }
-  .hero-dial-rest,
-  .hero-dial-tick {
+  .ot-dial-rest,
+  .ot-dial-tick {
     stroke: CanvasText;
   }
-  .hero-dial-knob,
-  .hero-dial-key[data-asset="sell"] {
+  .ot-dial-knob,
+  .ot-dial-key[data-asset="sell"] {
     background: Highlight;
     forced-color-adjust: none;
   }
-  .hero-dial-key[data-asset="buy"] {
+  .ot-dial-key[data-asset="buy"] {
     background: CanvasText;
     forced-color-adjust: none;
   }

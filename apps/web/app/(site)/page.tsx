@@ -1,12 +1,13 @@
 import { ChapterHud } from "@/components/landing/chapter-hud";
 import { DriftDemo } from "@/components/landing/drift-demo";
-import { HeroDial } from "@/components/landing/hero-dial";
 import { Reveal } from "@/components/reveal";
 import { RotatingWord } from "@/components/rotating-word";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, IconWell } from "@/components/ui/card";
+import { cn } from "@/components/ui/cn";
 import { GlowText } from "@/components/ui/glow-text";
 import { Icon, type IconName } from "@/components/ui/icons";
+import { Logo } from "@/components/ui/mark";
 import { Notice } from "@/components/ui/states";
 
 const WHY_DIFFERENT_POINTS: Array<{ icon: IconName; title: string; body: string }> = [
@@ -84,22 +85,42 @@ function ChapterLabel({ index, name }: { index: string; name: string }) {
   );
 }
 
+/**
+ * The room a chapter keeps clear for the background's picture: an empty
+ * box in the logo's proportions, which the scene fits the logo to. Where
+ * the logo stands whole it holds the logo itself, which is what shows
+ * until the scene is up; elsewhere it names the still that stands in
+ * where the scene cannot run (see background.css).
+ */
+function Stage({ logo, still, className }: { logo?: boolean; still?: "drift" | "return" | "bounds"; className?: string }) {
+  return (
+    <div aria-hidden="true" data-stage="" data-still={still} className={cn("ot-stage", className)}>
+      {logo ? <Logo /> : null}
+    </div>
+  );
+}
+
 /*
-  The page is five chapters over the growth-ring field. Each section
-  names the scene the field shows behind it (data-chapter) and its own
-  name for the chapter marker; text that sits directly on the field is
-  marked data-quiet, and the field dims itself there.
+  The page is five chapters, told behind by the logo: whole in the hero,
+  out of balance, level again, held inside a band, and whole once more at
+  the end. Each section names its picture (data-chapter) and its own name
+  for the chapter marker, and keeps a stage clear for the picture; text
+  that sits directly on the ground is marked data-quiet, and the scene
+  dims itself there.
 */
 export default function Landing() {
   return (
     <>
-      {/* 00. The headline and its two actions beside the allocation dial.
-          On narrow viewports the dial drops beneath the copy. */}
+      {/* 00. The logo, and the headline with its two actions. Side by
+          side where there is room; on narrow viewports the logo stands
+          above the copy. */}
       <section
         data-chapter="0"
         data-chapter-name="Otolith"
-        className="ot-container ot-chapter grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:gap-12"
+        className="ot-container ot-chapter ot-chapter-hero grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.78fr)] lg:gap-16"
       >
+        <Stage logo className="mx-auto max-w-xl lg:order-last lg:max-w-none" />
+
         <div data-quiet="" className="flex min-w-0 flex-col items-start gap-8">
           <h1 className="font-display text-display font-medium tracking-display text-text">
             <span className="sr-only">
@@ -125,10 +146,6 @@ export default function Landing() {
             </ButtonLink>
           </div>
         </div>
-
-        <div data-quiet="">
-          <HeroDial />
-        </div>
       </section>
 
       <div className="ot-container flex flex-col">
@@ -141,18 +158,21 @@ export default function Landing() {
             data-chapter-name="Why different"
             className="ot-chapter"
           >
-            <div data-quiet="" className="min-w-0 max-w-2xl">
-              <ChapterLabel index="01" name="Why different" />
-              <h2 id="why-different-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
-                What it is, and why it is different
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-text-muted">
-                Most rebalancing tools ask you to hand over your funds, either
-                to a manager or to an off-chain system you have to trust.
-                Otolith does not. Your funds stay in your own wallet at every
-                step, and rebalancing runs as a transaction your wallet&apos;s own
-                policy contract validates and bounds, on-chain, every time.
-              </p>
+            <div className="grid min-w-0 items-center gap-14 lg:grid-cols-2 lg:gap-16">
+              <Stage still="drift" className="mx-auto max-w-xl lg:max-w-none" />
+              <div data-quiet="" className="min-w-0 max-w-2xl">
+                <ChapterLabel index="01" name="Why different" />
+                <h2 id="why-different-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
+                  What it is, and why it is different
+                </h2>
+                <p className="mt-5 text-base leading-relaxed text-text-muted">
+                  Most rebalancing tools ask you to hand over your funds, either
+                  to a manager or to an off-chain system you have to trust.
+                  Otolith does not. Your funds stay in your own wallet at every
+                  step, and rebalancing runs as a transaction your wallet&apos;s own
+                  policy contract validates and bounds, on-chain, every time.
+                </p>
+              </div>
             </div>
 
             <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
@@ -184,15 +204,18 @@ export default function Landing() {
             data-chapter-name="How it works"
             className="ot-chapter"
           >
-            <div data-quiet="" className="min-w-0 max-w-2xl">
-              <ChapterLabel index="02" name="How it works" />
-              <h2 id="how-it-works-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
-                How it works
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-text-muted">
-                Four steps, from setting your targets to a trade landing back
-                in your own wallet.
-              </p>
+            <div className="grid min-w-0 items-center gap-14 lg:grid-cols-2 lg:gap-16">
+              <Stage still="return" className="mx-auto max-w-xl lg:order-last lg:max-w-none" />
+              <div data-quiet="" className="min-w-0 max-w-2xl">
+                <ChapterLabel index="02" name="How it works" />
+                <h2 id="how-it-works-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
+                  How it works
+                </h2>
+                <p className="mt-5 text-base leading-relaxed text-text-muted">
+                  Four steps, from setting your targets to a trade landing back
+                  in your own wallet.
+                </p>
+              </div>
             </div>
 
             <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
@@ -229,6 +252,8 @@ export default function Landing() {
             data-chapter-name="Security"
             className="ot-chapter grid grid-cols-1 lg:grid-cols-12 lg:gap-12"
           >
+            <Stage still="bounds" className="mx-auto max-w-md lg:col-span-12" />
+
             <div data-quiet="" className="min-w-0 lg:col-span-4 lg:self-center">
               <ChapterLabel index="03" name="Security" />
               <h2 id="security-heading" className="mt-5 font-display text-2xl font-medium tracking-display text-text">
@@ -261,21 +286,25 @@ export default function Landing() {
                 ))}
               </div>
 
-              <Notice role="note" className="mt-8 text-base font-medium">
-                Otolith is live on Stellar testnet today. The contracts have
-                not yet been independently audited.
-              </Notice>
+              {/* The notice is nearly clear, so the scene is kept quiet behind it too. */}
+              <div data-quiet="" className="mt-8">
+                <Notice role="note" className="text-base font-medium">
+                  Otolith is live on Stellar testnet today. The contracts have
+                  not yet been independently audited.
+                </Notice>
+              </div>
             </div>
           </section>
         </Reveal>
 
-        {/* 04. Closing call to action, over the nucleus itself */}
+        {/* 04. Closing call to action, and under it the logo, whole again:
+            the last thing on the page above the footer. */}
         <Reveal>
           <section
             aria-labelledby="cta-heading"
             data-chapter="4"
             data-chapter-name="Get started"
-            className="ot-chapter items-center"
+            className="ot-chapter ot-chapter-last items-center"
           >
             <div data-quiet="" className="flex flex-col items-center gap-6 text-center">
               <ChapterLabel index="04" name="Get started" />
@@ -291,6 +320,8 @@ export default function Landing() {
                 Open app
               </ButtonLink>
             </div>
+
+            <Stage logo className="max-w-md" />
           </section>
         </Reveal>
       </div>
