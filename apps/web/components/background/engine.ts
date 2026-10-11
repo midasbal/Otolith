@@ -58,6 +58,10 @@ export type Frame = {
   dark: number;
   /** Where the page has left room for the scene, a box to each chapter (left, top, right, bottom), where it has. */
   stages: Array<Stage | null>;
+  /** A box, where it is on the screen now, inside which the scene is not to be dimmed even though text surrounds it. */
+  clear: Stage | null;
+  /** How much the portfolio holds of the asset it sells, as a share of what it should hold (1 is on target); null when that is not known. */
+  level: number | null;
 };
 
 /** A box the page keeps clear for the scene, in CSS pixels from the top left of the viewport. */
@@ -66,7 +70,7 @@ export type Stage = [number, number, number, number];
 export type QuietZone = [number, number, number, number];
 
 /** What the page tells the engine each frame. Read-only: it must not write to the DOM. */
-export type PageReading = { chapter: number; quiet: QuietZone[]; stages?: Array<Stage | null> };
+export type PageReading = { chapter: number; quiet: QuietZone[]; stages?: Array<Stage | null>; clear?: Stage | null };
 
 export type ConceptInstance = {
   draw(frame: Frame): void;
@@ -94,6 +98,8 @@ export type Engine = {
   /** A rebalance was submitted: one bright ring crosses the field. It does
       not change the state; that is whatever setState last said. */
   pulse(): void;
+  /** What the portfolio holds of the asset it sells against what it should (1 is on target), or null when unknown. */
+  setLevel(level: number | null): void;
   setPaused(paused: boolean): void;
   /** Takes the clock away from the browser, for frame-exact recording. */
   setManual(manual: boolean): void;
@@ -160,6 +166,7 @@ export function createBackground(
   let time = options.reducedMotion ? def.stillTime : 0;
   let state: BackgroundState = "balanced";
   let drift = 0;
+  let level: number | null = null;
   let held = 0;
   let pulse = 1000;
   let pulseOrigin: [number, number] = [css[0] / 2, css[1] / 2];
@@ -247,6 +254,8 @@ export function createBackground(
       still: raf === 0 && !manual,
       dark,
       stages: reading.stages ?? [],
+      clear: reading.clear ?? null,
+      level,
     });
     // A redraw without an advance (a resize, a still frame) must not count as time passing.
     lastDt = 0;
@@ -472,6 +481,10 @@ export function createBackground(
       held = drift;
       pulse = 0;
       pulseOrigin = pointer[2] > 0.5 ? [pointer[0], pointer[1]] : [css[0] / 2, css[1] / 2];
+    },
+    setLevel(next) {
+      level = next;
+      if (!raf) draw(!def.stillsFollowScroll);
     },
     setPaused(next) {
       paused = next;

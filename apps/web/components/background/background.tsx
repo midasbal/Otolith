@@ -56,8 +56,10 @@ import type { BackgroundState, Engine, PageReading, QuietZone, Stage } from "./e
   the choice is remembered from page to page.
 
   Through useBackground() a component can say what the portfolio is
-  doing: balanced, drifting, or just rebalanced. The app's screens do;
-  nothing is drawn behind them yet.
+  doing: balanced, drifting, or just rebalanced, and how much it holds
+  against its target. The app's dashboard does, and keeps one box for
+  the scene beside its title: there the same logo is drawn small and
+  calm, its two vessels as full as the portfolio is of each asset.
 */
 
 type BackgroundController = {
@@ -65,9 +67,11 @@ type BackgroundController = {
   setState(state: BackgroundState): void;
   /** A rebalance was submitted. The state stays as it was set. */
   pulse(): void;
+  /** What the portfolio holds of the asset it sells, against what it should hold (1 is on target); null when that is not known. */
+  setLevel(level: number | null): void;
 };
 
-const BackgroundContext = createContext<BackgroundController>({ setState() {}, pulse() {} });
+const BackgroundContext = createContext<BackgroundController>({ setState() {}, pulse() {}, setLevel() {} });
 const MotionContext = createContext<{ animated: boolean; paused: boolean }>({ animated: false, paused: false });
 
 /** Lets a component tell the background what the portfolio is doing. */
@@ -148,12 +152,14 @@ function createReader(): () => PageReading {
   let blocks: HTMLElement[] = [];
   let chapters: Chapter[] = [];
   let stages: Array<Stage | null> = [];
+  let lone: HTMLElement | null = null;
   let measuredAt = -Infinity;
   let measuredFor = "";
 
   const measure = (height: number) => {
     const sections = [...document.querySelectorAll<HTMLElement>("[data-chapter]")];
     blocks = [...document.querySelectorAll<HTMLElement>("[data-quiet]")];
+    lone = sections.length === 0 ? document.querySelector<HTMLElement>("[data-stage]") : null;
     const end = Math.max(0, document.documentElement.scrollHeight - height);
     chapters = [];
     stages = [];
@@ -213,7 +219,16 @@ function createReader(): () => PageReading {
       visible.push({ zone: [box.left - 12, box.top - 12, box.right + 12, box.bottom + 12], area: shown * box.width });
     }
     visible.sort((a, b) => b.area - a.area);
-    return { chapter, quiet: visible.slice(0, 4).map((entry) => entry.zone), stages };
+    const quiet = visible.slice(0, 4).map((entry) => entry.zone);
+    if (chapters.length > 0) return { chapter, quiet, stages };
+
+    // A page with no chapters (the app's dashboard) may still keep one box for the scene, inside its own text.
+    // The scene is drawn where that box is with the page at its top, and is not dimmed where the box is now.
+    if (!lone || !lone.isConnected) return { chapter, quiet, stages: [] };
+    const [x, y] = placeOf(lone);
+    const fixed: Stage = [x, y, x + lone.offsetWidth, y + lone.offsetHeight];
+    const box = lone.getBoundingClientRect();
+    return { chapter, quiet, stages: [fixed, fixed, fixed, fixed, fixed], clear: [box.left, box.top, box.right, box.bottom] };
   };
 }
 
@@ -254,8 +269,9 @@ type BackgroundProps = {
 
 export function Background({ children, force }: BackgroundProps) {
   const pathname = usePathname();
-  // The scene belongs to the landing page. Behind the app there is only the ground, for now.
-  const enabled = force ? force === "landing" : pathname === "/";
+  // The scene is drawn behind the landing page, and behind the app's dashboard, which keeps a box for it.
+  const enabled = force !== undefined || pathname === "/" || pathname === "/app";
+  const calm = force ? force === "app" : pathname !== "/";
   const reduced = usePrefersReducedMotion();
   const forcedColors = useSyncExternalStore(subscribeForcedColors, readForcedColors, () => false);
   const paused = useSyncExternalStore(subscribePaused, readPaused, () => false);
@@ -263,7 +279,13 @@ export function Background({ children, force }: BackgroundProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
-  const wanted = useRef<{ state: BackgroundState; paused: boolean; dark: boolean }>({ state: "balanced", paused: false, dark: false });
+  const wanted = useRef<{ state: BackgroundState; paused: boolean; dark: boolean; calm: number; level: number | null }>({
+    state: "balanced",
+    paused: false,
+    dark: false,
+    calm: 0,
+    level: null,
+  });
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
@@ -307,7 +329,8 @@ export function Background({ children, force }: BackgroundProps) {
         announce("none");
         return;
       }
-      engine.setLook({ dark: wanted.current.dark });
+      engine.setLook({ dark: wanted.current.dark, calm: wanted.current.calm });
+      engine.setLevel(wanted.current.level);
       engine.setState(wanted.current.state);
       engine.setPaused(wanted.current.paused);
       canvas.dataset.ready = "true";
@@ -346,6 +369,11 @@ export function Background({ children, force }: BackgroundProps) {
     engineRef.current?.setLook({ dark: theme === "dark" });
   }, [theme]);
 
+  useEffect(() => {
+    wanted.current.calm = calm ? 1 : 0;
+    engineRef.current?.setLook({ calm: calm ? 1 : 0 });
+  }, [calm]);
+
   const motion = useMemo(() => ({ animated, paused }), [animated, paused]);
 
   const controller = useMemo<BackgroundController>(
@@ -360,6 +388,11 @@ export function Background({ children, force }: BackgroundProps) {
         engineRef.current?.pulse();
         const canvas = canvasRef.current;
         if (canvas) canvas.dataset.pulses = String(Number(canvas.dataset.pulses ?? 0) + 1);
+      },
+      setLevel(level) {
+        wanted.current.level = level;
+        engineRef.current?.setLevel(level);
+        if (canvasRef.current) canvasRef.current.dataset.level = level === null ? "" : level.toFixed(3);
       },
     }),
     [],

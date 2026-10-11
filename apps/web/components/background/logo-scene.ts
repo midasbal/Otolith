@@ -116,11 +116,19 @@ const float LEFT = ${f(LEFT)};
 const float RIGHT = ${f(RIGHT)};
 uniform vec4 uQuiet[4];
 uniform float uReach;   // how far past a block of text the dimming reaches, in buffer pixels
+uniform vec4 uClear;    // a box the page keeps for the scene inside a block of text: nothing is dimmed in it
 // 1 inside a block of text, falling away smoothly outside it.
 float quietAt(vec2 at, vec4 box, float reach) {
   vec2 d = max(box.xy - at, at - box.zw);
   float outside = length(max(d, 0.0)) / reach;
   return exp(-outside * outside * 2.2);
+}
+// How quiet the scene should be at a point: as quiet as the nearest block of text asks, except in the box kept clear.
+float quietest(vec2 at) {
+  float quiet = 0.0;
+  for (int k = 0; k < 4; k++) quiet = max(quiet, quietAt(at, uQuiet[k], uReach));
+  vec2 d = max(uClear.xy - at, at - uClear.zw);
+  return quiet * smoothstep(0.0, uReach * 0.3, max(d.x, d.y));
 }
 `;
 
@@ -139,6 +147,8 @@ uniform float uPour[${PAST}];   // how far the pour has gone: now, and at each s
 uniform float uSurface; // the height the ink stands at in the left vessel (and its depth below the axis in the right)
 uniform float uSlosh;   // how much the ink's surface is still moving
 uniform float uLean;    // how far the whole leans toward the heavy side
+uniform float uUnrest;  // how unsettled the vessels are: heaped and spilling at 1, calm at 0
+uniform vec2 uRun;      // a rebalance just submitted: how far its one run along the path has got, and how bright it is
 uniform float uPoint;   // the size of a point, in pixels
 uniform float uPass;    // 0 the particles, 1 their trails
 uniform float uStill;
@@ -190,9 +200,8 @@ vec2 atHero(float t) {
 vec2 ink(float t, float back) {
   vec2 l = aPos.xy - vec2(LEFT, 0.0);
   float poured = uPour[0];
-  // While it is full the left vessel is heaped past its own line, and nearly half of that is spilling off in the
-  // current; by the time the two are level it lies calm.
-  float unrest = 1.0 - smoothstep(0.08, 0.8, poured);
+  // Unsettled, the left vessel is heaped past its own line, and nearly half of that is spilling off in the current.
+  float unrest = uUnrest;
   float spill = step(0.56, aRnd.y);
   // The surface rocks a little while the pour runs and for a while after: only the ink near it moves.
   float rock = uSlosh * 0.028 * sin(l.x * 3.1 + t * 1.6) * exp(-abs(l.y - uSurface) / 0.14) * (1.0 - uStill);
@@ -243,8 +252,7 @@ vec2 ink(float t, float back) {
 // 1 and 2  The vessels' lines: half the outline's grains stand on the left vessel's line, which is the right one's turned half round.
 vec2 rim(float t) {
   vec2 p = aRnd.w < 0.5 ? -aPos.xy : aPos.xy;
-  float unrest = 1.0 - smoothstep(0.08, 0.8, uPour[0]);
-  return p + flow(p * 0.7 + 3.0, t) * (0.035 * unrest * aRnd.y + 0.003 * (1.0 - uStill));
+  return p + flow(p * 0.7 + 3.0, t) * (0.035 * uUnrest * aRnd.y + 0.003 * (1.0 - uStill));
 }
 
 // 1  The integral, still itself, a little unsettled.
@@ -255,8 +263,8 @@ vec2 glyph(float t) {
 // 2  The integral as the path. Its grains move along it only as the pour moves, and rest when it rests.
 vec2 channel(float back, out float ends) {
   float poured = mix(uPour[0], uPour[1], back / STEP);
-  float u = fract(aRnd.x + poured * 2.6);
-  ends = 0.5 * smoothstep(0.0, 0.07, u) * smoothstep(1.0, 0.93, u);
+  float u = fract(aRnd.x + poured * 2.6 + uRun.x);
+  ends = min(1.0, 0.5 + 0.5 * uRun.y) * smoothstep(0.0, 0.07, u) * smoothstep(1.0, 0.93, u);
   return besideAt(u, (aRnd.y - 0.5) * (0.05 + 0.09 * aRnd.w));
 }
 
@@ -329,9 +337,7 @@ void main() {
     p -= moved * (1.0 - aPos.w);
   }
   vec2 at = uCentre + p * uUnit;
-  float quiet = 0.0;
-  for (int k = 0; k < 4; k++) quiet = max(quiet, quietAt(at, uQuiet[k], uReach));
-  vAlpha = alpha * (1.0 - 0.94 * quiet);
+  vAlpha = alpha * (1.0 - 0.94 * quietest(at));
   gl_Position = vec4(at / uRes * 2.0 - 1.0, 0.0, 1.0);
   bool outline = aPos.z > 0.5 && aPos.z < 1.5;
   gl_PointSize = uPoint * (outline ? 0.78 : (aPos.z > 1.5 ? 0.92 : 1.0));
@@ -403,9 +409,7 @@ void main() {
   }
   float cover = 0.0;
   if (logo > 0.0) {
-    float quiet = 0.0;
-    for (int k = 0; k < 4; k++) quiet = max(quiet, quietAt(frag, uQuiet[k], uReach));
-    cover = logo * (1.0 - 0.94 * quiet);
+    cover = logo * (1.0 - 0.94 * quietest(frag));
   }
   gl_FragColor = vec4(mix(uGround, uInk, cover), 1.0);
 }
@@ -418,17 +422,15 @@ uniform vec2 uRes;
 uniform vec3 uGround;
 ${SHARED}
 void main() {
-  float quiet = 0.0;
-  for (int k = 0; k < 4; k++) quiet = max(quiet, quietAt(gl_FragCoord.xy, uQuiet[k], uReach));
-  float a = 0.93 * quiet;
+  float a = 0.93 * quietest(gl_FragCoord.xy);
   gl_FragColor = vec4(uGround * a, a);
 }
 `;
 
 const PARTICLE_UNIFORMS = [
-  "uRes", "uCentre", "uUnit", "uNow", "uThen", "uBack", "uSpan", "uHalf", "uPour", "uSurface", "uSlosh", "uLean", "uPoint", "uPass", "uStill", "uQuiet", "uReach", "uInk",
+  "uRes", "uCentre", "uUnit", "uNow", "uThen", "uBack", "uSpan", "uHalf", "uPour", "uSurface", "uSlosh", "uLean", "uUnrest", "uRun", "uPoint", "uPass", "uStill", "uQuiet", "uReach", "uClear", "uInk",
 ] as const;
-const GROUND_UNIFORMS = ["uRes", "uCentre", "uUnit", "uSolid", "uLines", "uLean", "uStroke", "uInk", "uGround", "uGlyph", "uGlyphBox", "uSpread", "uQuiet", "uReach"] as const;
+const GROUND_UNIFORMS = ["uRes", "uCentre", "uUnit", "uSolid", "uLines", "uLean", "uStroke", "uInk", "uGround", "uGlyph", "uGlyphBox", "uSpread", "uQuiet", "uReach", "uClear"] as const;
 
 const NOWHERE = [-1e5, -1e5, -1e5, -1e5];
 
@@ -576,7 +578,7 @@ export function logoScene(field: LogoField): ConceptDef {
       const gu = uniforms(gl, ground, GROUND_UNIFORMS);
       const groundCorner = gl.getAttribLocation(ground, "aCorner");
       const veil = compile(gl, QUAD_VERTEX, VEIL_FRAGMENT);
-      const vu = uniforms(gl, veil, ["uRes", "uGround", "uQuiet", "uReach"] as const);
+      const vu = uniforms(gl, veil, ["uRes", "uGround", "uQuiet", "uReach", "uClear"] as const);
       const veilCorner = gl.getAttribLocation(veil, "aCorner");
       const quad = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, quad);
@@ -615,8 +617,15 @@ export function logoScene(field: LogoField): ConceptDef {
       return {
         detail: () => `${count.toLocaleString("en-US")} particles`,
         draw(frame: Frame) {
+          // Behind the app the scene is not told by the page but by the portfolio: whole while nothing is known of
+          // it, and otherwise the two vessels, each as full as the portfolio is of that asset against its target.
+          // It is drawn only where the app has kept a box for it.
+          const app = frame.calm > 0.5;
+          const hidden = app && !frame.stages[0];
           // At rest there is one picture to a chapter, and nothing between.
-          const place = Math.max(0, Math.min(4, frame.still ? Math.round(frame.chapter) : frame.chapter));
+          const place = app
+            ? frame.level === null ? 0 : 2
+            : Math.max(0, Math.min(4, frame.still ? Math.round(frame.chapter) : frame.chapter));
           if (frame.still || progress === null) {
             progress = place;
           } else {
@@ -633,7 +642,11 @@ export function logoScene(field: LogoField): ConceptDef {
           };
           const byPage = POUR_AT_DRIFT * near(0.4, 1) + (1 - POUR_AT_DRIFT) * near(1.35, 2);
           const drifting = frame.drift * near(1.2, 1.6) * (1 - near(2.4, 2.8));
-          const due = byPage + (POUR_AT_DRIFT - byPage) * (frame.still ? Math.round(drifting) : drifting);
+          // On target both vessels are half full; holding more of the asset it sells, the left one is fuller by
+          // that much, and holding less, the right one.
+          const due = app
+            ? frame.level === null ? 0 : Math.max(0.12, Math.min(1.88, 2 - frame.level))
+            : byPage + (POUR_AT_DRIFT - byPage) * (frame.still ? Math.round(drifting) : drifting);
           if (frame.still || poured === null) {
             // Standing still, it is simply there: nothing is on the path.
             poured = due;
@@ -643,7 +656,7 @@ export function logoScene(field: LogoField): ConceptDef {
           } else {
             // It follows over a few seconds, setting off gently and arriving gently, however far it has to go.
             pouring += (POUR_PACE * POUR_PACE * (due - poured) - 2 * POUR_PACE * pouring) * frame.dt;
-            poured = Math.max(0, Math.min(1, poured + pouring * frame.dt));
+            poured = Math.max(0, Math.min(2, poured + pouring * frame.dt));
             if (Math.abs(due - poured) < 0.0002 && Math.abs(pouring) < 0.0002) {
               poured = due;
               pouring = 0;
@@ -667,7 +680,16 @@ export function logoScene(field: LogoField): ConceptDef {
             const t = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)));
             return t * t * (3 - 2 * t);
           };
-          const lean = LEAN * settle(0.1, 1, progress) * (1 - settle(POUR_AT_DRIFT, 0.95, poured)) * (1 - settle(2, 3, progress));
+          // On the page the vessels are unsettled while the left one is full, and the whole leans to the heavy side
+          // and comes level as the ink does. Behind the app both say one thing, more quietly: a rebalance is due.
+          const unrest = app ? 0.5 * frame.drift : 1 - settle(0.08, 0.8, poured);
+          const lean = app
+            ? LEAN * 0.6 * frame.drift * settle(1, 2, progress)
+            : LEAN * settle(0.1, 1, progress) * (1 - settle(POUR_AT_DRIFT, 0.95, poured)) * (1 - settle(2, 3, progress));
+          // A rebalance was submitted: the path runs once, end to end, and shows a little stronger while it does.
+          const running = !frame.still && frame.pulse < 2.6;
+          const run = running ? settle(0, 2.6, frame.pulse) : 0;
+          const glow = running ? Math.sin((Math.PI * frame.pulse) / 2.6) : 0;
 
           // The moment a trail reaches back to: the oldest remembered one still inside the trail's span.
           let then: [number, number] = [progress, frame.time];
@@ -711,8 +733,11 @@ export function logoScene(field: LogoField): ConceptDef {
           const span = Math.max(centreX, width - centreX) / unit;
           // The logo's solid parts show while the particles are in them: at the top of the page, and again at the
           // end. Between, the halves are vessels: the left one takes the right one's line, as its solid fades.
-          const solid = Math.max(1 - settle(0.03, 0.3, progress), settle(3.7, 3.97, progress));
-          const vessels = 1 - solid;
+          const solid = hidden ? 0 : Math.max(1 - settle(0.03, 0.3, progress), settle(3.7, 3.97, progress));
+          const vessels = hidden ? 0 : 1 - solid;
+          const clear = frame.clear
+            ? [frame.clear[0] * frame.scale, (frame.css[1] - frame.clear[3]) * frame.scale, frame.clear[2] * frame.scale, (frame.css[1] - frame.clear[1]) * frame.scale]
+            : NOWHERE;
 
           const mix = (light: number[], dark: number[]) => light.map((value, i) => (value + (dark[i] - value) * frame.dark) / 255);
           const inkColor = mix(LIGHT.ink, DARK.ink);
@@ -728,7 +753,8 @@ export function logoScene(field: LogoField): ConceptDef {
             );
           }
           // Fewer particles when the frame rate has asked for less.
-          const shown = Math.max(1, Math.round(count * (0.55 + 0.45 * ((frame.quality - 0.5) / 0.5))));
+          // Fewer particles when the frame rate has asked for less, and far fewer for the small logo behind the app.
+          const shown = Math.max(1, Math.round(count * (app ? 0.4 : 1) * (0.55 + 0.45 * ((frame.quality - 0.5) / 0.5))));
 
           // 1. The ground and the exact logo.
           gl.disable(gl.BLEND);
@@ -740,7 +766,8 @@ export function logoScene(field: LogoField): ConceptDef {
           gl.uniform2f(gu.uCentre, centreX, centreY);
           gl.uniform1f(gu.uUnit, unit);
           gl.uniform1f(gu.uSolid, solid);
-          gl.uniform2f(gu.uLines, vessels, 1);
+          gl.uniform2f(gu.uLines, vessels, hidden ? 0 : 1);
+          gl.uniform4f(gu.uClear, clear[0], clear[1], clear[2], clear[3]);
           gl.uniform1f(gu.uLean, lean);
           gl.uniform1f(gu.uStroke, 1.15 * frame.scale);
           gl.uniform3f(gu.uInk, inkColor[0], inkColor[1], inkColor[2]);
@@ -774,13 +801,17 @@ export function logoScene(field: LogoField): ConceptDef {
           gl.uniform1f(pu.uSurface, heightFor(poured * half));
           gl.uniform1f(pu.uSlosh, slosh);
           gl.uniform1f(pu.uLean, lean);
-          gl.uniform1f(pu.uPoint, Math.max(1.5 * frame.scale, Math.min(3 * frame.scale, unit * 0.0125)));
+          gl.uniform1f(pu.uUnrest, unrest);
+          gl.uniform2f(pu.uRun, run, glow);
+          gl.uniform4f(pu.uClear, clear[0], clear[1], clear[2], clear[3]);
+          // A small logo takes smaller points, or it would be all point.
+          gl.uniform1f(pu.uPoint, Math.max((app ? 1 : 1.5) * frame.scale, Math.min(3 * frame.scale, unit * 0.0125)));
           gl.uniform1f(pu.uStill, frame.still ? 1 : 0);
           gl.uniform4fv(pu.uQuiet, quiet);
           gl.uniform1f(pu.uReach, DIM_REACH * frame.scale);
           gl.uniform3f(pu.uInk, inkColor[0], inkColor[1], inkColor[2]);
           // Nothing moves far enough to leave a trail while the logo is whole and still, so that pass is skipped there.
-          const moving = !frame.still && (then[0] !== progress || (progress > 0.02 && progress < 3.98));
+          const moving = !hidden && !frame.still && (then[0] !== progress || (progress > 0.02 && progress < 3.98));
           if (moving) {
             gl.vertexAttribPointer(aPos, 4, gl.FLOAT, false, 32, 0);
             gl.vertexAttribPointer(aRnd, 4, gl.FLOAT, false, 32, 16);
@@ -791,7 +822,7 @@ export function logoScene(field: LogoField): ConceptDef {
           gl.vertexAttribPointer(aPos, 4, gl.FLOAT, false, 64, 32);
           gl.vertexAttribPointer(aRnd, 4, gl.FLOAT, false, 64, 48);
           gl.uniform1f(pu.uPass, 0);
-          gl.drawArrays(gl.POINTS, 0, shown);
+          if (!hidden) gl.drawArrays(gl.POINTS, 0, shown);
           gl.disableVertexAttribArray(aPos);
           gl.disableVertexAttribArray(aRnd);
 
@@ -804,6 +835,7 @@ export function logoScene(field: LogoField): ConceptDef {
             gl.uniform2f(vu.uRes, width, height);
             gl.uniform3f(vu.uGround, groundColor[0], groundColor[1], groundColor[2]);
             gl.uniform4fv(vu.uQuiet, quiet);
+            gl.uniform4f(vu.uClear, clear[0], clear[1], clear[2], clear[3]);
             gl.uniform1f(vu.uReach, VEIL_REACH * frame.scale);
             gl.drawArrays(gl.TRIANGLES, 0, 3);
             gl.disableVertexAttribArray(veilCorner);

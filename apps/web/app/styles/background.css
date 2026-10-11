@@ -42,6 +42,12 @@
     aspect-ratio: 1700 / 720;
     pointer-events: none;
   }
+  /* The app's one stage, beside the dashboard's title. */
+  .ot-stage-app {
+    flex: none;
+    width: min(13rem, 42%);
+    margin-block: calc(var(--space-2) * -1);
+  }
   .ot-stage > .ot-logo {
     display: block;
     width: 100%;

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackgroundToggle } from "@/components/background/background";
 import { ThemeToggle } from "@/components/ui/theme";
 import type { ReactNode } from "react";
 import { TestnetBadge } from "@/components/ui/badge";
@@ -134,9 +135,13 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
       <aside className="hidden w-72 shrink-0 p-4 lg:sticky lg:top-0 lg:flex lg:h-screen">
         <div className="ot-raised flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto rounded-xl p-5">
           <div className="flex flex-1 flex-col gap-8">
-            <div className="flex items-start justify-between gap-2">
+            {/* The sidebar is too narrow for the logo and two controls on one line: the controls take the next. */}
+            <div className="flex flex-col gap-4">
               <ShellLogo />
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <BackgroundToggle />
+              </div>
             </div>
             <ShellNav links={links} />
           </div>
@@ -152,6 +157,7 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
         <div className="ot-raised flex items-center justify-between gap-3 rounded-xl px-3 py-3 sm:px-5">
           <ShellLogo />
           <div className="flex items-center gap-2">
+            <BackgroundToggle />
             <ThemeToggle />
             <IconButton label="Menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={onToggleMenu}>
               <Icon name="menu" />

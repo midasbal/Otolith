@@ -8,6 +8,7 @@ import { Icon, type IconName } from "@/components/ui/icons";
 import { EmptyState, ErrorState, LoadingState, Notice } from "@/components/ui/states";
 import { formatBalanceAmount, formatBps, formatUsd } from "@/lib/stellar/format";
 import { ConnectPrompt, PolicyTermsList, Screen, ScreenHeader, TransactionReceipt } from "./common";
+import { Logo } from "@/components/ui/mark";
 import { PortfolioField, rebalanceDue } from "./portfolio-field";
 import type { BalancesState, PolicyState, PolicyTerms, RebalanceState, TriggerState, ValuationState } from "./types";
 
@@ -245,8 +246,17 @@ export function DashboardView({
 }: DashboardViewProps) {
   return (
     <Screen>
-      <PortfolioField rebalanceState={rebalanceState} triggerState={triggerState} />
-      <ScreenHeader title="Dashboard">
+      <PortfolioField rebalanceState={rebalanceState} triggerState={triggerState} valuationState={valuationState} />
+      {/* Beside the title, the box the dashboard keeps for the scene: the logo, small, its two halves as full as
+          the portfolio is of each asset. Decorative: everything it shows is in the figures and badges below. */}
+      <ScreenHeader
+        title="Dashboard"
+        action={
+          <div aria-hidden="true" data-stage="" className="ot-stage ot-stage-app">
+            <Logo />
+          </div>
+        }
+      >
         Connected as <span className="ot-num text-text">{accountLabel}</span>.
       </ScreenHeader>
 

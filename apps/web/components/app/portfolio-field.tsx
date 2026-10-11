@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useBackground } from "@/components/background/background";
-import type { RebalanceState, TriggerState } from "./types";
+import type { RebalanceState, TriggerState, ValuationState } from "./types";
 
 /**
  * Whether the rebalance check found this portfolio past its band on the
@@ -27,6 +27,21 @@ export function rebalanceDue(rebalanceState: RebalanceState): boolean {
   );
 }
 
+/**
+ * What the portfolio holds of the asset it sells, as a share of what its
+ * target says it should hold: 1 on target, more when it holds too much
+ * of it (the side a rebalance trades from), less when it holds more of
+ * the buy asset than the target. Null until the portfolio is valued.
+ * Read from the same valuation the dashboard prints.
+ */
+export function portfolioLevel(valuationState: ValuationState): number | null {
+  if (valuationState.status !== "loaded" || valuationState.result.kind !== "valued") return null;
+  const { currentBuyWeightBps, targetBuyWeightBps } = valuationState.result;
+  const target = 10000 - targetBuyWeightBps;
+  if (target <= 0) return null;
+  return (10000 - currentBuyWeightBps) / target;
+}
+
 /*
   Tells the background what the portfolio is doing. It renders nothing.
 
@@ -44,9 +59,24 @@ export function rebalanceDue(rebalanceState: RebalanceState): boolean {
   badge and drift figure, its rebalance panel, and its "Rebalance
   submitted" panel say the same things in text.
 */
-export function PortfolioField({ rebalanceState, triggerState }: { rebalanceState: RebalanceState; triggerState: TriggerState }) {
+export function PortfolioField({
+  rebalanceState,
+  triggerState,
+  valuationState,
+}: {
+  rebalanceState: RebalanceState;
+  triggerState: TriggerState;
+  valuationState: ValuationState;
+}) {
   const background = useBackground();
   const due = rebalanceDue(rebalanceState);
+  const level = portfolioLevel(valuationState);
+
+  // How full the scene's two vessels are: the valuation the page shows in figures, and nothing else.
+  useEffect(() => {
+    background.setLevel(level);
+  }, [background, level]);
+  useEffect(() => () => background.setLevel(null), [background]);
 
   useEffect(() => {
     background.setState(due ? "drifting" : "balanced");
