@@ -208,20 +208,98 @@
     flex-direction: column;
     gap: var(--space-5);
   }
-  .ot-demo-level {
-    height: 2rem;
-    flex: none;
+  /* The drift on a scale: a line three bands long either side of the
+     target, the band itself shaded, a tick and a label at the target and
+     at each edge of the band, and a dot for the drift. Past the band the
+     dot takes the drift color, as well as standing outside the ticks. */
+  .ot-demo-scale {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
   }
-  /* Beside its label, the level takes the rest of the row. */
-  .ot-demo-readout .ot-demo-level {
+  .ot-demo-scale > .ot-caps {
+    line-height: 3.75rem;
+  }
+  .ot-demo-scale-track {
+    position: relative;
+    min-width: 8rem;
+    height: 3.75rem;
     flex: 1;
+    /* Room for the labels at the band's edges and the dot at the ends. */
+    margin-inline: var(--space-2);
   }
-  /* Drift is slow; the return is quick. */
-  .ot-demo .ot-level-travel {
-    transition-duration: 2400ms;
+  .ot-demo-scale-track::before {
+    content: "";
+    position: absolute;
+    top: 1.875rem;
+    right: 0;
+    left: 0;
+    height: 1px;
+    background-color: var(--line-strong);
   }
-  .ot-demo[data-phase="rebalanced"] .ot-level-travel {
-    transition-duration: 900ms;
+  .ot-demo-scale-band {
+    position: absolute;
+    top: 1.625rem;
+    height: 0.5rem;
+    border-radius: var(--radius-pill);
+    background-color: var(--well);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .ot-demo-scale-mark {
+    position: absolute;
+    top: 1.375rem;
+    width: 0;
+    height: 1rem;
+  }
+  .ot-demo-scale-mark::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1px;
+    width: 2px;
+    border-radius: 1px;
+    background-color: var(--text-muted);
+  }
+  .ot-demo-scale-mark[data-kind="target"]::before {
+    background-color: var(--text);
+  }
+  .ot-demo-scale-mark > span {
+    position: absolute;
+    top: 1.25rem;
+    left: 0;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    white-space: nowrap;
+    translate: -50% 0;
+  }
+  /* The target's label stands above the line and the band's below it, so they never run into each other. */
+  .ot-demo-scale-mark[data-kind="target"] > span {
+    top: auto;
+    bottom: 1.25rem;
+  }
+  .ot-demo-scale-dot {
+    position: absolute;
+    top: 1.875rem;
+    display: grid;
+    width: 0.875rem;
+    height: 0.875rem;
+    place-items: center;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background-color: var(--surface-strong);
+    color: var(--drift);
+    translate: -50% -50%;
+  }
+  .ot-demo-scale[data-out="true"] .ot-demo-scale-dot {
+    border-color: var(--drift);
+  }
+  /* Off the end of the scale: an arrow, pointing on. */
+  .ot-demo-scale-dot > svg {
+    position: absolute;
+    left: 100%;
+    margin-left: 2px;
   }
   .ot-demo-past {
     color: var(--drift);
@@ -285,8 +363,17 @@
   }
   .ot-dial-value {
     color: var(--text);
-    font-size: var(--text-lg);
-    line-height: var(--text-lg--line-height);
+    font-size: var(--text-base);
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: pre;
+  }
+  /* The target, said small under the current split. */
+  .ot-dial-target {
+    margin-top: var(--space-1);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
     white-space: pre;
   }
 
@@ -312,15 +399,38 @@
       opacity var(--duration-base) var(--ease-settle);
   }
   /* The two shares differ in weight as well as in color, so which arc
+     is which never rests on telling the accent from a grey, and each
+     asset keeps its color whatever the portfolio is doing. The drift
+     color belongs to one thing on the ring: the stretch between the
+     target's notch and the current split, once that is past the band. */
+  .ot-dial-arc {
+    stroke: var(--accent);
+  }
+  .ot-dial-drift {
+    fill: none;
+    stroke: var(--drift);
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-settle);
+  }
+  .ot-dial[data-out="true"] .ot-dial-drift {
+    opacity: 1;
+  }
+  .ot-dial-rest {
+    fill: none;
+    stroke-linecap: round;
+    transition:
+      stroke var(--duration-base) var(--ease-settle),
+      stroke-dasharray var(--duration-base) var(--ease-settle),
+      stroke-dashoffset var(--duration-base) var(--ease-settle),
+      opacity var(--duration-base) var(--ease-settle);
+  }
+  /* The two shares differ in weight as well as in color, so which arc
      is which never rests on telling the accent from a grey. Past the
      band the held share takes the drift color, as the level's bubble
      does; the knob is outside the band ticks by then, and the line of
      text says so. */
   .ot-dial-arc {
     stroke: var(--accent);
-  }
-  .ot-dial[data-out="true"] .ot-dial-arc {
-    stroke: var(--drift);
   }
   .ot-dial-rest {
     stroke: var(--text-muted);
@@ -392,16 +502,9 @@
     inset: -0.5rem;
     border-radius: 50%;
   }
-  /* Drift is slow and the return is quick, as on the level. */
-  .ot-dial[data-pace="drift"] :is(.ot-dial-orbit, .ot-dial-knob, .ot-dial-arc, .ot-dial-rest) {
-    transition-duration: 2400ms;
-  }
-  .ot-dial[data-pace="return"] :is(.ot-dial-orbit, .ot-dial-knob, .ot-dial-arc, .ot-dial-rest) {
-    transition-duration: 900ms;
-  }
   /* While it is being dragged the ring follows the pointer exactly, with
      nothing easing behind it; a press or a key still settles. */
-  .ot-dial[data-dragging="true"] :is(.ot-dial-orbit, .ot-dial-knob, .ot-dial-ticks, .ot-dial-arc, .ot-dial-rest) {
+  .ot-dial:is([data-dragging="true"], [data-moving="true"]) :is(.ot-dial-orbit, .ot-dial-knob, .ot-dial-ticks, .ot-dial-arc, .ot-dial-rest) {
     transition-duration: 0s;
   }
   .ot-dial[data-dragging="true"] :is(.ot-dial-groove, .ot-dial-knob) {
@@ -440,6 +543,14 @@
     color: var(--text);
     white-space: pre;
   }
+  .ot-dial-aim {
+    font-size: var(--text-xs);
+    white-space: pre;
+  }
+  /* The key's two lines stack when there is no room for them side by side. */
+  .ot-dial-legend {
+    flex-wrap: wrap;
+  }
 }
 
 /* The level's entrance: from where the bubble starts to where it rests. */
@@ -457,9 +568,11 @@
     border: 1px solid CanvasText;
     background: Canvas;
   }
-  .ot-dial-arc,
-  .ot-dial[data-out="true"] .ot-dial-arc {
+  .ot-dial-arc {
     stroke: Highlight;
+  }
+  .ot-dial-drift {
+    stroke: CanvasText;
   }
   .ot-dial-rest,
   .ot-dial-tick {

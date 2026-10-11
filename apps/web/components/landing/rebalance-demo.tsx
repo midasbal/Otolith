@@ -1,27 +1,35 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { useBackground } from "@/components/background/background";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
-import { Level } from "@/components/ui/level";
+import { usePrefersReducedMotion } from "@/components/ui/use-reduced-motion";
 import { DemoAction } from "./demo-action";
 
 /*
   The product's one move, by hand, on an example portfolio.
 
-  The dial is the allocation: its ring is a slider that sets the target
-  split, the notch on its rim is that target with the band marked either
-  side, and the knob sits where the holdings actually are. "Let it
-  drift" carries the knob out past the band; "Rebalance" brings it back.
-  Under the dial a level says the same thing a second way, and one line
-  of text says it in words. Both buttons act on the page's background as
-  well, which shows the same thing: the logo out of balance, and level
-  again along the integral.
+  Two things are shown and kept apart. The target split is the visitor's
+  setting: the notch on the dial's rim, with the band marked either
+  side, and the ring's knob dragged round (or moved with the keyboard)
+  sets it. The current split is what the portfolio holds: the ring's two
+  arcs, the figure in its middle, and the key under it. The gap between
+  where the arcs meet and the notch is the drift.
+
+  "Let it drift" carries the current split away from the target, past
+  the band; "Rebalance" brings it back. The arcs, the figures, the scale
+  under the dial and the page's background all move together, and the
+  same number is behind every one of them: drift is the current share of
+  the first asset less its target share.
+
+  Each asset has one color everywhere. The drift color is kept for being
+  past the band: the stretch of arc between the notch and the current
+  split, the dot on the scale, and the line of text.
 
   It is an example and says so. Everything here is local to this file:
-  the split is component state that starts at 50/50 and is gone on
+  the target is component state that starts at 50/50 and is gone on
   reload, and the drift and band are fixed illustrative figures. Nothing
   is read from a wallet, a contract, or the network, and nothing is
   stored.
@@ -47,6 +55,12 @@ const DRIFTED = 3.8;
 
 type Phase = "balanced" | "drifting" | "rebalanced";
 
+// How long the current split takes to drift away, and to come back: slow out, quick home.
+const DRIFT_MS = 2400;
+const RETURN_MS = 900;
+// The scale under the dial runs this many bands either side of the target.
+const SCALE_BANDS = 3;
+
 const STATUS: Record<Phase, { drift: number; text: string }> = {
   balanced: { drift: RESTING_DRIFT, text: "Within band" },
   drifting: { drift: DRIFTED, text: "Past band: a rebalance is due" },
@@ -70,10 +84,11 @@ const RING_GAP = 1.2;
 
 const fixed = (value: number) => value.toFixed(3);
 
-// A one-digit figure is padded to two with a no-break space, which in the
-// tabular face is exactly one digit wide. Every figure on the dial is then
-// the same width at every split, so none of them moves as the split changes.
-const figure = (value: number) => String(value).padStart(2, " ");
+// Figures are padded to a fixed width with no-break spaces, which in the
+// tabular face are exactly one digit wide. Every figure on the dial is
+// then the same width at every split, so none of them moves as it changes.
+const figure = (value: number) => String(value).padStart(2, "\u00a0");
+const share = (value: number) => value.toFixed(1).padStart(4, "\u00a0");
 
 /**
  * The ring for a given target and drift: the accent arc runs from the top
@@ -135,10 +150,12 @@ export function RebalanceDemo() {
   const [phase, setPhase] = useState<Phase>("balanced");
   const [sellPercent, setSellPercent] = useState(DEFAULT_PERCENT);
   const [dragging, setDragging] = useState(false);
-  // How fast the ring moves to where it should be: slowly out as the
-  // portfolio drifts, quickly back as it is rebalanced, and at the pace
-  // of any other control when the visitor moves it themselves.
-  const [pace, setPace] = useState<"hand" | "drift" | "return">("hand");
+  const reducedMotion = usePrefersReducedMotion();
+  // The drift as it is shown, on its way to the drift the phase says: every
+  // moving thing (arcs, knob, figures, scale) is drawn from this one
+  // number, so they cannot disagree. With less motion asked for it snaps.
+  const [eased, setEased] = useState(RESTING_DRIFT);
+  const shown = useRef(RESTING_DRIFT);
   // True while the knob holds focus because a pointer pressed it. The
   // focus ring is the keyboard's: a press focuses the knob by script,
   // which a browser may count as keyboard focus, so the ring is held back
@@ -154,7 +171,39 @@ export function RebalanceDemo() {
   // position it took hold, so the knob does not jump under it.
   const drag = useRef<{ pointerId: number; offset: number } | null>(null);
 
-  const ring = ringFor(sellPercent, status.drift);
+  useEffect(() => {
+    const to = STATUS[phase].drift;
+    const from = shown.current;
+    if (from === to) return;
+    if (reducedMotion) {
+      shown.current = to;
+      return;
+    }
+    const length = to > from ? DRIFT_MS : RETURN_MS;
+    const began = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - began) / length);
+      // Settles like everything else here: quick away, slow to rest.
+      shown.current = from + (to - from) * (1 - (1 - t) ** 3);
+      setEased(shown.current);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [phase, reducedMotion]);
+
+  const drift = reducedMotion ? status.drift : eased;
+  // On its way: the ring follows the number frame by frame, with nothing easing behind it.
+  const moving = drift !== status.drift;
+  const ring = ringFor(sellPercent, drift);
+  const sellNow = sellPercent + drift;
+  const buyNow = 100 - sellNow;
+  const pastNow = Math.abs(drift) > BAND_PERCENT;
+  // Where the drift sits on the scale under the dial, and whether it is off its end.
+  const reach = BAND_PERCENT * SCALE_BANDS;
+  const scaleAt = (value: number) => 50 + (Math.max(-reach, Math.min(reach, value)) / reach) * 50;
+  const offScale = Math.abs(drift) > reach;
 
   // The ring is the control. A press on the knob picks it up where it is;
   // a press anywhere else on the track brings the knob there first. Either
@@ -169,16 +218,15 @@ export function RebalanceDemo() {
 
     event.preventDefault();
     setPointerFocus(true);
-    setPace("hand");
     knob.focus({ preventScroll: true });
     knob.setPointerCapture(event.pointerId);
 
     const at = turnAt(event, dial);
     if (from === "knob") {
-      drag.current = { pointerId: event.pointerId, offset: shorterWay(at - (sellPercent + status.drift)) };
+      drag.current = { pointerId: event.pointerId, offset: shorterWay(at - (sellPercent + drift)) };
     } else {
       drag.current = { pointerId: event.pointerId, offset: 0 };
-      setSellPercent(snapPercent(at - status.drift));
+      setSellPercent(snapPercent(at - drift));
     }
   };
 
@@ -187,7 +235,7 @@ export function RebalanceDemo() {
     if (!dial || drag.current?.pointerId !== event.pointerId) return;
 
     const at = (((turnAt(event, dial) - drag.current.offset) % 100) + 100) % 100;
-    const next = snapPercent(at - status.drift);
+    const next = snapPercent(at - drift);
 
     // The range is open at the top of the ring, between its two ends. A
     // drag that crosses the top would jump from one end to the other;
@@ -235,7 +283,6 @@ export function RebalanceDemo() {
     }
 
     event.preventDefault();
-    setPace("hand");
     setSellPercent(snapPercent(next));
   };
 
@@ -252,8 +299,8 @@ export function RebalanceDemo() {
             ref={dialRef}
             className="ot-dial"
             data-dragging={dragging ? "true" : undefined}
-            data-pace={pace}
-            data-out={past ? "true" : undefined}
+            data-moving={moving ? "true" : undefined}
+            data-out={pastNow ? "true" : undefined}
             style={{ "--dial-target": `${fixed(sellPercent * 3.6)}deg`, "--dial-knob": ring.knob } as CSSProperties}
           >
             <div aria-hidden="true" className="ot-dial-plate" />
@@ -282,6 +329,17 @@ export function RebalanceDemo() {
                 className="ot-dial-arc"
                 style={{ strokeDasharray: ring.arc, strokeDashoffset: fixed(-ARC_CAP) }}
               />
+              {/* The drift itself: the stretch of ring between the target and the current split. It shows, in the
+                  drift color, only while that stretch is longer than the band. */}
+              <circle
+                cx="50"
+                cy="50"
+                r={ARC_RADIUS}
+                pathLength={100}
+                strokeWidth={ARC_WIDTH}
+                className="ot-dial-drift"
+                style={{ strokeDasharray: `${fixed(Math.max(0, drift))} ${fixed(100 - Math.max(0, drift))}`, strokeDashoffset: fixed(-sellPercent) }}
+              />
               <g className="ot-dial-ticks">
                 <Tick degrees={-BAND_PERCENT * 3.6} kind="band" />
                 <Tick degrees={0} kind="target" />
@@ -298,7 +356,7 @@ export function RebalanceDemo() {
                 aria-valuemin={MIN_PERCENT}
                 aria-valuemax={MAX_PERCENT}
                 aria-valuenow={sellPercent}
-                aria-valuetext={`${sellPercent}% ${SELL_SYMBOL}, ${buyPercent}% ${BUY_SYMBOL}`}
+                aria-valuetext={`Target ${sellPercent}% ${SELL_SYMBOL}, ${buyPercent}% ${BUY_SYMBOL}. Current ${(sellPercent + status.drift).toFixed(1)}% ${SELL_SYMBOL}, ${(buyPercent - status.drift).toFixed(1)}% ${BUY_SYMBOL}.`}
                 className="ot-dial-knob"
                 data-pointer-focus={pointerFocus ? "true" : undefined}
                 onKeyDown={handleKnobKeyDown}
@@ -312,12 +370,18 @@ export function RebalanceDemo() {
             </div>
 
             <div aria-hidden="true" className="ot-dial-cap">
-              <span className="ot-caps">Target split</span>
+              <span className="ot-caps">Current</span>
               <span className="ot-num ot-dial-value">
-                {figure(sellPercent)} / {figure(buyPercent)}
+                {share(sellNow)} / {share(buyNow)}
               </span>
               <span className="ot-caps">
                 {SELL_SYMBOL} / {BUY_SYMBOL}
+              </span>
+              <span className="ot-dial-target">
+                Target{" "}
+                <span className="ot-num">
+                  {figure(sellPercent)} / {figure(buyPercent)}
+                </span>
               </span>
             </div>
           </div>
@@ -329,31 +393,51 @@ export function RebalanceDemo() {
             <span>
               <span className="ot-dial-key" data-asset="sell" />
               {SELL_SYMBOL}
-              <span className="ot-num ot-dial-percent">{figure(sellPercent)}%</span>
+              <span className="ot-num ot-dial-percent">{share(sellNow)}%</span>
+              <span className="ot-dial-aim">
+                · target <span className="ot-num">{figure(sellPercent)}%</span>
+              </span>
             </span>
             <span>
               <span className="ot-dial-key" data-asset="buy" />
               {BUY_SYMBOL}
-              <span className="ot-num ot-dial-percent">{figure(buyPercent)}%</span>
+              <span className="ot-num ot-dial-percent">{share(buyNow)}%</span>
+              <span className="ot-dial-aim">
+                · target <span className="ot-num">{figure(buyPercent)}%</span>
+              </span>
             </span>
           </div>
         </div>
 
         <div className="ot-demo-readout">
-          {/* The level shows what the knob shows: the bubble is the drift, the
-              two marks are the band. The line under it says it in words, so
-              the level itself is not announced. */}
-          <div className="flex items-center gap-4">
+          {/* The drift on a scale: the target in the middle, the band marked either side, and room beyond it, so a
+              drift past the band still has somewhere to stand. Off the end of the scale it is held at the end with an
+              arrow, never silently. The line under it says the same in words, so the scale is not announced. */}
+          <div aria-hidden="true" className="ot-demo-scale" data-out={pastNow ? "true" : undefined}>
             <span className="ot-caps">Drift</span>
-            <Level drift={status.drift} band={BAND_PERCENT} className="ot-demo-level" />
+            <div className="ot-demo-scale-track">
+              <span className="ot-demo-scale-band" style={{ left: `${scaleAt(-BAND_PERCENT)}%`, right: `${100 - scaleAt(BAND_PERCENT)}%` }} />
+              {[-BAND_PERCENT, 0, BAND_PERCENT].map((mark) => (
+                <span key={mark} className="ot-demo-scale-mark" data-kind={mark === 0 ? "target" : "band"} style={{ left: `${scaleAt(mark)}%` }}>
+                  <span className="ot-num">{mark === 0 ? "Target" : `${mark > 0 ? "+" : "-"}${Math.abs(mark)}%`}</span>
+                </span>
+              ))}
+              <span className="ot-demo-scale-dot" style={{ left: `${scaleAt(drift)}%` }}>
+                {offScale ? <Icon name="arrow-right" size={12} /> : null}
+              </span>
+            </div>
           </div>
 
-          {/* One line, announced when it changes: the drift, and what it means. */}
+          {/* One line, announced when it changes: the drift, what it means, and both splits in words. */}
           <p role="status" className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="ot-num text-lg text-text">{status.drift.toFixed(2)}%</span>
             <span className={past ? "ot-demo-past text-sm" : "text-sm text-text-muted"}>
               {past ? <Icon name="alert" size={14} className="mr-1.5 inline-block align-[-2px]" /> : null}
               {status.text}
+            </span>
+            <span className="sr-only">
+              Current {(sellPercent + status.drift).toFixed(1)}% {SELL_SYMBOL}, {(buyPercent - status.drift).toFixed(1)}% {BUY_SYMBOL}. Target {sellPercent}%{" "}
+              {SELL_SYMBOL}, {buyPercent}% {BUY_SYMBOL}.
             </span>
           </p>
 
@@ -362,7 +446,6 @@ export function RebalanceDemo() {
               done={past}
               onPress={() => {
                 setPhase("drifting");
-                setPace("drift");
                 background.setState("drifting");
               }}
             >
@@ -373,7 +456,6 @@ export function RebalanceDemo() {
               done={!past}
               onPress={() => {
                 setPhase("rebalanced");
-                setPace("return");
                 background.setState("balanced");
                 background.pulse();
               }}
