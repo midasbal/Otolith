@@ -1,5 +1,5 @@
 import { ChapterHud } from "@/components/landing/chapter-hud";
-import { DriftDemo } from "@/components/landing/drift-demo";
+import { RebalanceDemo } from "@/components/landing/rebalance-demo";
 import { Reveal } from "@/components/reveal";
 import { RotatingWord } from "@/components/rotating-word";
 import { ButtonLink } from "@/components/ui/button";
@@ -195,7 +195,7 @@ export default function Landing() {
           </section>
         </Reveal>
 
-        {/* 02. How it works, with the drift simulator beside the steps */}
+        {/* 02. How it works, with the drift simulator and its allocation dial beside the steps */}
         <Reveal>
           <section
             id="how-it-works"
@@ -219,7 +219,7 @@ export default function Landing() {
             </div>
 
             <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
-              <ol className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 lg:col-span-8">
+              <ol className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2 lg:col-span-7">
                 {HOW_IT_WORKS_STEPS.map((step) => (
                   <Card key={step.title} as="li" className="flex flex-col gap-5">
                     <IconWell className="ot-num text-sm font-medium tabular-nums">
@@ -236,8 +236,8 @@ export default function Landing() {
                   </Card>
                 ))}
               </ol>
-              <div className="min-w-0 lg:col-span-4">
-                <DriftDemo />
+              <div className="min-w-0 lg:col-span-5">
+                <RebalanceDemo />
               </div>
             </div>
           </section>

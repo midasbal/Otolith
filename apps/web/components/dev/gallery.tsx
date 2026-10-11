@@ -680,7 +680,7 @@ function ComponentsTab() {
 
       <Section
         title="Rebalance demo"
-        note="The hero's dial and the drift simulator as one example: the ring sets the target split, the knob is where the holdings are. Not on the landing page yet."
+        note="The drift simulator with its allocation dial: the ring sets the target split, the knob is where the holdings are. On the landing page, under How it works."
       >
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
           <RebalanceDemo />
