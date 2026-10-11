@@ -3,10 +3,10 @@
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { useBackground } from "@/components/background/background";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 import { Level } from "@/components/ui/level";
+import { DemoAction } from "./demo-action";
 
 /*
   The product's one move, by hand, on an example portfolio.
@@ -358,20 +358,20 @@ export function RebalanceDemo() {
           </p>
 
           <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={past}
-              onClick={() => {
+            <DemoAction
+              done={past}
+              onPress={() => {
                 setPhase("drifting");
                 setPace("drift");
                 background.setState("drifting");
               }}
             >
               Let it drift
-            </Button>
-            <Button
+            </DemoAction>
+            <DemoAction
               variant="primary"
-              disabled={!past}
-              onClick={() => {
+              done={!past}
+              onPress={() => {
                 setPhase("rebalanced");
                 setPace("return");
                 background.setState("balanced");
@@ -379,7 +379,7 @@ export function RebalanceDemo() {
               }}
             >
               Rebalance
-            </Button>
+            </DemoAction>
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@
   1. A surface is --bg. A control that is not the primary action is the
      same color as the page it sits on; only its shadow says where it is.
   2. A state is never a shadow alone. Focus is a ring in the accent;
-     active and selected are the accent plus a marker; disabled is opacity
+     active and selected are the accent plus a marker; disabled is a shape
      plus a cursor; an error is the danger color plus an icon plus text.
      The React primitives in components/ui add the matching ARIA state.
   3. Raised and pressed are the same four shadow layers (see tokens.css),
@@ -190,6 +190,7 @@
   .ot-btn {
     --btn-height: var(--control-md);
     --btn-pad: var(--space-6);
+    position: relative;
     display: inline-flex;
     max-width: 100%;
     align-items: center;
@@ -264,22 +265,47 @@
     color: var(--danger-strong);
   }
 
+  /* Unavailable is said by shape, not by a paler color: the fill and the
+     lift go, a dashed line is left where the button was, and the label
+     keeps an ink that can be read. (A faded accent under white text was
+     neither clearly off nor legible.) The cursor says it too, and the
+     component says it to assistive technology. */
   .ot-btn:disabled,
   .ot-btn[aria-disabled="true"] {
-    opacity: 0.5;
+    background-color: transparent;
+    color: var(--text-muted);
     cursor: not-allowed;
+    box-shadow: none;
   }
-  /* Busy is not dimmed: the label is now the status ("Waiting for
-     passkey..."), so it keeps its full contrast. The button sits pressed
-     in, as it was left, with a spinner and a progress cursor. */
+  .ot-btn:disabled::after,
+  .ot-btn[aria-disabled="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px dashed var(--text-muted);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  /* Busy is not unavailable in that sense: the label is now the status
+     ("Waiting for passkey..."), so the button keeps its own look and its
+     full contrast. It sits pressed in, as it was left, with a spinner
+     and a progress cursor. */
   .ot-btn[aria-busy="true"] {
-    opacity: 1;
+    background-color: var(--surface);
+    color: var(--text);
     cursor: progress;
     box-shadow: var(--pressed-sm);
   }
+  .ot-btn[aria-busy="true"]::after {
+    content: none;
+  }
   .ot-btn-primary[aria-busy="true"] {
     background-color: var(--accent-strong);
+    color: var(--on-accent);
     box-shadow: var(--pressed-fill);
+  }
+  .ot-btn-danger[aria-busy="true"] {
+    color: var(--danger);
   }
 
   /* ── Text link ──────────────────────────────────────────────────────
@@ -1444,6 +1470,11 @@
   .ot-btn[aria-disabled="true"] {
     border-color: GrayText;
     color: GrayText;
+  }
+  /* The button's own border says it here; the dashed line is not needed. */
+  .ot-btn:disabled::after,
+  .ot-btn[aria-disabled="true"]::after {
+    content: none;
   }
   .ot-btn[aria-busy="true"] {
     border-color: ButtonBorder;

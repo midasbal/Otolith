@@ -31,8 +31,10 @@ type ButtonProps = ComponentProps<"button"> &
 
 /**
  * A native button. Disabled is the real `disabled` attribute, so a click
- * is blocked by the browser, mirrored as aria-disabled and shown with
- * reduced opacity and a not-allowed cursor rather than a missing shadow.
+ * is blocked by the browser, mirrored as aria-disabled and shown by
+ * shape: a dashed outline where the fill was, with a not-allowed cursor.
+ * (Pass aria-disabled alone, without `disabled`, for a button that
+ * should stay focusable while it is unavailable; it looks the same.)
  */
 export function Button({
   variant,

@@ -226,6 +226,19 @@
   .ot-demo-past {
     color: var(--drift);
   }
+  /* The simulator's two actions. The one that is unavailable takes a
+     tick, which stands in the button's own padding beside the label: the
+     button is as wide with it as without, so nothing moves when one
+     action's tick comes and the other's goes. */
+  .ot-btn.ot-demo-action {
+    --btn-pad: var(--space-8);
+  }
+  .ot-demo-action-tick {
+    position: absolute;
+    top: 50%;
+    left: var(--space-3);
+    translate: 0 -50%;
+  }
 
   /* ── The allocation dial ──────────────────────────────────────────── */
 

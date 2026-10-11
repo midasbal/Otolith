@@ -3,17 +3,17 @@
 import { useState } from "react";
 import { useBackground } from "@/components/background/background";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 import { Level } from "@/components/ui/level";
+import { DemoAction } from "./demo-action";
 
 /*
   The drift simulator: the product's one move, by hand. "Let it drift"
   carries the example portfolio past its band; "Rebalance" brings it
-  back. Both act on the page's background as well, which is the same
-  field showing the same thing: the rings buckle and warm while it
-  drifts, and a rebalance sends one ring out through them.
+  back. Both act on the page's background as well, which shows the same
+  thing: the ink returns to the vessel it came from while it drifts, and
+  a rebalance pours it level again.
 
   It is an example and says so. The figures are fixed and local to this
   file; nothing is read from a wallet, a contract, or the network.
@@ -56,26 +56,26 @@ export function DriftDemo() {
       </p>
 
       <div className="flex flex-wrap gap-3">
-        <Button
-          disabled={past}
-          onClick={() => {
+        <DemoAction
+          done={past}
+          onPress={() => {
             setPhase("drifting");
             background.setState("drifting");
           }}
         >
           Let it drift
-        </Button>
-        <Button
+        </DemoAction>
+        <DemoAction
           variant="primary"
-          disabled={!past}
-          onClick={() => {
+          done={!past}
+          onPress={() => {
             setPhase("rebalanced");
             background.setState("balanced");
             background.pulse();
           }}
         >
           Rebalance
-        </Button>
+        </DemoAction>
       </div>
     </Card>
   );
