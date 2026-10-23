@@ -1,0 +1,128 @@
+/*
+  The headline glow: light diffusing across the surface from beneath the
+  letters the pointer passes.
+
+  The mechanism is per letter. Each letter of a headline has its own
+  halo; a halo is lit while the pointer is on its letter, stays lit for
+  --glow-hold after the pointer moves on, and then fades, so a sweep of
+  the pointer leaves a trail that follows it out. The same wave is
+  played once, unprompted, when a headline first comes into view.
+
+  The headline's own text is never touched. It stays ordinary text in
+  the ordinary flow, so its spacing, wrapping, selection, and copying
+  are exactly what they would be without the effect. The halos live in a
+  separate layer behind it, each one placed over its letter by
+  measurement (see components/ui/use-letter-glow.ts), and they are the
+  only thing that changes: one property, opacity, on a layer that takes
+  no pointer events. The ink does not change color and nothing is laid
+  out again, on hover or ever.
+
+  A halo is three soft accent shadows of the letter (tight, mid, wide):
+  on this dark ground, simply light behind the letter, the same violet
+  the rings are drawn in. All of it scales with --glow-blur and peaks at
+  --glow-opacity.
+*/
+
+@layer components {
+  .glow-text {
+    --glow-halo:
+      0 0 calc(var(--glow-blur) * 0.35) var(--glow-color),
+      0 0 var(--glow-blur) var(--glow-color),
+      0 0 calc(var(--glow-blur) * 2.2) var(--glow-color);
+    position: relative;
+    display: block;
+    /* Its own stacking context, so the layer's negative z-index puts the
+       halos behind this headline's ink and nowhere further back. */
+    isolation: isolate;
+  }
+
+  .glow-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* One letter's halo: a box the size of its letter, holding a copy of
+     the glyph. The copy comes from generated content, so it is never
+     part of a selection, a copy, or a find-in-page match; it is drawn
+     transparent, leaving only its shadows.
+
+     The copy is centered in the box, and starts at the box's leading
+     edge whatever the text alignment. The script gives each box a line
+     exactly as tall as the letter's own extent, which puts the copy
+     precisely on the letter; the centering is what keeps it there (to
+     within a pixel) when a user stylesheet overrides line-height or
+     letter-spacing on every element, as the WCAG 1.4.12 text-spacing
+     test does, since a glyph's extent is centered in its line at any
+     line-height. */
+  .glow-halo {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    color: transparent;
+    white-space: pre;
+    text-shadow: var(--glow-halo);
+    opacity: 0;
+    /* Going out, the light fades at an even pace: the settle curve would
+       drop most of it in the first instant and leave no trail to see. */
+    transition: opacity var(--glow-out) var(--ease-fade);
+  }
+  .glow-halo::before {
+    content: attr(data-char);
+  }
+  .glow-halo[data-lit] {
+    opacity: var(--glow-opacity);
+    transition: opacity var(--glow-in) var(--ease-settle);
+  }
+
+  /* A word that moves on its own (the hero's rotating word) carries its
+     halos with it, in a layer of its own. It sits with the main layer,
+     behind the ink of the words beside it. */
+  .glow-text [data-glow-anchor] {
+    z-index: -1;
+  }
+}
+
+/* On a small screen the type is small and the light would crowd it: the
+   halo drops its tightest layer, the one that sits right against the
+   letter, and spreads less, so the letter's own edge stays clean. (The
+   lower intensity for small screens is set with the tokens.) */
+@media (max-width: 40rem) {
+  .glow-text {
+    --glow-halo:
+      0 0 calc(var(--glow-blur) * 1.1) var(--glow-color),
+      0 0 calc(var(--glow-blur) * 2.2) var(--glow-color);
+  }
+}
+
+/* Reduced motion: no sweep and no trail. One still, faint halo under the
+   part of the headline marked for it, drawn straight onto the text, so
+   it needs no script and nothing ever moves. It has no tight layer
+   either: drawn on the text itself, that layer would soften the edge of
+   every letter. */
+@media (prefers-reduced-motion: reduce) {
+  .glow-text [data-glow-static] {
+    --glow-static-color: color-mix(in srgb, var(--glow-color) calc(var(--glow-static-opacity) * 100%), transparent);
+    text-shadow:
+      0 0 calc(var(--glow-blur) * 1.1) var(--glow-static-color),
+      0 0 calc(var(--glow-blur) * 2.2) var(--glow-static-color);
+  }
+}
+
+/* Forced colors drops every shadow, and with it every halo: the glow is
+   simply off. The layer is removed outright rather than left as
+   invisible boxes, and a moving word goes back to the ordinary stacking
+   order. In this mode the browser paints an opaque plate behind each
+   line of text for legibility, and a word stacked behind the headline's
+   other ink would be stacked behind that plate too, and vanish. */
+@media (forced-colors: active) {
+  .glow-layer {
+    display: none;
+  }
+  .glow-text [data-glow-anchor] {
+    z-index: auto;
+  }
+}

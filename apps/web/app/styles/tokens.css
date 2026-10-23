@@ -1,0 +1,394 @@
+/*
+  Design tokens: the single source of truth for the Otolith interface.
+
+  Ink on cream, as the logo is drawn, or the same two exchanged. The page
+  is one flat ground, and behind the landing page runs the logo itself,
+  as a scene (components/background). Content sits over it on quiet
+  panels: a slightly lifted surface with a hairline edge. A raised
+  element is such a panel; a pressed element, and every input, is a well
+  cut into it. There are no textures and no gradients standing in for a
+  material, and nothing is blurred.
+
+  Two themes, one set of names. Light is the default; dark is used when
+  the system asks for it, or when the reader chooses it with the toggle
+  in the header (which sets data-theme on the root and overrides the
+  system either way). Every component reads these names and never a raw
+  color, so it works in both without knowing which it is in.
+
+  One accent, a violet, for the primary action and for focus, and for
+  whatever is current. A red exists beside it for errors and destructive
+  actions, and a warm brown-orange (coral on dark) is used only to say
+  "past the band".
+
+  To retune the interface, change a value here, in both themes.
+*/
+
+:root {
+  color-scheme: light;
+
+  /* Ground and ink: the logo's cream and its ink (13.9:1). --text-muted
+     is the secondary ink (6.2:1); nothing is set fainter than it. */
+  --bg: #f1ebe6;
+  --text: #231e1d;
+  --text-muted: #5d5552;
+
+  /* Panels. --surface is what a raised element is made of: a shade
+     lighter than the ground and nearly opaque, so text on it never
+     depends on what the scene is doing behind it. --surface-strong is
+     fully opaque, for anything that floats over other content (a dialog,
+     a menu). --well is the cut of an input or a badge. --knob is the
+     small moving part of a control. */
+  --surface: rgba(250, 247, 243, 0.88);
+  --surface-strong: #faf7f3;
+  --well: rgba(35, 30, 29, 0.055);
+  --knob: #ffffff;
+
+  /* Edges: the hairline every panel carries, and a stronger one for
+     wells and for hover. The hairline is far below the 3:1 a boundary
+     needs to count on its own, which is why no state in the interface is
+     ever signalled by an edge alone. */
+  --line: rgba(35, 30, 29, 0.14);
+  --line-strong: rgba(35, 30, 29, 0.3);
+
+  /* The accent: 5.3:1 as text or a focus ring on --bg, and it fills the
+     primary action under white (--on-accent, 6.2:1). --accent-strong is
+     its hover step. */
+  --accent: #5a43e6;
+  --accent-strong: #4a34cf;
+  --on-accent: #ffffff;
+
+  /* Danger: errors and destructive actions (revoke) only, and always
+     paired with an icon and text. 5.9:1 on --bg. An ink, never a fill. */
+  --danger: #a8281f;
+  --danger-strong: #8a1f18;
+
+  /* Drift: a portfolio past its band. 5.1:1 on --bg. Always beside a
+     label that says so. */
+  --drift: #a4471c;
+
+  /* The tones a panel's edge and shadow are drawn from. */
+  --shadow-light: rgba(255, 255, 255, 0.7);
+  --shadow-dark: rgba(35, 30, 29, 0.16);
+  --shadow-fill-light: rgba(255, 255, 255, 0.28);
+  --shadow-fill-dark: rgba(20, 12, 60, 0.3);
+
+  /* Depth: one multiplier on every shadow distance, so panels sit lower
+     on a small screen (see the media queries at the foot of this file). */
+  --depth: 1;
+  --elev-sm: calc(var(--depth) * 8px);
+  --elev-md: calc(var(--depth) * 18px);
+  --elev-lg: calc(var(--depth) * 30px);
+
+  /*
+    Depth levels. Raised, pressed, and flat, each in three sizes, and
+    every one written as the same three layers in the same order: the
+    hairline edge, an inner tone, and the shadow it casts. Keeping the
+    layers aligned lets a control ease from one level to another.
+  */
+  --raised-sm:
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 0 var(--shadow-light),
+    0 var(--elev-sm) calc(var(--elev-sm) * 2.5) calc(var(--elev-sm) * -1) var(--shadow-dark);
+  --raised-md:
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 0 var(--shadow-light),
+    0 var(--elev-md) calc(var(--elev-md) * 2.5) calc(var(--elev-md) * -1) var(--shadow-dark);
+  --raised-lg:
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 0 var(--shadow-light),
+    0 var(--elev-lg) calc(var(--elev-lg) * 2.5) calc(var(--elev-lg) * -1) var(--shadow-dark);
+
+  --pressed-sm:
+    inset 0 0 0 1px var(--line),
+    inset 0 2px 5px 0 var(--shadow-dark),
+    0 0 0 0 transparent;
+  --pressed-md:
+    inset 0 0 0 1px var(--line),
+    inset 0 3px 9px 0 var(--shadow-dark),
+    0 0 0 0 transparent;
+  --pressed-lg:
+    inset 0 0 0 1px var(--line),
+    inset 0 5px 16px 0 var(--shadow-dark),
+    0 0 0 0 transparent;
+
+  --flat:
+    inset 0 0 0 1px transparent,
+    inset 0 0 0 0 transparent,
+    0 0 0 0 transparent;
+
+  /* On a control filled with the accent: pressed in, and the small part
+     that rides on it. */
+  --pressed-fill:
+    inset 0 0 0 1px var(--shadow-fill-dark),
+    inset 0 2px 6px 0 var(--shadow-fill-dark),
+    0 0 0 0 transparent;
+  --raised-on-fill:
+    inset 0 0 0 1px transparent,
+    inset 0 1px 0 0 var(--shadow-fill-light),
+    0 2px 6px -1px var(--shadow-fill-dark);
+
+  /* The one divider in the system: a single hairline. */
+  --groove: inset 0 1px 0 var(--line);
+
+  /* Spacing: one 4px-based scale. Tailwind's numeric spacing utilities
+     run on the same base (see --spacing below), so p-6 and
+     var(--space-6) are always the same length. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Layout aliases, fluid between a 360px phone and a wide desktop:
+     the page's side gutter, the gap between landing sections, the
+     padding inside a card, and the widest a line of content runs. */
+  --space-gutter: clamp(1rem, 0.4rem + 2.7vw, 2.5rem);
+  --space-section: clamp(4rem, 2.6rem + 6vw, 7rem);
+  --space-card: clamp(1.25rem, 1rem + 1.1vw, 2rem);
+  --container: 76rem;
+
+  /* Control heights. md is the default and clears the 44px touch
+     target; sm is for dense rows inside a card. */
+  --control-sm: 2.25rem;
+  --control-md: 2.75rem;
+  --control-lg: 3.25rem;
+
+  /* Motion. Fast for hover and press feedback, base for ordinary state
+     changes, settle for the slower, physical "drift and settle" move
+     that has always been the identity's centerpiece. The one signature
+     curve they all run on, --ease-settle, is defined with the theme
+     below, since Tailwind has a namespace for easings. */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-settle: 1100ms;
+
+  /* The headline glow (see glow.css). Each letter the pointer passes is
+     lit from beneath for a moment, then let go: on this ground, real
+     light. Three of these are the ones to tune: --glow-opacity is the
+     intensity at peak, --glow-blur is how far the light spreads (in ems,
+     so it scales with the type), and --glow-hold is how long a letter
+     stays lit after the pointer has left it. --glow-in and --glow-out are
+     the fade either side of that, --glow-reach is how near the pointer
+     has to pass to light a letter, and --glow-static-opacity is the
+     strength of the one still halo shown in place of all this under
+     reduced motion. The ink itself never changes color. */
+  --glow-color: var(--accent);
+  --glow-opacity: 0.75;
+  --glow-blur: 0.22em;
+  --glow-hold: 1500ms;
+  --glow-in: 260ms;
+  --glow-out: 600ms;
+  --glow-reach: 8px;
+  --glow-static-opacity: 0.3;
+
+  /* Focus: the one cue every interactive element shares. */
+  --focus-width: 2px;
+  --focus-offset: 3px;
+  --focus-color: var(--accent);
+
+  /* Stacking: only what has to sit above the page. Dialogs and menus use
+     the browser's own top layer and need no number here. */
+  --z-toast: 60;
+}
+
+/*
+  The dark theme. The same list twice, because CSS has no way to say
+  "either of these" for a block of declarations: once for a system that
+  asks for dark (unless the reader has chosen light), once for a reader
+  who has chosen dark. Keep the two in step.
+*/
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    /* Cream on a warm near-black: text 16.4:1, secondary 8.7:1. */
+    --bg: #0f0d0d;
+    --text: #f1ebe6;
+    --text-muted: #b5aca6;
+    --surface: rgba(24, 21, 21, 0.88);
+    --surface-strong: #181515;
+    --well: rgba(0, 0, 0, 0.5);
+    --knob: #f1ebe6;
+    --line: rgba(241, 235, 230, 0.11);
+    --line-strong: rgba(241, 235, 230, 0.24);
+    /* The accent lightened until it passes on the dark ground (6.0:1), with the ground's own ink on it. */
+    --accent: #8f7dff;
+    --accent-strong: #a99bff;
+    --on-accent: #0f0d0d;
+    --danger: #ff8a8a;
+    --danger-strong: #ffb0b0;
+    --drift: #ff8279;
+    --shadow-light: rgba(241, 235, 230, 0.07);
+    --shadow-dark: rgba(0, 0, 0, 0.6);
+    --shadow-fill-light: rgba(255, 255, 255, 0.28);
+    --shadow-fill-dark: rgba(15, 13, 13, 0.34);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* Cream on a warm near-black: text 16.4:1, secondary 8.7:1. */
+  --bg: #0f0d0d;
+  --text: #f1ebe6;
+  --text-muted: #b5aca6;
+  --surface: rgba(24, 21, 21, 0.88);
+  --surface-strong: #181515;
+  --well: rgba(0, 0, 0, 0.5);
+  --knob: #f1ebe6;
+  --line: rgba(241, 235, 230, 0.11);
+  --line-strong: rgba(241, 235, 230, 0.24);
+  /* The accent lightened until it passes on the dark ground (6.0:1), with the ground's own ink on it. */
+  --accent: #8f7dff;
+  --accent-strong: #a99bff;
+  --on-accent: #0f0d0d;
+  --danger: #ff8a8a;
+  --danger-strong: #ffb0b0;
+  --drift: #ff8279;
+  --shadow-light: rgba(241, 235, 230, 0.07);
+  --shadow-dark: rgba(0, 0, 0, 0.6);
+  --shadow-fill-light: rgba(255, 255, 255, 0.28);
+  --shadow-fill-dark: rgba(15, 13, 13, 0.34);
+}
+
+/*
+  The type scale, radii, and tracking live in a static @theme block
+  rather than :root, so each one exists twice from a single definition:
+  as a Tailwind utility (text-sm, rounded-lg) and as a plain custom
+  property (var(--text-sm), var(--radius-lg)) for the component styles.
+
+  Type: a modular scale, base 16px, ratio 1.25 (a major third), rounded
+  to clean values. The steps from xl upward are fluid, so a heading set
+  at one step is right at 360px and on a wide desktop without a
+  breakpoint. instrument is kept as its own step: the large measured
+  figure, wherever a page shows one number as the instrument reading.
+
+  Radii: sm for wells and chips inside a card, md for inputs and
+  notices, lg for cards, xl for the largest panels, pill for buttons,
+  toggles, and badges: the round forms echo the rings.
+
+  Easing: one signature curve, a confident deceleration with no bounce.
+  Everything that moves in this interface settles on it. ease-fade is
+  its plain counterpart for the one thing that does not move: light
+  going out, by opacity alone, at an even pace rather than all at once.
+*/
+@theme static {
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-md: 1.25rem;
+  --text-md--line-height: 1.55;
+  --text-lg: 1.5625rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: clamp(1.5rem, 1.25rem + 1.1vw, 1.9375rem);
+  --text-xl--line-height: 1.25;
+  --text-2xl: clamp(1.75rem, 1.3rem + 2vw, 2.4375rem);
+  --text-2xl--line-height: 1.15;
+  --text-display: clamp(2.25rem, 1.35rem + 4.2vw, 3rem);
+  --text-display--line-height: 1.05;
+  --text-instrument: clamp(2.75rem, 1.6rem + 5vw, 4.75rem);
+  --text-instrument--line-height: 1;
+
+  --tracking-display: -0.02em;
+  --tracking-label: 0.12em;
+
+  --radius-*: initial;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
+  --radius-pill: 999px;
+
+  --spacing: 0.25rem;
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-fade: cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/*
+  Colors and typefaces, exposed to Tailwind by reference. Tailwind's own
+  default palette and shadow scale are cleared first, so a utility can
+  only ever reach a token defined above: there is no gray-400 or
+  shadow-md left to reach for by accident.
+
+  Typography is one superfamily plus one instrument face. Zalando Sans
+  Expanded carries every heading and the wordmark; Zalando Sans carries
+  body copy; JetBrains Mono carries every numeral, address, and hash,
+  set with tabular figures so columns of numbers align.
+*/
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-drift: var(--drift);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+
+  --font-display: var(--font-zalando-sans-expanded);
+  --font-sans: var(--font-zalando-sans);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+/* Panels sit lower on small screens: the same relationships, at three
+   quarters of the distance on a phone and a little less again on the
+   narrowest ones. */
+@media (max-width: 40rem) {
+  :root {
+    --depth: 0.75;
+    /* The headline glow is gentler on a small screen: less light, kept closer in. */
+    --glow-opacity: 0.45;
+    --glow-blur: 0.15em;
+    --glow-static-opacity: 0.2;
+  }
+}
+
+@media (max-width: 24rem) {
+  :root {
+    --depth: 0.6;
+  }
+}
+
+/* Anyone who has asked their system for more contrast gets a stronger
+   secondary ink, stronger edges and opaque panels, in whichever theme.
+   Component styles add a real outline to every surface under the same
+   query (see components.css). */
+@media (prefers-contrast: more) {
+  :root {
+    --text-muted: #3f3835;
+    --line: rgba(35, 30, 29, 0.36);
+    --line-strong: rgba(35, 30, 29, 0.62);
+    --surface: #faf7f3;
+  }
+  :root[data-theme="dark"] {
+    --text-muted: #d6cfca;
+    --line: rgba(241, 235, 230, 0.3);
+    --line-strong: rgba(241, 235, 230, 0.55);
+    --surface: #181515;
+  }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --text-muted: #d6cfca;
+    --line: rgba(241, 235, 230, 0.3);
+    --line-strong: rgba(241, 235, 230, 0.55);
+    --surface: #181515;
+  }
+}

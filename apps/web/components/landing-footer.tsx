@@ -1,4 +1,7 @@
-import Link from "next/link";
+import { BackgroundToggle } from "@/components/background/background";
+import { TextLink } from "@/components/ui/button";
+
+const CONTACT_EMAIL = "support@otolith.xyz";
 
 const LINK_GROUPS = [
   {
@@ -11,7 +14,7 @@ const LINK_GROUPS = [
   {
     heading: "Resources",
     links: [
-      { label: "Docs", href: "#docs" },
+      { label: "Docs", href: "https://github.com/midasbal/Otolith#readme" },
       { label: "GitHub", href: "https://github.com/midasbal/Otolith" },
     ],
   },
@@ -19,46 +22,49 @@ const LINK_GROUPS = [
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-hairline">
-      <div className="mx-auto flex max-w-5xl flex-col gap-12 px-6 py-16 sm:px-10">
-        <div className="flex flex-col gap-8 sm:flex-row sm:justify-between">
-          <div className="flex flex-col gap-3">
-            <span className="font-display text-md font-medium tracking-tight text-text">
-              Otolith
-            </span>
-            <p className="max-w-xs text-sm leading-relaxed text-text-muted">
-              An on-chain, non-custodial portfolio auto-rebalancer.
-            </p>
-          </div>
+    <footer data-quiet="" className="ot-container pb-10">
+      <div className="ot-divider" />
 
-          <div className="flex flex-wrap gap-12">
-            {LINK_GROUPS.map((group) => (
-              <div key={group.heading} className="flex flex-col gap-3">
-                <span className="text-xs uppercase tracking-[0.16em] text-text-faint">
-                  {group.heading}
-                </span>
-                <ul className="flex flex-col gap-2">
-                  {group.links.map((link) => (
-                    <li key={link.href}>
-                      <a
-                        href={link.href}
-                        className="text-sm text-text-muted transition-colors duration-[var(--duration-fast)] hover:text-text"
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+      <div className="flex flex-col gap-10 py-12 sm:flex-row sm:justify-between">
+        <div className="flex flex-col gap-3">
+          <span className="font-display text-md font-medium tracking-display text-text">Otolith</span>
+          <p className="max-w-xs text-sm leading-relaxed text-text-muted">
+            An on-chain, non-custodial portfolio auto-rebalancer.
+          </p>
         </div>
 
-        <div className="flex items-center justify-between border-t border-hairline pt-8 text-xs text-text-faint">
-          <span>Non-custodial, on-chain.</span>
-          <Link href="/app" className="hover:text-text-muted">
-            Open app
-          </Link>
+        <div className="flex flex-wrap gap-x-16 gap-y-10">
+          {LINK_GROUPS.map((group) => (
+            <nav key={group.heading} aria-label={group.heading} className="flex flex-col gap-3">
+              <span className="ot-caps">{group.heading}</span>
+              <ul className="flex flex-col gap-2">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <a href={link.href} className="ot-quiet-link text-sm">
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
+      </div>
+
+      <div className="ot-divider" />
+
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 pt-6 text-sm">
+        {/* The address is the link's visible text; "Email" is added for a
+            screen reader, which would otherwise hear an address with no
+            verb. The address may break anywhere if a narrow screen, or a
+            reader's own text spacing, leaves it no room. */}
+        <TextLink href={`mailto:${CONTACT_EMAIL}`} native muted className="[overflow-wrap:anywhere]">
+          <span className="sr-only">Email </span>
+          {CONTACT_EMAIL}
+        </TextLink>
+        <div className="flex items-center gap-4">
+          <BackgroundToggle />
+          <TextLink href="/app">Open app</TextLink>
         </div>
       </div>
     </footer>

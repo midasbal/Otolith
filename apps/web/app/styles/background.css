@@ -1,0 +1,102 @@
+/*
+  The background's own layer, and the room the page keeps for it (see
+  components/background/background.tsx).
+
+  One fixed canvas behind the page, which fades in once the scene is
+  running. It takes no pointer, and steps aside entirely under forced
+  colors.
+
+  A stage is an empty box in a chapter, in the logo's own proportions:
+  the room that chapter keeps clear for the scene's picture. The scene
+  fits the logo to it. Where the logo stands whole (the hero, and the
+  closing chapter) the box holds the logo itself, as an SVG: that is what
+  shows before the scene has loaded and wherever it cannot run, and the
+  scene draws its own logo exactly over it, so one gives way to the other
+  without a seam. The three chapters between have a still of their
+  picture instead, an image fetched only where the scene cannot run.
+*/
+
+@layer components {
+  .bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    width: 100%;
+    /* The tallest the screen gets, and not the height it has now: on a
+       phone the browser's toolbar slides away as the page scrolls, and a
+       canvas that followed it would be cleared and resized mid-scroll. */
+    height: 100vh;
+    height: 100lvh;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 900ms var(--ease-fade);
+  }
+  .bg-canvas[data-ready="true"] {
+    opacity: 1;
+  }
+
+  .ot-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1700 / 720;
+    pointer-events: none;
+  }
+  /* The app's one stage, beside the dashboard's title. */
+  .ot-stage-app {
+    flex: none;
+    width: min(13rem, 42%);
+    margin-block: calc(var(--space-2) * -1);
+  }
+  .ot-stage > .ot-logo {
+    display: block;
+    width: 100%;
+    color: var(--text);
+    transition: opacity 900ms var(--ease-fade);
+  }
+  :root[data-scene="live"] .ot-stage > .ot-logo {
+    opacity: 0;
+  }
+
+  /* The stills: one image to a picture, used as a mask over the text
+     color, so the same file serves both themes. */
+  :root[data-scene="none"] .ot-stage[data-still]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--text);
+    mask: var(--stage-still) center / contain no-repeat;
+  }
+  .ot-stage[data-still="drift"] {
+    --stage-still: url("/logo/still-drift.webp");
+  }
+  .ot-stage[data-still="return"] {
+    --stage-still: url("/logo/still-return.webp");
+  }
+  .ot-stage[data-still="bounds"] {
+    --stage-still: url("/logo/still-bounds.webp");
+  }
+
+  /* Text that sits directly on the ground. The scene goes quiet behind it
+     by itself, wherever the text is; nothing is needed here for that.
+     The block is only made a positioning context, as it always was. */
+  [data-quiet] {
+    position: relative;
+  }
+
+  /* The pause control's place in the layout: there whether or not the
+     control is, so nothing moves when the scene arrives. */
+  .bg-toggle {
+    display: inline-flex;
+    flex: none;
+    width: var(--control-sm);
+    height: var(--control-sm);
+  }
+}
+
+@media (forced-colors: active) {
+  .bg-canvas,
+  .ot-stage[data-still]::after {
+    display: none;
+  }
+}
