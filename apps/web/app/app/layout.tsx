@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { QueryProvider } from "@/components/query-provider";
 import { WalletProvider } from "@/components/wallet-provider";
 
 // /app/setup is a dedicated, full-attention flow, not the standard
@@ -16,22 +17,24 @@ export default function AppShellLayout({
   const pathname = usePathname();
 
   return (
-    <WalletProvider>
-      <a href="#main" className="ot-skip-link">
-        Skip to content
-      </a>
-      {isFocusedRoute(pathname) ? (
-        <main id="main" className="min-h-screen">
-          {children}
-        </main>
-      ) : (
-        <div className="flex min-h-screen flex-col lg:flex-row">
-          <AppSidebar />
-          <main id="main" className="min-w-0 flex-1">
+    <QueryProvider>
+      <WalletProvider>
+        <a href="#main" className="ot-skip-link">
+          Skip to content
+        </a>
+        {isFocusedRoute(pathname) ? (
+          <main id="main" className="min-h-screen">
             {children}
           </main>
-        </div>
-      )}
-    </WalletProvider>
+        ) : (
+          <div className="flex min-h-screen flex-col lg:flex-row">
+            <AppSidebar />
+            <main id="main" className="min-w-0 flex-1">
+              {children}
+            </main>
+          </div>
+        )}
+      </WalletProvider>
+    </QueryProvider>
   );
 }

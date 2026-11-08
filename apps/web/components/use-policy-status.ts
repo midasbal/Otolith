@@ -1,70 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getPolicyStatus, type PolicyStatus } from "@/lib/stellar";
 
 type PolicyState =
+  | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "loaded"; result: PolicyStatus };
 
-type Loaded = { address: string; state: PolicyState };
+const IDLE: PolicyState = { status: "idle" };
+const LOADING: PolicyState = { status: "loading" };
+const ERROR: PolicyState = {
+  status: "error",
+  message: "Could not reach the Stellar network. Check your connection and try again.",
+};
 
 /**
  * Loads whether a rebalance policy is installed on a smart account,
  * with loading and error states of its own. Passing `null` (not
  * connected) returns an idle state rather than fetching.
  *
- * Same pattern as the other read-layer hooks: "loading" is derived at
- * render time rather than set from inside the effect, so the effect
- * itself only ever calls setState from its async callbacks.
+ * The read is a query keyed by the account, so the last reading is kept
+ * while the app is open: a page that opens finds it at once, as
+ * "loaded", while one background read runs to confirm it (the query is
+ * always stale, so every mount reads again). Loading is only ever shown
+ * when there is no reading yet, and a background read that fails keeps
+ * the last good one on screen rather than replacing it with an error.
  */
 export function usePolicyStatus(address: string | null) {
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [reloadIndex, setReloadIndex] = useState(0);
+  const query = useQuery({
+    queryKey: ["policy", address],
+    queryFn: () => getPolicyStatus(address as string),
+    enabled: address !== null,
+    staleTime: 0,
+  });
 
-  useEffect(() => {
+  const { data, isError, refetch } = query;
+
+  const state = useMemo<PolicyState>(() => {
     if (!address) {
-      return;
+      return IDLE;
     }
-
-    let cancelled = false;
-
-    getPolicyStatus(address)
-      .then((result) => {
-        if (!cancelled) {
-          setLoaded({ address, state: { status: "loaded", result } });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!cancelled) {
-          setLoaded({
-            address,
-            state: {
-              status: "error",
-              message: "Could not reach the Stellar network. Check your connection and try again.",
-            },
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [address, reloadIndex]);
+    if (data) {
+      return { status: "loaded", result: data };
+    }
+    if (isError) {
+      return ERROR;
+    }
+    return LOADING;
+  }, [address, data, isError]);
 
   const retry = useCallback(() => {
-    setReloadIndex((n) => n + 1);
-  }, []);
+    void refetch();
+  }, [refetch]);
 
-  if (!address) {
-    return { state: { status: "idle" } as const, retry };
-  }
-
-  if (loaded && loaded.address === address) {
-    return { state: loaded.state, retry };
-  }
-
-  return { state: { status: "loading" } as const, retry };
+  return { state, retry };
 }
