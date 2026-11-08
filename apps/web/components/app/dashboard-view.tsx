@@ -71,7 +71,7 @@ export function DashboardConnectView({ connecting, error, onCreate, onConnect }:
  * Allocation now against target, and drift against the band. `due` is
  * whether the rebalance check calls for a rebalance (see rebalanceDue):
  * the badge takes the drift color only then, the same moment the
- * background does. (Exported for the gallery's extreme cases.)
+ * background does.
  */
 export function AllocationPanel({ result, due }: { result: Valued; due: boolean }) {
   const sellSymbol = result.sellAsset.code;
@@ -215,8 +215,6 @@ type DashboardViewProps = {
   /** The connected address, shortened for display. */
   accountLabel: string;
   walletError: string | null;
-  /** The funding panel (the lira on-ramp). */
-  fund: ReactNode;
   policyState: PolicyState;
   valuationState: ValuationState;
   rebalanceState: RebalanceState;
@@ -232,7 +230,6 @@ type DashboardViewProps = {
 export function DashboardView({
   accountLabel,
   walletError,
-  fund,
   policyState,
   valuationState,
   rebalanceState,
@@ -265,8 +262,6 @@ export function DashboardView({
           {walletError}
         </Notice>
       ) : null}
-
-      <div className="min-w-0">{fund}</div>
 
       <section aria-label="Portfolio" className="min-w-0">
         {policyState.status === "loading" ? <LoadingState>Checking your portfolio setup...</LoadingState> : null}

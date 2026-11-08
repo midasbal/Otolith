@@ -1,12 +1,12 @@
 # apps/web
 
-Frontend for Otolith: create or connect a passkey smart account, fund it from fiat, set target weights, install a rebalance policy, view balances and drift, and trigger a rebalance.
+Frontend for Otolith: create or connect a passkey smart account, set target weights, install a rebalance policy, view balances and drift, and trigger a rebalance.
 
 Next.js (App Router), TypeScript, Tailwind CSS. No component library and no animation or 3D library: the design system is bespoke, a dark identity built around one animated background, defined as design tokens in `app/styles/tokens.css` and built into a small set of primitives in `components/ui/`.
 
 ## Status
 
-Functional against Stellar testnet. Wallet creation and connection are real (passkey-backed smart accounts via `smart-account-kit`), balances are read live from chain, the policy setup flow installs a real on-chain rule, and rebalancing can be triggered and is validated by the deployed contracts. A "fund your portfolio in lira" flow (`/api/deposit-try`, see `lib/server/anchor.ts`) drives a real SEP-6 deposit against a Stellar testnet anchor and delivers testnet USDC into the user's account on-chain.
+Functional against Stellar testnet. Wallet creation and connection are real (passkey-backed smart accounts via `smart-account-kit`), balances are read live from chain, the policy setup flow installs a real on-chain rule, and rebalancing can be triggered and is validated by the deployed contracts.
 
 ## Run it
 
@@ -106,24 +106,16 @@ Hand-written WebGL 1, no library: about 29 KB of JavaScript in the production bu
 - Pause: a visible control in the landing page's header and footer and in the app's shell (WCAG 2.2.2). The choice is remembered across pages in `localStorage`, and the control still works where storage is refused. A paused scene stops where it is; from then on it shows each chapter's still as the page reaches it, as under reduced motion.
 - The canvas never takes clicks or focus, and the page scrolls natively.
 
-The scene's assets are made in the lab, `/dev/ui?bg=logo`, in development:
-
-- The integral's distance field: `window.__buildLogoField()` returns it as a PNG data URL, to save over `public/logo/integral-field.png`. Rebuild it only if the integral's outline in `geometry.ts` changes.
-- The stills: open `/dev/ui?bg=logo&still=1` (then `2`, `3`) in the light theme in a 1020x432 window; `window.__exportStill()` returns that picture as a WebP data URL (ink as opacity), to save over `public/logo/still-drift.webp`, `still-return.webp`, `still-bounds.webp`. Re-export them after changing how those pictures look.
+The scene's assets are committed files in `public/logo/`: `integral-field.png` (the integral's distance field) and three stills (`still-drift.webp`, `still-return.webp`, `still-bounds.webp`). They are not built by anything in this repo, so if the integral's outline in `geometry.ts` or the look of those pictures changes, they have to be remade and saved over these files.
 
 ### Retuning
 
-- Ground and ink: change `--bg` and `--text` in both themes, and the `LIGHT` and `DARK` constants in `components/background/logo-scene.ts` to match (and `GROUND` and `INK` in the lab if the light pair changes, then re-export the stills).
+- Ground and ink: change `--bg` and `--text` in both themes, and the `LIGHT` and `DARK` constants in `components/background/logo-scene.ts` to match.
 - Accent: change `--accent` and `--accent-strong` together, per theme. It must stay at or above 4.5:1 against `--bg`, and `--on-accent` at or above 4.5:1 against it.
 - How strongly the scene shows behind text: `DIM_REACH`, `VEIL_REACH` and the veil's strength in `logo-scene.ts`. Keep the reach shorter than the gap the page leaves between text and a stage, or the logo is dimmed where it stands. After any change, re-measure text contrast over the scene at 360, 768, and 1280 in both themes, moving, paused, and with reduced motion.
 - Trails: `TRAIL_SECONDS` and `TRAIL_MAX` in `logo-scene.ts`. The pour: `POUR_PACE` (how quickly it follows the page), `TRANSIT` (seconds on the path; keep it under `PAST * STEP`, the time the scene remembers), `POUR_AT_DRIFT` (what already lies in the right vessel while out of balance), `LEAN`.
-- After a token change, open the Tokens tab of the gallery (below): it reads the live values back from the page and shows each color's measured contrast.
 - Depth: `--depth` scales every shadow at once; the `--elev-*` distances set the three levels.
 
 ### Accessibility
 
 A panel's edge is far too faint to carry meaning, so no state is ever shown by an edge or a shadow alone. Current and selected items take the accent and a marker; errors take the danger ink, an icon, and text; drift takes the drift ink, a dot, and a label; disabled is a shape, not a paler color (the fill and shadow go, a dashed outline stays, the label keeps a readable ink), with a not-allowed cursor and `aria-disabled`; a busy button keeps full contrast and shows a spinner. Every interactive element draws the same accent focus ring on keyboard focus. Text over the scene is measured over its densest frames in both themes: body text at least 4.5:1, large text at least 3:1. Nothing flashes. Under `prefers-reduced-motion` state changes are instant and the scene stands still; under `prefers-contrast: more` panels turn opaque and every edge strengthens; under `forced-colors` the scene is removed and borders come back in system colors.
-
-### Gallery
-
-`/dev/ui` shows every token, every primitive, and every app screen in every state (loading, empty, error, success, balanced, drifting) from mock data, with no wallet and no network, in either theme (the toggle is at the top). The dashboard's states include the drift readout at its extremes (`?screen=dashboard&state=drift-band-200` and its neighbours): drift from -50% to +50% at three band widths, and the longest figures it can be asked to show. `/dev/ui?bg=logo` is the scene on its own. It exists in development only: the route is a 404 in a production build and is marked `noindex`.

@@ -95,33 +95,6 @@ export function formatUsd(amount: number): string {
   return amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/**
- * Parses a decimal amount string (up to 7 decimal places, Stellar's own
- * precision) into raw stroops as a bigint, in string arithmetic. Anchor
- * and contract amounts alike come back as decimal strings, not numbers
- * (SEP-6 amounts are strings by spec); converting through a float would
- * silently lose precision at this scale, so this never does that. Returns
- * null if the input is not a valid non-negative decimal amount.
- */
-export function parseDecimalToStroops(amount: string): bigint | null {
-  const trimmed = amount.trim();
-  if (!/^\d+(\.\d+)?$/.test(trimmed)) {
-    return null;
-  }
-
-  const [intPart, fracPart = ""] = trimmed.split(".");
-  if (fracPart.length > 7) {
-    return null;
-  }
-
-  const paddedFrac = fracPart.padEnd(7, "0");
-  try {
-    return BigInt(intPart) * BigInt(10_000_000) + BigInt(paddedFrac || "0");
-  } catch {
-    return null;
-  }
-}
-
 function pluralize(n: number, unit: string): string {
   return `${n} ${unit}${n === 1 ? "" : "s"}`;
 }

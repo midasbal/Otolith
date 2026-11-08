@@ -7,7 +7,6 @@ import { usePolicyStatus } from "@/components/use-policy-status";
 import { useRebalanceCheck } from "@/components/use-rebalance-check";
 import { useTriggerRebalance } from "@/components/use-trigger-rebalance";
 import { usePortfolioValuation, type PortfolioValuationInput } from "@/components/use-portfolio-value";
-import { FundInLira } from "@/components/fund-in-lira";
 import { DashboardConnectView, DashboardView } from "@/components/app/dashboard-view";
 import type { ExtraTokenContract } from "@/lib/stellar";
 import { BUY_ASSET } from "@/lib/stellar/policy-config";
@@ -17,8 +16,8 @@ export default function DashboardPage() {
   const { state: policyState, retry: retryPolicy } = usePolicyStatus(address);
 
   const extraTokenContracts: ExtraTokenContract[] = useMemo(() => {
-    // The portfolio's own USDC is always worth checking, even before a
-    // policy is installed: a lira deposit can land here first.
+    // USDC is half of the rebalanced pair, so its balance belongs on the
+    // portfolio view even before a policy is installed.
     const base: ExtraTokenContract[] = [{ contract: BUY_ASSET.contract, code: BUY_ASSET.symbol }];
     if (policyState.status === "loaded" && policyState.result.kind === "installed") {
       const { params } = policyState.result;
@@ -79,7 +78,6 @@ export default function DashboardPage() {
     <DashboardView
       accountLabel={truncateAddress(address)}
       walletError={error}
-      fund={<FundInLira account={address} onDeposited={retryBalances} />}
       policyState={policyState}
       valuationState={valuationState}
       rebalanceState={rebalanceState}

@@ -11,13 +11,13 @@ You choose a target allocation, for example 80% XLM and 20% USDC, and sign it on
 
 Holding a target allocation usually forces a choice. You either rebalance by hand, watching prices and placing trades yourself, or you hand your assets to a custodian and trust them to do it. The first is tedious and easy to get wrong. The second means giving up control of your funds.
 
-Otolith removes that trade-off. It automates rebalancing while your assets stay entirely in your own custody, and it adds a fiat on-ramp so a new user can start from local currency instead of needing crypto first. The target user is anyone who wants a hands-off, rules-based portfolio without surrendering their keys.
+Otolith removes that trade-off. It automates rebalancing while your assets stay entirely in your own custody. The target user is anyone who wants a hands-off, rules-based portfolio without surrendering their keys.
 
 ## How it works for a user
 
 1. Create an account with a passkey. No seed phrase, no browser extension.
 2. Set your target allocation, drift band, slippage limit, and cooldown. Signing this once installs the policy on your account.
-3. Fund it, including directly with Turkish lira through the built-in anchor flow.
+3. Fund it by sending XLM and USDC to your account's address.
 4. When the portfolio drifts past the band, a rebalance brings it back. Anyone can trigger it, but it can only execute within the rules you signed.
 5. Revoke anytime. One signature removes the automation's permission and your balances stay put.
 
@@ -31,14 +31,13 @@ Otolith is built around a passkey-owned Soroban smart account and two Rust contr
 
 **Rebalancer contract (`rebalancer`).** This executes an approved rebalance. It reads the current allocation, computes the trade needed to move toward target, and routes the swap. It can never move assets outside what the policy contract allows.
 
-**Web app (`apps/web`).** A Next.js frontend for account creation, portfolio setup, live drift and value readouts, triggering rebalances, the lira on-ramp, and revoke. It reads chain state through public Stellar RPC and the oracle, with no trusted backend in the custody path.
+**Web app (`apps/web`).** A Next.js frontend for account creation, portfolio setup, live drift and value readouts, triggering rebalances, and revoke. It reads chain state through public Stellar RPC and the oracle, with no trusted backend in the custody path.
 
 ## Stellar integrations
 
 - **Soroban smart accounts** for non-custodial, passkey-owned wallets and the scoped policy signer that authorizes permissionless rebalances.
 - **Reflector oracle** for on-chain pricing. Every rebalance is valued and bounds-checked against Reflector, so trades cannot execute at a price the contract would not trust.
 - **Soroswap** as the execution venue. Approved rebalances route their swaps through Soroswap pools.
-- **SEP-6 anchor** for the fiat on-ramp. The lira deposit runs a real SEP-6 flow against a Stellar testnet anchor, delivering USDC on-chain into the user's account.
 
 ## Key design decisions and trade-offs
 
@@ -54,8 +53,6 @@ Otolith is built around a passkey-owned Soroban smart account and two Rust contr
 
 **Getting a smart account to trade permissionlessly.** A permissionless rebalance is not a passkey operation, but the outer transaction still needs a classic account to pay the fee. We resolved this with a fee-only submitter that satisfies the transaction envelope without ever becoming a signer on the smart account, preserving the non-custodial property.
 
-**Fiat into a smart account.** Anchors deliver to classic accounts, not directly to Soroban smart accounts. The on-ramp bridges that gap so a lira deposit lands as spendable USDC in the user's smart account.
-
 ## Deployed contracts (Stellar Testnet)
 
 - `rebalance-policy`: `CADFMK3SCILEPHADKHRLH6W7HWNY6R3VSTYMWJINIPKDQX5NW2YJKS2Q`
@@ -63,9 +60,7 @@ Otolith is built around a passkey-owned Soroban smart account and two Rust contr
 
 ## Status
 
-Working MVP on Stellar testnet. Account creation, setup, live drift and value, permissionless rebalancing, revoke, an on-chain activity feed, and the lira on-ramp are all functional and confirmed with real transactions, including both the successful rebalance path and the safety-rejection path (a rebalance is intentionally refused when a testnet pool cannot fill it within the user's slippage bound).
-
-The anchor is a testnet sandbox, so its bank transfer and identity steps are simulated. The Stellar side, the SEP flow and the USDC delivery, is genuine on-chain testnet activity.
+Working MVP on Stellar testnet. Account creation, setup, live drift and value, permissionless rebalancing, revoke, and an on-chain activity feed are all functional and confirmed with real transactions, including both the successful rebalance path and the safety-rejection path (a rebalance is intentionally refused when a testnet pool cannot fill it within the user's slippage bound).
 
 ## Repo layout
 
