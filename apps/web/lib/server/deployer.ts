@@ -61,10 +61,31 @@ export function getDeployerPublicKey(): string {
   return getDeployerKeypair().publicKey();
 }
 
+/**
+ * A sponsored call that did not go through. `message` is what the caller is
+ * told; `stage` and `detail` are for the server's own log (see
+ * deployer-log.ts) and never reach a response.
+ */
 export class DeploySponsorError extends Error {
-  constructor(message: string) {
+  readonly stage: "decode" | "prepare" | "send" | "confirm";
+  readonly detail: string | undefined;
+
+  constructor(message: string, stage: "decode" | "prepare" | "send" | "confirm", detail?: string) {
     super(message);
     this.name = "DeploySponsorError";
+    this.stage = stage;
+    this.detail = detail;
+  }
+}
+
+// The result code of a failed transaction, for the log: the name of the
+// outermost code, which is enough to tell a bad sequence from a failed
+// contract call without dumping XDR.
+function resultCodeName(result: xdr.TransactionResult | undefined): string | undefined {
+  try {
+    return result?.result().switch().name;
+  } catch {
+    return undefined;
   }
 }
 
@@ -95,8 +116,12 @@ export async function sponsorHostFunctionCall(func: string, auth: string[]): Pro
   try {
     hostFunction = xdr.HostFunction.fromXDR(func, "base64");
     authEntries = auth.map((entry) => xdr.SorobanAuthorizationEntry.fromXDR(entry, "base64"));
-  } catch {
-    throw new DeploySponsorError("The deploy payload could not be decoded.");
+  } catch (err) {
+    throw new DeploySponsorError(
+      "The deploy payload could not be decoded.",
+      "decode",
+      err instanceof Error ? err.message : undefined,
+    );
   }
 
   const account = await sorobanServer.getAccount(deployer.publicKey());
@@ -114,7 +139,11 @@ export async function sponsorHostFunctionCall(func: string, auth: string[]): Pro
     prepared = await sorobanServer.prepareTransaction(transaction);
   } catch (err) {
     console.error(err);
-    throw new DeploySponsorError("The deploy transaction could not be prepared.");
+    throw new DeploySponsorError(
+      "The deploy transaction could not be prepared.",
+      "prepare",
+      err instanceof Error ? err.message : undefined,
+    );
   }
 
   prepared.sign(deployer);
@@ -122,13 +151,23 @@ export async function sponsorHostFunctionCall(func: string, auth: string[]): Pro
   const sendResult = await sorobanServer.sendTransaction(prepared);
   if (sendResult.status === "ERROR") {
     console.error(sendResult);
-    throw new DeploySponsorError("The deploy transaction was rejected before submission.");
+    throw new DeploySponsorError(
+      "The deploy transaction was rejected before submission.",
+      "send",
+      resultCodeName(sendResult.errorResult),
+    );
   }
 
   const final = await sorobanServer.pollTransaction(sendResult.hash, { attempts: 15 });
   if (final.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
     console.error(final);
-    throw new DeploySponsorError("The deploy transaction did not succeed on-chain.");
+    throw new DeploySponsorError(
+      "The deploy transaction did not succeed on-chain.",
+      "confirm",
+      final.status === rpc.Api.GetTransactionStatus.FAILED
+        ? `FAILED: ${resultCodeName(final.resultXdr) ?? "unknown result"}`
+        : String(final.status),
+    );
   }
 
   return { hash: sendResult.hash };
