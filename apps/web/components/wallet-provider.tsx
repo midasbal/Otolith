@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { IndexedDBStorage, SmartAccountKit } from "smart-account-kit";
+import type { CreationStage } from "@/components/app/progress-stages";
 import { NETWORK_PASSPHRASE, SOROBAN_RPC_URL } from "@/lib/stellar";
 
 // Published, already-deployed OpenZeppelin smart account WASM and WebAuthn
@@ -27,7 +28,16 @@ const DEPLOY_SPONSOR_URL = "/api/deployer";
 
 type WalletContextValue = {
   address: string | null;
+  /**
+   * True from mount until the silent restore of a saved session has
+   * settled, whether it found one or not. While it is true, "no address"
+   * does not mean "logged out" yet, so screens show a loading view
+   * instead of the way in.
+   */
+  restoring: boolean;
   connecting: boolean;
+  /** Where account creation is, while it runs; null otherwise. */
+  creationStage: CreationStage | null;
   error: string | null;
   createWallet: () => Promise<void>;
   connectWallet: () => Promise<void>;
@@ -122,7 +132,9 @@ async function connectWalletWithSettlingRetry() {
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [creationStage, setCreationStage] = useState<CreationStage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const restoreAttempted = useRef(false);
 
@@ -142,14 +154,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       })
       .catch((err) => {
         console.error(err);
+      })
+      .finally(() => {
+        setRestoring(false);
       });
   }, []);
 
   const createWallet = useCallback(async () => {
     setConnecting(true);
+    setCreationStage("passkey");
     setError(null);
+    let stopListening = () => {};
     try {
       const kit = getKit();
+      // The kit reports two real moments while it creates an account: the
+      // passkey being registered, then the deploy transaction being built
+      // and signed, just before it is submitted. Everything after that
+      // (submitting, confirming, funding) emits nothing, so the last stage
+      // simply holds until createWallet resolves.
+      const stopPasskey = kit.events.on("credentialCreated", () => setCreationStage("preparing"));
+      const stopPrepared = kit.events.on("walletConnected", () => setCreationStage("deploying"));
+      stopListening = () => {
+        stopPasskey();
+        stopPrepared();
+      };
       const result = await kit.createWallet(APP_NAME, `Otolith account ${new Date().toLocaleDateString()}`, {
         autoSubmit: true,
         autoFund: true,
@@ -171,6 +199,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       console.error(err);
       setError(describeError(err, "Could not create a new Otolith account. Try again."));
     } finally {
+      stopListening();
+      setCreationStage(null);
       setConnecting(false);
     }
   }, []);
@@ -202,8 +232,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ address, connecting, error, createWallet, connectWallet, disconnect }),
-    [address, connecting, error, createWallet, connectWallet, disconnect],
+    () => ({ address, restoring, connecting, creationStage, error, createWallet, connectWallet, disconnect }),
+    [address, restoring, connecting, creationStage, error, createWallet, connectWallet, disconnect],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

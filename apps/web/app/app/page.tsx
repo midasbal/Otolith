@@ -12,7 +12,7 @@ import type { ExtraTokenContract } from "@/lib/stellar";
 import { BUY_ASSET } from "@/lib/stellar/policy-config";
 
 export default function DashboardPage() {
-  const { address, connecting, error, createWallet, connectWallet } = useWallet();
+  const { address, restoring, connecting, creationStage, error, createWallet, connectWallet } = useWallet();
   const { state: policyState, retry: retryPolicy } = usePolicyStatus(address);
 
   const extraTokenContracts: ExtraTokenContract[] = useMemo(() => {
@@ -66,7 +66,9 @@ export default function DashboardPage() {
   if (!address) {
     return (
       <DashboardConnectView
+        restoring={restoring}
         connecting={connecting}
+        creationStage={creationStage}
         error={error}
         onCreate={() => void createWallet()}
         onConnect={() => void connectWallet()}

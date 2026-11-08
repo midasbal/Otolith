@@ -80,7 +80,7 @@ function validateDuration(
 }
 
 export default function SetupPage() {
-  const { address, connecting, createWallet, connectWallet } = useWallet();
+  const { address, restoring, connecting, creationStage, createWallet, connectWallet } = useWallet();
   const { state: policyState } = usePolicyStatus(address);
   const { state: installState, install } = useInstallPolicy();
 
@@ -145,7 +145,9 @@ export default function SetupPage() {
   return (
     <SetupView
       address={address}
+      restoring={restoring}
       connecting={connecting}
+      creationStage={creationStage}
       onCreate={() => void createWallet()}
       onConnect={() => void connectWallet()}
       alreadyInstalled={alreadyInstalled}

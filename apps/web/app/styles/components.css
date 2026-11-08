@@ -1104,6 +1104,104 @@
     color: var(--accent);
   }
 
+  /* ── Operation progress ─────────────────────────────────────────────
+     The display for a slow on-chain operation (components/ui/
+     operation-progress.tsx). Its track is the level's line and bubble
+     with a mark at each stage: the bubble settles on the current stage
+     the way the level does, then drifts a little to either side of the
+     rest and settles back for as long as it waits. */
+
+  .ot-progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+  .ot-progress-track {
+    position: relative;
+    height: 1.5rem;
+  }
+  .ot-progress-mark {
+    position: absolute;
+    top: 28%;
+    bottom: 28%;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background-color: var(--line-strong);
+    transition: background-color var(--duration-base) var(--ease-settle);
+  }
+  .ot-progress-mark[data-state="reached"] {
+    background-color: var(--text);
+  }
+  /* A zero-width carrier at the bubble's place, as in the level. */
+  .ot-progress-travel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--progress-at) * 100%);
+    width: 0;
+    transition: left var(--duration-settle) var(--ease-settle);
+  }
+  .ot-progress-drift {
+    position: absolute;
+    inset: 0;
+    animation: ot-progress-drift 2800ms var(--ease-settle) infinite;
+  }
+  .ot-progress-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ot-progress-step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    transition: color var(--duration-base) var(--ease-settle);
+  }
+  .ot-progress-step[data-state="done"] {
+    color: var(--text);
+  }
+  .ot-progress-step[data-state="active"] {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .ot-progress-dot {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--line-strong);
+    border-radius: 50%;
+    color: var(--on-accent);
+    transition:
+      background-color var(--duration-base) var(--ease-settle),
+      border-color var(--duration-base) var(--ease-settle);
+  }
+  .ot-progress-step[data-state="done"] .ot-progress-dot {
+    border-color: var(--accent);
+    background-color: var(--accent);
+  }
+  .ot-progress-step[data-state="active"] .ot-progress-dot {
+    border-color: var(--accent);
+    background-color: var(--accent);
+    animation: ot-progress-breathe 2600ms var(--ease-settle) infinite;
+  }
+  /* Reduced motion also asks for a still bubble and dot; the global rule
+     above already collapses the durations, and this keeps the end state
+     the same whichever way it is reached. */
+  .ot-progress[data-motion="still"] .ot-progress-drift,
+  .ot-progress[data-motion="still"] .ot-progress-dot {
+    animation: none;
+  }
+
   .ot-empty {
     display: flex;
     flex-direction: column;
@@ -1366,6 +1464,21 @@
   }
 }
 
+/* The bubble leaves its place and settles back; each leg eases on the
+   settle curve, so it moves off quickly and comes to rest slowly. */
+@keyframes ot-progress-drift {
+  45% {
+    transform: translateX(0.625rem);
+  }
+}
+
+@keyframes ot-progress-breathe {
+  50% {
+    opacity: 0.6;
+    transform: scale(1.18);
+  }
+}
+
 @keyframes ot-spin {
   to {
     transform: rotate(360deg);
@@ -1432,6 +1545,20 @@
    the highlight color, the switch and the fills take it too. */
 
 @media (forced-colors: active) {
+  .ot-progress-mark {
+    background-color: CanvasText;
+    forced-color-adjust: none;
+  }
+  .ot-progress-dot {
+    border-color: CanvasText;
+    background-color: Canvas;
+    color: CanvasText;
+    forced-color-adjust: none;
+  }
+  .ot-progress-step[data-state="done"] .ot-progress-dot,
+  .ot-progress-step[data-state="active"] .ot-progress-dot {
+    border-color: Highlight;
+  }
   :is(
     .ot-raised-sm,
     .ot-raised,

@@ -7,12 +7,14 @@ import { Field, Input } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icons";
 import { Select } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Notice } from "@/components/ui/states";
+import { OperationProgress } from "@/components/ui/operation-progress";
+import { LoadingState, Notice } from "@/components/ui/states";
 import { Stepper } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { formatBps, formatDurationSeconds } from "@/lib/stellar/format";
 import { ThemeToggle } from "@/components/ui/theme";
 import { ConnectPrompt, Screen, ScreenHeader, TransactionReceipt } from "./common";
+import { INSTALL_STAGES, SLOW_WAIT_NOTE, type CreationStage } from "./progress-stages";
 import type { InstallState } from "./types";
 
 /*
@@ -37,7 +39,9 @@ const copy = "mt-2 text-sm leading-relaxed text-text-muted";
 
 type SetupViewProps = {
   address: string | null;
+  restoring: boolean;
   connecting: boolean;
+  creationStage: CreationStage | null;
   onCreate: () => void;
   onConnect: () => void;
 
@@ -94,7 +98,7 @@ export function SetupView(props: SetupViewProps) {
         title="Set target weights"
         action={
           <div className="flex items-center gap-3">
-            <TextLink href="/app" native className="text-sm">
+            <TextLink href="/app" className="text-sm">
               Back to dashboard
             </TextLink>
             {/* This flow has no sidebar, so the theme control sits here. */}
@@ -103,14 +107,18 @@ export function SetupView(props: SetupViewProps) {
         }
       />
 
-      {!address ? (
+      {!address && props.restoring ? (
+        <LoadingState>Restoring your session...</LoadingState>
+      ) : !address ? (
         <Card className="flex flex-col gap-5">
           <p className="text-sm leading-relaxed text-text-muted">
             This flow sets up automatic rebalancing on your own smart
             account, so it needs one connected first.
           </p>
           <ConnectPrompt
+            restoring={false}
             connecting={props.connecting}
+            creationStage={props.creationStage}
             onCreate={props.onCreate}
             onConnect={props.onConnect}
             connectLabel="Connect with your passkey"
@@ -126,7 +134,7 @@ export function SetupView(props: SetupViewProps) {
               existing policy from here is not supported yet; manage it from Settings.
             </p>
           </div>
-          <ButtonLink href="/app" native>
+          <ButtonLink href="/app">
             Back to dashboard
           </ButtonLink>
         </Card>
@@ -369,7 +377,7 @@ function ReviewStep({
           </div>
         </div>
         <TransactionReceipt hash={installState.hash} />
-        <ButtonLink href="/app" native variant="primary" className="w-fit">
+        <ButtonLink href="/app" variant="primary" className="w-fit">
           Go to dashboard
         </ButtonLink>
       </Card>
@@ -409,12 +417,21 @@ function ReviewStep({
         </Notice>
       ) : null}
 
+      {installState.status === "installing" ? (
+        <OperationProgress
+          label="Installing your policy"
+          stages={INSTALL_STAGES}
+          current={installState.stage}
+          note={SLOW_WAIT_NOTE}
+        />
+      ) : null}
+
       <div className="flex flex-wrap justify-between gap-4">
         <Button onClick={onBackToParams} disabled={installing}>
           Back
         </Button>
         <Button variant="primary" onClick={onAuthorize} disabled={installing || !paramsValid} loading={installing}>
-          {installing ? "Waiting for passkey..." : "Authorize and sign"}
+          {installing ? "Installing policy..." : "Authorize and sign"}
         </Button>
       </div>
       <p className="text-sm text-text-muted">One signature, no fee to you.</p>

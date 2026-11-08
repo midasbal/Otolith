@@ -2,9 +2,11 @@ import type { ReactNode } from "react";
 import { Button, TextButton, TextLink } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { DataList, DataRow } from "@/components/ui/data-list";
-import { Notice } from "@/components/ui/states";
+import { OperationProgress } from "@/components/ui/operation-progress";
+import { LoadingState, Notice } from "@/components/ui/states";
 import { TxHash } from "@/components/ui/tx-hash";
 import { formatBps, formatDurationSeconds } from "@/lib/stellar/format";
+import { CREATION_STAGES, SLOW_WAIT_NOTE, type CreationStage } from "./progress-stages";
 import type { PolicyTerms } from "./types";
 
 /*
@@ -53,7 +55,11 @@ export function ScreenHeader({ title, action, children }: ScreenHeaderProps) {
 }
 
 type ConnectPromptProps = {
+  /** A saved session is still being looked for: the way in is not shown yet. */
+  restoring: boolean;
   connecting: boolean;
+  /** Where account creation is while it runs, null when it is not. */
+  creationStage: CreationStage | null;
   error?: string | null;
   onCreate: () => void;
   onConnect: () => void;
@@ -64,24 +70,42 @@ type ConnectPromptProps = {
 /**
  * The two ways in: create an account, or connect with a passkey you
  * already have. Shown wherever a screen needs an account and has none.
+ * While a saved session is still being restored there is no way in to
+ * offer yet, so a loading line stands in; while an account is being
+ * created, its stages are shown beside the disabled button.
  */
 export function ConnectPrompt({
+  restoring,
   connecting,
+  creationStage,
   error,
   onCreate,
   onConnect,
   connectLabel = "Have an account already? Connect with your passkey",
 }: ConnectPromptProps) {
+  if (restoring) {
+    return <LoadingState>Restoring your session...</LoadingState>;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
         <Button variant="primary" onClick={onCreate} disabled={connecting} loading={connecting}>
-          {connecting ? "Working..." : "Create account"}
+          {creationStage ? "Creating account..." : connecting ? "Working..." : "Create account"}
         </Button>
         <TextButton onClick={onConnect} disabled={connecting}>
           {connectLabel}
         </TextButton>
       </div>
+      {creationStage ? (
+        <OperationProgress
+          label="Creating your account"
+          stages={CREATION_STAGES}
+          current={creationStage}
+          note={SLOW_WAIT_NOTE}
+          className="max-w-xl"
+        />
+      ) : null}
       {error ? (
         <Notice tone="danger" role="alert" className="max-w-xl">
           {error}

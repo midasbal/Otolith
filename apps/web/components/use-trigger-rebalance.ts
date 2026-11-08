@@ -1,10 +1,16 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { TriggerStage } from "@/components/app/progress-stages";
+
+// The server submits, then waits for the ledger, in one request that
+// reports nothing along the way, so "confirming" follows the clock: it
+// is shown once the request has been out this long.
+const CONFIRMING_AFTER_MS = 5000;
 
 type TriggerState =
   | { status: "idle" }
-  | { status: "submitting" }
+  | { status: "submitting"; stage: TriggerStage }
   | { status: "success"; hash: string; ledger: number | null }
   | { status: "error"; message: string };
 
@@ -18,7 +24,8 @@ export function useTriggerRebalance() {
   const [state, setState] = useState<TriggerState>({ status: "idle" });
 
   const trigger = useCallback(async (account: string): Promise<boolean> => {
-    setState({ status: "submitting" });
+    setState({ status: "submitting", stage: "submitting" });
+    const confirmingTimer = setTimeout(() => setState({ status: "submitting", stage: "confirming" }), CONFIRMING_AFTER_MS);
     try {
       const res = await fetch("/api/rebalance", {
         method: "POST",
@@ -39,6 +46,8 @@ export function useTriggerRebalance() {
       console.error(err);
       setState({ status: "error", message: "Could not reach the server to submit this rebalance." });
       return false;
+    } finally {
+      clearTimeout(confirmingTimer);
     }
   }, []);
 

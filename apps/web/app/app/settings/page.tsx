@@ -33,13 +33,15 @@ function CopyAddressButton({ address }: { address: string }) {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { address, connecting, error, createWallet, connectWallet } = useWallet();
+  const { address, restoring, connecting, creationStage, error, createWallet, connectWallet } = useWallet();
   const { state: policyState, retry: retryPolicy } = usePolicyStatus(address);
 
   if (!address) {
     return (
       <SettingsConnectView
+        restoring={restoring}
         connecting={connecting}
+        creationStage={creationStage}
         error={error}
         onCreate={() => void createWallet()}
         onConnect={() => void connectWallet()}

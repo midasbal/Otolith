@@ -7,7 +7,7 @@ import { Button, IconButton, TextButton } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { Mark } from "@/components/ui/mark";
-import { Notice } from "@/components/ui/states";
+import { LoadingState, Notice } from "@/components/ui/states";
 
 /*
   The app's chrome: the sidebar on wide screens, a top bar with a sheet
@@ -67,6 +67,8 @@ type AccountStatusViewProps = {
   address: string | null;
   /** The address, shortened for display. */
   addressLabel: string | null;
+  /** A saved session is still being looked for: neither way in nor out is known yet. */
+  restoring: boolean;
   connecting: boolean;
   error: string | null;
   onCreate: () => void;
@@ -78,6 +80,7 @@ type AccountStatusViewProps = {
 export function AccountStatusView({
   address,
   addressLabel,
+  restoring,
   connecting,
   error,
   onCreate,
@@ -88,7 +91,9 @@ export function AccountStatusView({
     <div className="flex flex-col gap-3">
       <p className="ot-caps">Account</p>
 
-      {address ? (
+      {restoring ? (
+        <LoadingState>Restoring...</LoadingState>
+      ) : address ? (
         <div className="flex flex-col items-start gap-3">
           <span className="ot-pressed-sm ot-num w-full truncate rounded-md px-4 py-2.5 text-sm text-text" title={address}>
             {addressLabel}

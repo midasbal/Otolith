@@ -5,11 +5,13 @@ import { Button, ButtonLink, TextLink } from "@/components/ui/button";
 import { Card, IconWell } from "@/components/ui/card";
 import { DriftGauge } from "@/components/ui/drift-gauge";
 import { Icon, type IconName } from "@/components/ui/icons";
+import { OperationProgress } from "@/components/ui/operation-progress";
 import { EmptyState, ErrorState, LoadingState, Notice } from "@/components/ui/states";
 import { formatBalanceAmount, formatBps, formatUsd } from "@/lib/stellar/format";
 import { ConnectPrompt, PolicyTermsList, Screen, ScreenHeader, TransactionReceipt } from "./common";
 import { Logo } from "@/components/ui/mark";
 import { PortfolioField, rebalanceDue } from "./portfolio-field";
+import { SLOW_WAIT_NOTE, TRIGGER_STAGES, type CreationStage } from "./progress-stages";
 import type { BalancesState, PolicyState, PolicyTerms, RebalanceState, TriggerState, ValuationState } from "./types";
 
 /*
@@ -47,22 +49,31 @@ const BAND_LABEL: Record<Valued["bandState"], string> = {
 };
 
 type ConnectProps = {
+  restoring: boolean;
   connecting: boolean;
+  creationStage: CreationStage | null;
   error: string | null;
   onCreate: () => void;
   onConnect: () => void;
 };
 
 /** The dashboard before an account is connected. */
-export function DashboardConnectView({ connecting, error, onCreate, onConnect }: ConnectProps) {
+export function DashboardConnectView({ restoring, connecting, creationStage, error, onCreate, onConnect }: ConnectProps) {
   return (
     <Screen>
       <ScreenHeader title="Dashboard">
-        Otolith holds your funds in your own smart account, secured by a
-        passkey instead of a password. Create one to get started, or
-        connect with a passkey you already have.
+        {restoring
+          ? null
+          : "Otolith holds your funds in your own smart account, secured by a passkey instead of a password. Create one to get started, or connect with a passkey you already have."}
       </ScreenHeader>
-      <ConnectPrompt connecting={connecting} error={error} onCreate={onCreate} onConnect={onConnect} />
+      <ConnectPrompt
+        restoring={restoring}
+        connecting={connecting}
+        creationStage={creationStage}
+        error={error}
+        onCreate={onCreate}
+        onConnect={onConnect}
+      />
     </Screen>
   );
 }
@@ -177,7 +188,7 @@ function PortfolioCard({ terms, valuationState, due }: { terms: PolicyTerms; val
         <PolicyTermsList terms={terms} className="mt-2" />
       </div>
 
-      <TextLink href="/app/settings" native className="w-fit text-sm">
+      <TextLink href="/app/settings" className="w-fit text-sm">
         Manage or revoke this policy in Settings
       </TextLink>
     </Card>
@@ -282,7 +293,7 @@ export function DashboardView({
                 step, fully in your control.
               </p>
             </div>
-            <ButtonLink href="/app/setup" native variant="primary">
+            <ButtonLink href="/app/setup" variant="primary">
               Choose your targets
             </ButtonLink>
           </Card>
@@ -358,6 +369,15 @@ export function DashboardView({
                   >
                     {triggerState.status === "submitting" ? "Submitting..." : "Rebalance now"}
                   </Button>
+                  {triggerState.status === "submitting" ? (
+                    <OperationProgress
+                      label="Submitting your rebalance"
+                      stages={TRIGGER_STAGES}
+                      current={triggerState.stage}
+                      note={SLOW_WAIT_NOTE}
+                      className="mt-5 max-w-sm"
+                    />
+                  ) : null}
                   {triggerState.status === "error" ? (
                     <Notice tone="danger" role="alert" className="mt-4">
                       {triggerState.message}

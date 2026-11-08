@@ -20,12 +20,13 @@ function isActiveRoute(pathname: string, href: string) {
 }
 
 function AccountStatus() {
-  const { address, connecting, error, createWallet, connectWallet, disconnect } = useWallet();
+  const { address, restoring, connecting, error, createWallet, connectWallet, disconnect } = useWallet();
 
   return (
     <AccountStatusView
       address={address}
       addressLabel={address ? truncateAddress(address) : null}
+      restoring={restoring}
       connecting={connecting}
       error={error}
       onCreate={() => void createWallet()}

@@ -4,6 +4,7 @@ import { DataList, DataRow } from "@/components/ui/data-list";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { formatBalanceAmount, formatDurationSeconds } from "@/lib/stellar/format";
 import { ConnectPrompt, explorerTxUrl, Screen, ScreenHeader } from "./common";
+import type { CreationStage } from "./progress-stages";
 import type { HistoryState } from "./types";
 
 /*
@@ -21,18 +22,27 @@ function formatTimestamp(unixSeconds: number): string {
 }
 
 type ConnectProps = {
+  restoring: boolean;
   connecting: boolean;
+  creationStage: CreationStage | null;
   error: string | null;
   onCreate: () => void;
   onConnect: () => void;
 };
 
 /** The activity screen before an account is connected. */
-export function ActivityConnectView({ connecting, error, onCreate, onConnect }: ConnectProps) {
+export function ActivityConnectView({ restoring, connecting, creationStage, error, onCreate, onConnect }: ConnectProps) {
   return (
     <Screen>
-      <ScreenHeader title="Activity">Connect your account to see its rebalance activity.</ScreenHeader>
-      <ConnectPrompt connecting={connecting} error={error} onCreate={onCreate} onConnect={onConnect} />
+      <ScreenHeader title="Activity">{restoring ? null : "Connect your account to see its rebalance activity."}</ScreenHeader>
+      <ConnectPrompt
+        restoring={restoring}
+        connecting={connecting}
+        creationStage={creationStage}
+        error={error}
+        onCreate={onCreate}
+        onConnect={onConnect}
+      />
     </Screen>
   );
 }

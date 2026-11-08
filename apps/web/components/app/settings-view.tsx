@@ -3,6 +3,7 @@ import { ButtonLink, TextLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { ConnectPrompt, PolicyTermsList, Screen, ScreenHeader } from "./common";
+import type { CreationStage } from "./progress-stages";
 import type { PolicyState } from "./types";
 
 /*
@@ -12,18 +13,27 @@ import type { PolicyState } from "./types";
 */
 
 type ConnectProps = {
+  restoring: boolean;
   connecting: boolean;
+  creationStage: CreationStage | null;
   error: string | null;
   onCreate: () => void;
   onConnect: () => void;
 };
 
 /** Settings before an account is connected. */
-export function SettingsConnectView({ connecting, error, onCreate, onConnect }: ConnectProps) {
+export function SettingsConnectView({ restoring, connecting, creationStage, error, onCreate, onConnect }: ConnectProps) {
   return (
     <Screen>
-      <ScreenHeader title="Settings">Connect your account to see its settings.</ScreenHeader>
-      <ConnectPrompt connecting={connecting} error={error} onCreate={onCreate} onConnect={onConnect} />
+      <ScreenHeader title="Settings">{restoring ? null : "Connect your account to see its settings."}</ScreenHeader>
+      <ConnectPrompt
+        restoring={restoring}
+        connecting={connecting}
+        creationStage={creationStage}
+        error={error}
+        onCreate={onCreate}
+        onConnect={onConnect}
+      />
     </Screen>
   );
 }
@@ -70,7 +80,7 @@ export function SettingsView({ address, explorerAccountUrl, copyButton, policySt
                 No rebalance policy is installed on this account yet.
               </p>
             </div>
-            <ButtonLink href="/app/setup" native variant="primary">
+            <ButtonLink href="/app/setup" variant="primary">
               Set up your portfolio
             </ButtonLink>
           </Card>
