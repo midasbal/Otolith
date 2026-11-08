@@ -15,13 +15,12 @@ import {
 import { IndexedDBStorage, SmartAccountKit } from "smart-account-kit";
 import type { CreationStage } from "@/components/app/progress-stages";
 import { NETWORK_PASSPHRASE, SOROBAN_RPC_URL } from "@/lib/stellar";
+import { ACCOUNT_WASM_HASH, WEBAUTHN_VERIFIER_ADDRESS } from "@/lib/stellar/account-config";
+import { XLM_ASSET } from "@/lib/stellar/policy-config";
 
-// Published, already-deployed OpenZeppelin smart account WASM and WebAuthn
-// verifier for Protocol 27 testnet, and the native XLM Stellar Asset
-// Contract on testnet.
-const ACCOUNT_WASM_HASH = "1b5f4534a76322da2ad7c745f6900857a6802b0ca79850c35a03561df997785a";
-const WEBAUTHN_VERIFIER_ADDRESS = "CC7EKIHQP3TN4CARQDND6CEOY2UXLWWC2X5GHTD5NLAT7BG5GPZIOM3F";
-const NATIVE_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+// The native XLM Stellar Asset Contract on testnet. The smart account WASM
+// and WebAuthn verifier it deploys from live in lib/stellar/account-config.ts.
+const NATIVE_SAC = XLM_ASSET.contract;
 
 const APP_NAME = "Otolith";
 const DEPLOY_SPONSOR_URL = "/api/deployer";

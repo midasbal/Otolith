@@ -1,8 +1,8 @@
 import "server-only";
 
-import { Address, Keypair, StrKey, hash, xdr } from "@stellar/stellar-sdk";
+import { Address, StrKey, hash, scValToNative, xdr } from "@stellar/stellar-sdk";
+import { kitDefaultDeployerAddress, SPONSOR_POLICY_CONTRACT } from "@/lib/server/deployer-constants";
 import { NETWORK_PASSPHRASE } from "@/lib/stellar";
-import { POLICY_CONTRACT } from "@/lib/stellar/policy-config";
 
 /**
  * Structured logging for the deploy sponsor (POST /api/deployer). One JSON
@@ -20,21 +20,6 @@ import { POLICY_CONTRACT } from "@/lib/stellar/policy-config";
  */
 
 export const SPONSOR_LOG_TAG = "deployer-sponsor";
-
-// The kit's well-known default deployer is derived from a fixed public seed
-// (smart-account-kit's DEFAULT_DEPLOYER_SEED, not exported from the
-// package). It signs the deploy authorization and nothing else. If the kit
-// ever changes the seed, this only means its entries are labelled "other".
-const KIT_DEFAULT_DEPLOYER_SEED = "openzeppelin-smart-account-kit";
-
-let kitDefaultDeployer: string | null = null;
-
-function kitDefaultDeployerAddress(): string {
-  if (!kitDefaultDeployer) {
-    kitDefaultDeployer = Keypair.fromRawEd25519Seed(hash(Buffer.from(KIT_DEFAULT_DEPLOYER_SEED))).publicKey();
-  }
-  return kitDefaultDeployer;
-}
 
 export type SignerRole = "deployer" | "kit-default-deployer" | "smart-account" | "other";
 
@@ -57,6 +42,8 @@ export type OperationSummary =
       /** Distinct addresses found anywhere in the arguments, nested ones included. */
       addressesInArgs: string[];
       includesPolicyContract: boolean;
+      /** For a `transfer`: the from, to and amount (in stroops), when they are the usual types. */
+      transfer?: { from?: string; to?: string; amount?: string };
     }
   | {
       type: "create-contract";
@@ -70,7 +57,12 @@ export type OperationSummary =
       contractId?: string;
     }
   | { type: "upload-wasm"; bytes: number }
-  | { type: string };
+  | { type: "other"; hostFunction: string };
+
+/** What the allowlist made of a request (see deployer-validate.ts). */
+export type SponsorVerdict =
+  | { result: "pass"; shape: "deploy" | "fund" | "install" | "revoke" }
+  | { result: "reject"; rule: string; shape?: "deploy" | "fund" | "install" | "revoke" };
 
 export type SponsorStage = "validate" | "configuration" | "decode" | "prepare" | "send" | "confirm" | "unexpected";
 
@@ -130,15 +122,24 @@ function describeInvoke(args: xdr.InvokeContractArgs): OperationSummary {
   for (const arg of scArgs) {
     collectAddresses(arg, found, 0);
   }
-  return {
+  const functionName = args.functionName().toString();
+  const summary: OperationSummary & { type: "invoke-contract" } = {
     type: "invoke-contract",
     contract: scAddressToString(args.contractAddress()),
-    function: args.functionName().toString(),
+    function: functionName,
     argCount: scArgs.length,
     argTypes: scArgs.map((arg) => arg.switch().name),
     addressesInArgs: [...found],
-    includesPolicyContract: found.has(POLICY_CONTRACT),
+    includesPolicyContract: found.has(SPONSOR_POLICY_CONTRACT),
   };
+  if (functionName === "transfer" && scArgs.length === 3) {
+    summary.transfer = {
+      from: scArgs[0].switch().name === "scvAddress" ? scAddressToString(scArgs[0].address()) : undefined,
+      to: scArgs[1].switch().name === "scvAddress" ? scAddressToString(scArgs[1].address()) : undefined,
+      amount: scArgs[2].switch().name === "scvI128" ? String(scValToNative(scArgs[2])) : undefined,
+    };
+  }
+  return summary;
 }
 
 // The contract id a create-contract call will produce: the hash of the
@@ -193,7 +194,7 @@ function describeOperation(func: xdr.HostFunction): OperationSummary {
     case "hostFunctionTypeUploadContractWasm":
       return { type: "upload-wasm", bytes: func.wasm().length };
     default:
-      return { type: func.switch().name };
+      return { type: "other", hostFunction: func.switch().name };
   }
 }
 
@@ -203,6 +204,10 @@ function describeAuthEntry(entry: xdr.SorobanAuthorizationEntry, deployerPublicK
 
   if (summary.credential === "sorobanCredentialsAddress") {
     const signer = scAddressToString(credentials.address().address());
+    summary.signer = signer;
+    summary.role = classify(signer, deployerPublicKey);
+  } else if (summary.credential === "sorobanCredentialsAddressV2") {
+    const signer = scAddressToString(credentials.addressV2().address());
     summary.signer = signer;
     summary.role = classify(signer, deployerPublicKey);
   }
@@ -264,6 +269,8 @@ export function shortReason(reason: unknown): string {
  */
 export function logSponsorRequest(record: {
   summary: SponsorRequestSummary | null;
+  /** The allowlist's verdict and whether it was being enforced; null if the request never got that far. */
+  verdict: (SponsorVerdict & { mode: "shadow" | "enforce" }) | null;
   outcome: SponsorOutcome;
   durationMs: number;
 }): void {
@@ -274,6 +281,7 @@ export function logSponsorRequest(record: {
         at: new Date().toISOString(),
         durationMs: record.durationMs,
         ...record.summary,
+        verdict: record.verdict,
         outcome: record.outcome,
       }),
     );

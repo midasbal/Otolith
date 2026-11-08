@@ -9,13 +9,16 @@ import {
   getDeployerPublicKey,
   sponsorHostFunctionCall,
 } from "@/lib/server/deployer";
+import { isSponsorEnforcing } from "@/lib/server/deployer-constants";
 import {
   logSponsorRequest,
   shortReason,
   summarizeSponsorRequest,
   type SponsorOutcome,
   type SponsorRequestSummary,
+  type SponsorVerdict,
 } from "@/lib/server/deployer-log";
+import { validateSponsorRequest } from "@/lib/server/deployer-validate";
 
 /**
  * Health check for the deploy-sponsoring deployer. Confirms the server can
@@ -76,12 +79,18 @@ export async function GET() {
  * and call it directly with no extra client-side plumbing.
  *
  * Every request leaves one structured log line (see deployer-log.ts): what
- * was asked for, decoded, and how it ended. The logging only observes; it
- * never changes what is accepted or what is answered.
+ * was asked for, decoded, the allowlist's verdict, and how it ended.
+ *
+ * The allowlist (deployer-validate.ts) judges every request. With
+ * DEPLOYER_ENFORCE off, which is the default, the verdict is only logged
+ * and the request goes ahead exactly as it always has. With it on, a
+ * request that fails is answered 400 before anything is simulated, signed
+ * or submitted, and the client is not told which rule failed: the log is.
  */
 export async function POST(request: Request) {
   const startedAt = Date.now();
   let summary: SponsorRequestSummary | null = null;
+  let verdict: (SponsorVerdict & { mode: "shadow" | "enforce" }) | null = null;
   let outcome: SponsorOutcome = { success: false, stage: "unexpected", reason: "The handler ended without an outcome." };
 
   try {
@@ -118,6 +127,13 @@ export async function POST(request: Request) {
     }
     summary = summarizeSponsorRequest(func, auth, deployerPublicKey);
 
+    const enforcing = isSponsorEnforcing();
+    verdict = { ...validateSponsorRequest(summary, deployerPublicKey), mode: enforcing ? "enforce" : "shadow" };
+    if (enforcing && verdict.result === "reject") {
+      outcome = { success: false, stage: "validate", reason: `rejected: ${verdict.rule}` };
+      return NextResponse.json({ success: false, error: "This request is not accepted." }, { status: 400 });
+    }
+
     try {
       const result = await sponsorHostFunctionCall(func, auth);
       outcome = { success: true, hash: result.hash };
@@ -143,6 +159,6 @@ export async function POST(request: Request) {
       );
     }
   } finally {
-    logSponsorRequest({ summary, outcome, durationMs: Date.now() - startedAt });
+    logSponsorRequest({ summary, verdict, outcome, durationMs: Date.now() - startedAt });
   }
 }

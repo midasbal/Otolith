@@ -5,16 +5,7 @@ import { SmartAccountKit, MemoryStorage, type TransactionResult } from "smart-ac
 import { NETWORK_PASSPHRASE, SOROBAN_RPC_URL, sorobanServer, getPolicyStatus } from "@/lib/stellar";
 import { BUY_ASSET, ORACLE, REBALANCER_CONTRACT, ROUTER, SELL_ASSET, POLICY_CONTRACT } from "@/lib/stellar/policy-config";
 import { getDeployerKeypair, DeployerNotConfiguredError } from "@/lib/server/deployer";
-
-/**
- * Published, already-deployed OpenZeppelin smart account WASM and
- * WebAuthn verifier for Protocol 27 testnet, matching
- * components/wallet-provider.tsx exactly. Duplicated rather than
- * imported: that file is a client component ("use client") and this
- * module runs server-only, so it cannot import from it.
- */
-const ACCOUNT_WASM_HASH = "1b5f4534a76322da2ad7c745f6900857a6802b0ca79850c35a03561df997785a";
-const WEBAUTHN_VERIFIER_ADDRESS = "CC7EKIHQP3TN4CARQDND6CEOY2UXLWWC2X5GHTD5NLAT7BG5GPZIOM3F";
+import { ACCOUNT_WASM_HASH, WEBAUTHN_VERIFIER_ADDRESS } from "@/lib/stellar/account-config";
 
 const DEADLINE_SECONDS = 3600;
 
