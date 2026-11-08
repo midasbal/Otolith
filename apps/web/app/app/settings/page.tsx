@@ -35,6 +35,10 @@ export default function SettingsPage() {
   const router = useRouter();
   const { address, restoring, connecting, creationStage, error, createWallet, connectWallet } = useWallet();
   const { state: policyState, retry: retryPolicy } = usePolicyStatus(address);
+  // Set by a successful revoke in this visit, and gone when the page is.
+  // It keeps the revoke confirmation on screen after the policy refetch
+  // reads empty, and stands in for the policy cards while it does.
+  const [revoked, setRevoked] = useState(false);
 
   if (!address) {
     return (
@@ -59,10 +63,12 @@ export default function SettingsPage() {
       copyButton={<CopyAddressButton address={address} />}
       policyState={policyState}
       onRetryPolicy={retryPolicy}
+      revoked={revoked}
       revoke={
-        policyInstalled ? (
+        policyInstalled || revoked ? (
           <RevokePolicyPanel
             address={address}
+            onRevoked={() => setRevoked(true)}
             onContinue={() => router.push("/app")}
           />
         ) : null

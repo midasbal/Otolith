@@ -45,11 +45,13 @@ type SettingsViewProps = {
   copyButton: ReactNode;
   policyState: PolicyState;
   onRetryPolicy: () => void;
-  /** The revoke control, when a policy is installed. */
+  /** The revoke control, when a policy is installed or was just revoked. */
   revoke: ReactNode;
+  /** The policy was revoked in this visit: its confirmation stands in for the policy cards. */
+  revoked: boolean;
 };
 
-export function SettingsView({ address, explorerAccountUrl, copyButton, policyState, onRetryPolicy, revoke }: SettingsViewProps) {
+export function SettingsView({ address, explorerAccountUrl, copyButton, policyState, onRetryPolicy, revoke, revoked }: SettingsViewProps) {
   return (
     <Screen>
       <ScreenHeader title="Settings">Account and policy details for this connection.</ScreenHeader>
@@ -67,32 +69,34 @@ export function SettingsView({ address, explorerAccountUrl, copyButton, policySt
         </TextLink>
       </Card>
 
-      <div className="min-w-0">
-        {policyState.status === "loading" ? <LoadingState>Checking your portfolio setup...</LoadingState> : null}
+      {revoked ? null : (
+        <div className="min-w-0">
+          {policyState.status === "loading" ? <LoadingState>Checking your portfolio setup...</LoadingState> : null}
 
-        {policyState.status === "error" ? <ErrorState message={policyState.message} onRetry={onRetryPolicy} /> : null}
+          {policyState.status === "error" ? <ErrorState message={policyState.message} onRetry={onRetryPolicy} /> : null}
 
-        {policyState.status === "loaded" && policyState.result.kind === "not-installed" ? (
-          <Card className="flex flex-col items-start gap-4">
-            <div>
+          {policyState.status === "loaded" && policyState.result.kind === "not-installed" ? (
+            <Card className="flex flex-col items-start gap-4">
+              <div>
+                <p className="ot-caps">Policy</p>
+                <p className="mt-2 text-sm leading-relaxed text-text-muted">
+                  No rebalance policy is installed on this account yet.
+                </p>
+              </div>
+              <ButtonLink href="/app/setup" variant="primary">
+                Set up your portfolio
+              </ButtonLink>
+            </Card>
+          ) : null}
+
+          {policyState.status === "loaded" && policyState.result.kind === "installed" ? (
+            <Card>
               <p className="ot-caps">Policy</p>
-              <p className="mt-2 text-sm leading-relaxed text-text-muted">
-                No rebalance policy is installed on this account yet.
-              </p>
-            </div>
-            <ButtonLink href="/app/setup" variant="primary">
-              Set up your portfolio
-            </ButtonLink>
-          </Card>
-        ) : null}
-
-        {policyState.status === "loaded" && policyState.result.kind === "installed" ? (
-          <Card>
-            <p className="ot-caps">Policy</p>
-            <PolicyTermsList terms={policyState.result.params} className="mt-2" />
-          </Card>
-        ) : null}
-      </div>
+              <PolicyTermsList terms={policyState.result.params} className="mt-2" />
+            </Card>
+          ) : null}
+        </div>
+      )}
 
       {revoke ? <div className="min-w-0">{revoke}</div> : null}
     </Screen>
