@@ -140,7 +140,11 @@ export default function SetupPage() {
     [slippageToleranceBps, targetBuyWeightBps, bandThresholdBps, cooldownSecs],
   );
 
-  const alreadyInstalled = policyState.status === "loaded" && policyState.result.kind === "installed";
+  // Installing invalidates the policy read, which then reports "installed".
+  // That must not replace the install's own receipt with the "already
+  // installed" card, so a policy installed in this visit does not count.
+  const alreadyInstalled =
+    policyState.status === "loaded" && policyState.result.kind === "installed" && installState.status !== "success";
 
   return (
     <SetupView

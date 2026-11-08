@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/components/query-keys";
 import { computeValuation, getValuationPrices, type PortfolioValuation, type ValuationPrices } from "@/lib/stellar";
 
 type ValuationState =
@@ -48,7 +49,7 @@ const PRICES_FRESH_MS = 15_000;
  */
 export function usePortfolioValuation(input: PortfolioValuationInput | null) {
   const query = useQuery({
-    queryKey: ["prices", input?.oracle ?? null, input?.sellAsset.symbol ?? null, input?.buyAsset.symbol ?? null],
+    queryKey: queryKeys.prices(input?.oracle ?? null, input?.sellAsset.symbol ?? null, input?.buyAsset.symbol ?? null),
     queryFn: (): Promise<ValuationPrices> =>
       getValuationPrices(input!.oracle, input!.sellAsset.symbol, input!.buyAsset.symbol),
     enabled: input !== null,

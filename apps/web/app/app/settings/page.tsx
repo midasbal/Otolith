@@ -63,7 +63,6 @@ export default function SettingsPage() {
         policyInstalled ? (
           <RevokePolicyPanel
             address={address}
-            onRevoked={retryPolicy}
             onContinue={() => router.push("/app")}
           />
         ) : null

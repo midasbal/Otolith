@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/components/query-keys";
 import { getKit } from "@/components/wallet-provider";
 import { findPolicyContextRuleId } from "@/lib/stellar/policy";
 
@@ -32,6 +34,7 @@ function describeRevokeError(err: unknown): string {
  */
 export function useRevokePolicy() {
   const [state, setState] = useState<RevokeState>({ status: "idle" });
+  const queryClient = useQueryClient();
 
   const revoke = useCallback(async (smartAccount: string): Promise<boolean> => {
     setState({ status: "revoking" });
@@ -51,6 +54,12 @@ export function useRevokePolicy() {
         return false;
       }
 
+      // Revoking moves no funds, so the balances and prices stand. The policy
+      // is gone, and so is any rebalance that was due under it. Both are read
+      // again now, even for a page that is not open, so none is served stale.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.policy(smartAccount), refetchType: "all" });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.rebalanceCheck(smartAccount), refetchType: "all" });
+
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });
       return true;
     } catch (err) {
@@ -64,7 +73,7 @@ export function useRevokePolicy() {
       setState({ status: "error", message: describeRevokeError(err) });
       return false;
     }
-  }, []);
+  }, [queryClient]);
 
   const reset = useCallback(() => setState({ status: "idle" }), []);
 

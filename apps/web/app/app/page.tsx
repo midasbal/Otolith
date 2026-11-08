@@ -44,12 +44,9 @@ export default function DashboardPage() {
 
   const handleTrigger = async () => {
     if (!address) return;
-    const succeeded = await triggerRebalance(address);
-    if (succeeded) {
-      retryPolicy();
-      retryBalances();
-      retryRebalanceCheck();
-    }
+    // On success the trigger itself invalidates what a rebalance changes
+    // (balances, prices, the rebalance check), so nothing is read again here.
+    await triggerRebalance(address);
   };
 
   if (!address) {

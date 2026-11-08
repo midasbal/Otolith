@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createDefaultContext } from "smart-account-kit";
 import type { InstallStage } from "@/components/app/progress-stages";
-import { getKit } from "@/components/wallet-provider";
+import { queryKeys } from "@/components/query-keys";
+import { getKit, useWallet } from "@/components/wallet-provider";
 import { buildRebalancePolicyGateParamsScVal, type RebalancePolicyInstallParams } from "@/lib/stellar/policy-params";
 import { POLICY_CONTRACT } from "@/lib/stellar/policy-config";
 
@@ -39,6 +41,8 @@ function describeInstallError(err: unknown): string {
  */
 export function useInstallPolicy() {
   const [state, setState] = useState<InstallState>({ status: "idle" });
+  const queryClient = useQueryClient();
+  const { address } = useWallet();
 
   const install = useCallback(async (params: RebalancePolicyInstallParams, ruleName: string) => {
     setState({ status: "installing", stage: "preparing" });
@@ -56,6 +60,15 @@ export function useInstallPolicy() {
         return;
       }
 
+      // Installing moves no funds, so the balances and prices stand. What it
+      // does change is whether the account has a policy at all, and with it
+      // the answer to "is a rebalance due". Both are read again now, even
+      // for a page that is not open, so none is served stale on arrival.
+      if (address) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.policy(address), refetchType: "all" });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.rebalanceCheck(address), refetchType: "all" });
+      }
+
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });
     } catch (err) {
       console.error(err);
@@ -63,7 +76,7 @@ export function useInstallPolicy() {
     } finally {
       clearTimeout(confirmingTimer);
     }
-  }, []);
+  }, [queryClient, address]);
 
   const reset = useCallback(() => setState({ status: "idle" }), []);
 

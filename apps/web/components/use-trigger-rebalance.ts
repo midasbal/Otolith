@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { TriggerStage } from "@/components/app/progress-stages";
+import { queryKeys } from "@/components/query-keys";
 
 // The server submits, then waits for the ledger, in one request that
 // reports nothing along the way, so "confirming" follows the clock: it
@@ -22,6 +24,7 @@ type TriggerState =
  */
 export function useTriggerRebalance() {
   const [state, setState] = useState<TriggerState>({ status: "idle" });
+  const queryClient = useQueryClient();
 
   const trigger = useCallback(async (account: string): Promise<boolean> => {
     setState({ status: "submitting", stage: "submitting" });
@@ -34,6 +37,13 @@ export function useTriggerRebalance() {
       });
       const data = await res.json();
       if (data.success) {
+        // A rebalance moves funds, so the balances change, and the prices
+        // behind the valuation are read again with them. It also changes
+        // whether another rebalance is due (the cooldown starts). The
+        // policy itself is untouched: its stored terms do not change.
+        void queryClient.invalidateQueries({ queryKey: queryKeys.balances(account), refetchType: "all" });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.allPrices, refetchType: "all" });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.rebalanceCheck(account), refetchType: "all" });
         setState({ status: "success", hash: data.hash, ledger: data.ledger ?? null });
         return true;
       }
@@ -49,7 +59,7 @@ export function useTriggerRebalance() {
     } finally {
       clearTimeout(confirmingTimer);
     }
-  }, []);
+  }, [queryClient]);
 
   const reset = useCallback(() => setState({ status: "idle" }), []);
 

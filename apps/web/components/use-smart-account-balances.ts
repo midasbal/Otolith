@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/components/query-keys";
 import { getSmartAccountBalances, type ExtraTokenContract, type SmartAccountBalancesResult } from "@/lib/stellar";
 import { BUY_ASSET } from "@/lib/stellar/policy-config";
 
@@ -39,7 +40,7 @@ const PAIR_TOKENS: ExtraTokenContract[] = [{ contract: BUY_ASSET.contract, code:
  */
 export function useSmartAccountBalances(address: string | null) {
   const query = useQuery({
-    queryKey: ["balances", address],
+    queryKey: queryKeys.balances(address),
     queryFn: () => getSmartAccountBalances(address as string, PAIR_TOKENS),
     enabled: address !== null,
     staleTime: 15_000,

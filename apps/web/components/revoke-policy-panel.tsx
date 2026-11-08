@@ -6,7 +6,6 @@ import { useRevokePolicy } from "@/components/use-revoke-policy";
 
 type RevokePolicyPanelProps = {
   address: string;
-  onRevoked: () => void;
   onContinue: () => void;
 };
 
@@ -17,16 +16,15 @@ type RevokePolicyPanelProps = {
  * panel's only home; keep it that way rather than rendering it a second
  * time elsewhere.
  */
-export function RevokePolicyPanel({ address, onRevoked, onContinue }: RevokePolicyPanelProps) {
+export function RevokePolicyPanel({ address, onContinue }: RevokePolicyPanelProps) {
   const { state, revoke } = useRevokePolicy();
   const [confirming, setConfirming] = useState(false);
 
   const handleRevoke = async () => {
     setConfirming(false);
-    const succeeded = await revoke(address);
-    if (succeeded) {
-      onRevoked();
-    }
+    // The revoke itself invalidates what it changes (the policy and the
+    // rebalance check), so nothing is read again here.
+    await revoke(address);
   };
 
   return (

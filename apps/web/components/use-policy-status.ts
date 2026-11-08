@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/components/query-keys";
 import { getPolicyStatus, type PolicyStatus } from "@/lib/stellar";
 
 type PolicyState =
@@ -31,7 +32,7 @@ const ERROR: PolicyState = {
  */
 export function usePolicyStatus(address: string | null) {
   const query = useQuery({
-    queryKey: ["policy", address],
+    queryKey: queryKeys.policy(address),
     queryFn: () => getPolicyStatus(address as string),
     enabled: address !== null,
     staleTime: 0,
