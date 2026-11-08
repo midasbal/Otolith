@@ -4,10 +4,10 @@ import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createDefaultContext } from "smart-account-kit";
 import type { InstallStage } from "@/components/app/progress-stages";
+import { applyConfirmedPolicy } from "@/components/policy-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
-import { getPolicyStatus } from "@/lib/stellar";
 import { getKit, useWallet } from "@/components/wallet-provider";
 import { buildRebalancePolicyGateParamsScVal, type RebalancePolicyInstallParams } from "@/lib/stellar/policy-params";
 import { POLICY_CONTRACT } from "@/lib/stellar/policy-config";
@@ -33,6 +33,17 @@ function describeInstallError(err: unknown): string {
     }
   }
   return "Could not install the policy. Try again.";
+}
+
+// The id the new rule will have, from the add_context_rule simulation the
+// kit already ran to build the transaction; null if it cannot be read.
+function newRuleId(tx: { result: { id: number } }): number | null {
+  try {
+    const id = tx.result.id;
+    return typeof id === "number" ? id : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -65,30 +76,35 @@ export function useInstallPolicy() {
 
       // Installing moves no funds, so the balances and prices stand. What it
       // does change is whether the account has a policy at all, and with it
-      // the answer to "is a rebalance due". The transaction is confirmed,
-      // but the first read after it can still see the chain as it was, so
-      // both are read until they show the policy (see query-settle.ts), and
-      // only then is the install reported done: whoever goes on to the
-      // dashboard finds it installed. If the chain does not show it in time
-      // this falls back to an ordinary re-read and the install is reported
-      // all the same, because it did succeed.
+      // the answer to "is a rebalance due".
+      //
+      // The policy is written into the cache now, from what was just
+      // installed, behind a floor at the transaction's ledger: the screen is
+      // right the moment the install is, and no read evaluated before that
+      // ledger can undo it (see policy-ledger-floor.ts). The chain's own
+      // answer replaces it in the background. Without the ledger, or the new
+      // rule's id, there is nothing safe to floor or write, so the policy is
+      // simply read again, as it was before the floor existed.
       if (address) {
-        clearTimeout(confirmingTimer);
-        setState({ status: "installing", stage: "confirming" });
-        await Promise.all([
-          settleQuery({
-            queryClient,
-            queryKey: queryKeys.policy(address),
-            read: () => getPolicyStatus(address),
-            isSettled: (policy) => policy.kind === "installed",
-          }),
-          settleQuery({
-            queryClient,
-            queryKey: queryKeys.rebalanceCheck(address),
-            read: () => fetchRebalanceCheck(address),
-            isSettled: (check) => check.state !== "no_policy",
-          }),
-        ]);
+        const ruleId = newRuleId(tx);
+        if (typeof result.ledger === "number" && ruleId !== null) {
+          await applyConfirmedPolicy(queryClient, address, result.ledger, {
+            kind: "installed",
+            contextRuleId: ruleId,
+            params: { ...params, pair: params.sellAsset },
+            provisional: true,
+          });
+        } else {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.policy(address), refetchType: "all" });
+        }
+        // The rebalance check is read by the server, not through the floor
+        // (a later stage): read until it shows a policy, behind the success.
+        void settleQuery({
+          queryClient,
+          queryKey: queryKeys.rebalanceCheck(address),
+          read: () => fetchRebalanceCheck(address),
+          isSettled: (check) => check.state !== "no_policy",
+        });
       }
 
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });

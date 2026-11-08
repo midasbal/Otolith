@@ -92,7 +92,18 @@ function requireRetval(simulation: rpc.Api.SimulateTransactionSuccessResponse): 
 export type PolicyStatus =
   | { kind: "not-installed"; reason: "no-rule" }
   | { kind: "not-installed"; reason: "params-unavailable"; contextRuleId: number }
-  | { kind: "installed"; contextRuleId: number; params: RebalancePolicyParams };
+  | {
+      kind: "installed";
+      contextRuleId: number;
+      params: RebalancePolicyParams;
+      /**
+       * Set only on a status the app wrote itself from what it just
+       * installed, before the chain was read back: `params.pair`, which the
+       * contract derives at install, is a stand-in until the real reading
+       * replaces it.
+       */
+      provisional?: true;
+    };
 
 function decodeParams(raw: RawRebalancePolicyParams): RebalancePolicyParams {
   return {
@@ -114,14 +125,18 @@ function decodeParams(raw: RawRebalancePolicyParams): RebalancePolicyParams {
 }
 
 /**
- * Finds which context rule id (if any) on this smart account has the
+ * Finds which context rule (if any) on this smart account has the
  * rebalance-policy contract attached, by reading the account's own rule
  * metadata directly. The context_rule_id is never assumed to be a fixed
  * convention (rule 1 in every test deployment so far, but not a
  * contract-enforced guarantee): every rule the account actually has is
  * read and checked.
+ *
+ * `ledger` is the ledger the answer was evaluated at: the lowest of the
+ * ledgers the simulations behind it reported, so a state that is on-chain
+ * as of ledger L is in this answer whenever `ledger >= L`.
  */
-export async function findPolicyContextRuleId(smartAccount: string): Promise<number | null> {
+async function findPolicyContextRule(smartAccount: string): Promise<{ contextRuleId: number | null; ledger: number }> {
   const countSimulation = await simulateReadCall(smartAccount, "get_context_rules_count");
   if (rpc.Api.isSimulationError(countSimulation)) {
     throw new Error(countSimulation.error);
@@ -136,42 +151,61 @@ export async function findPolicyContextRuleId(smartAccount: string): Promise<num
       ]);
       if (rpc.Api.isSimulationError(simulation)) {
         if (simulation.error.includes(CONTEXT_RULE_NOT_FOUND_ERROR)) {
-          return null;
+          return { id: null, ledger: simulation.latestLedger };
         }
         throw new Error(simulation.error);
       }
       const rule = scValToNative(requireRetval(simulation)) as RawContextRule;
-      return rule.policies.includes(POLICY_CONTRACT) ? id : null;
+      return { id: rule.policies.includes(POLICY_CONTRACT) ? id : null, ledger: simulation.latestLedger };
     }),
   );
 
-  const found = matches.find((id) => id !== null);
-  return found === undefined ? null : found;
+  const found = matches.find((match) => match.id !== null);
+  return {
+    contextRuleId: found === undefined ? null : found.id,
+    ledger: Math.min(countSimulation.latestLedger, ...matches.map((match) => match.ledger)),
+  };
 }
+
+export async function findPolicyContextRuleId(smartAccount: string): Promise<number | null> {
+  return (await findPolicyContextRule(smartAccount)).contextRuleId;
+}
+
+/** A policy reading and the ledger it was evaluated at (see findPolicyContextRule). */
+export type PolicyRead = { status: PolicyStatus; ledger: number };
 
 /**
  * Reads whether a rebalance policy is installed on a smart account, and
- * its parameters if so. Read-only: nothing here signs or submits
- * anything.
+ * its parameters if so, with the ledger the reading reflects. Read-only:
+ * nothing here signs or submits anything.
  */
-export async function getPolicyStatus(smartAccount: string): Promise<PolicyStatus> {
-  const contextRuleId = await findPolicyContextRuleId(smartAccount);
+export async function readPolicyStatus(smartAccount: string): Promise<PolicyRead> {
+  const { contextRuleId, ledger } = await findPolicyContextRule(smartAccount);
   if (contextRuleId === null) {
-    return { kind: "not-installed", reason: "no-rule" };
+    return { status: { kind: "not-installed", reason: "no-rule" }, ledger };
   }
 
   const simulation = await simulateReadCall(POLICY_CONTRACT, "get_params", [
     Address.fromString(smartAccount).toScVal(),
     nativeToScVal(contextRuleId, { type: "u32" }),
   ]);
+  const readLedger = Math.min(ledger, simulation.latestLedger);
 
   if (rpc.Api.isSimulationError(simulation)) {
     if (simulation.error.includes(POLICY_NOT_INSTALLED_ERROR)) {
-      return { kind: "not-installed", reason: "params-unavailable", contextRuleId };
+      return { status: { kind: "not-installed", reason: "params-unavailable", contextRuleId }, ledger: readLedger };
     }
     throw new Error(simulation.error);
   }
 
   const raw = scValToNative(requireRetval(simulation)) as RawRebalancePolicyParams;
-  return { kind: "installed", contextRuleId, params: decodeParams(raw) };
+  return { status: { kind: "installed", contextRuleId, params: decodeParams(raw) }, ledger: readLedger };
+}
+
+/**
+ * The same reading without the ledger, for callers that only need the
+ * answer (the server's rebalance check).
+ */
+export async function getPolicyStatus(smartAccount: string): Promise<PolicyStatus> {
+  return (await readPolicyStatus(smartAccount)).status;
 }

@@ -2,10 +2,10 @@
 
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { applyConfirmedPolicy } from "@/components/policy-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
-import { getPolicyStatus } from "@/lib/stellar";
 import { getKit } from "@/components/wallet-provider";
 import { findPolicyContextRuleId } from "@/lib/stellar/policy";
 
@@ -58,26 +58,26 @@ export function useRevokePolicy() {
       }
 
       // Revoking moves no funds, so the balances and prices stand. The policy
-      // is gone, and so is any rebalance that was due under it. The first
-      // read after the confirmed transaction can still see the old chain, so
-      // both are read until they show it gone (see query-settle.ts), and only
-      // then is the revoke reported done, so the confirmation and the cleared
-      // state agree. If the chain does not show it in time this falls back to
-      // an ordinary re-read and the revoke is reported all the same.
-      await Promise.all([
-        settleQuery({
-          queryClient,
-          queryKey: queryKeys.policy(smartAccount),
-          read: () => getPolicyStatus(smartAccount),
-          isSettled: (policy) => policy.kind === "not-installed",
-        }),
-        settleQuery({
-          queryClient,
-          queryKey: queryKeys.rebalanceCheck(smartAccount),
-          read: () => fetchRebalanceCheck(smartAccount),
-          isSettled: (check) => check.state === "no_policy",
-        }),
-      ]);
+      // is gone, and so is any rebalance that was due under it.
+      //
+      // The mirror of an install: "not installed" is written into the cache
+      // now, behind a floor at the transaction's ledger, so no read
+      // evaluated before it can bring the policy back (see
+      // policy-ledger-floor.ts), and the chain's own answer replaces it in
+      // the background. Without the ledger the policy is simply read again.
+      if (typeof result.ledger === "number") {
+        await applyConfirmedPolicy(queryClient, smartAccount, result.ledger, { kind: "not-installed", reason: "no-rule" });
+      } else {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.policy(smartAccount), refetchType: "all" });
+      }
+      // The rebalance check is read by the server, not through the floor
+      // (a later stage): read until it shows no policy, behind the success.
+      void settleQuery({
+        queryClient,
+        queryKey: queryKeys.rebalanceCheck(smartAccount),
+        read: () => fetchRebalanceCheck(smartAccount),
+        isSettled: (check) => check.state === "no_policy",
+      });
 
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });
       return true;

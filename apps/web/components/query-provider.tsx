@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { queryKeys } from "@/components/query-keys";
 
 /**
  * The app's one QueryClient, for the screens under /app. It is created
@@ -16,17 +17,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
  * deliberately not set globally: each query says so for itself.
  */
 export function QueryProvider({ children }: { children: ReactNode }) {
-  const [client] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            refetchOnWindowFocus: false,
-            retry: 2,
-          },
+  const [client] = useState(() => {
+    const created = new QueryClient({
+      defaultOptions: {
+        queries: {
+          refetchOnWindowFocus: false,
+          retry: 2,
         },
-      }),
-  );
+      },
+    });
+    // The policy floors are written by the app, not read from anywhere, and
+    // are held to their own window (see policy-ledger-floor.ts), so the
+    // cache must not drop them for want of a subscriber.
+    created.setQueryDefaults(queryKeys.allPolicyFloors, { gcTime: Infinity, staleTime: Infinity });
+    return created;
+  });
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

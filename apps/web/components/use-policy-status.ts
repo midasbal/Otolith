@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchPolicyGuarded } from "@/components/policy-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
-import { getPolicyStatus, type PolicyStatus } from "@/lib/stellar";
+import type { PolicyStatus } from "@/lib/stellar";
 
 type PolicyState =
   | { status: "idle" }
@@ -23,6 +24,9 @@ const ERROR: PolicyState = {
  * with loading and error states of its own. Passing `null` (not
  * connected) returns an idle state rather than fetching.
  *
+ * Every read goes through fetchPolicyGuarded (policy-ledger-floor.ts), which
+ * will not store a reading older than the last confirmed install or revoke.
+ *
  * The read is a query keyed by the account, so the last reading is kept
  * while the app is open: a page that opens finds it at once, as
  * "loaded", while one background read runs to confirm it (the query is
@@ -31,9 +35,10 @@ const ERROR: PolicyState = {
  * the last good one on screen rather than replacing it with an error.
  */
 export function usePolicyStatus(address: string | null) {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: queryKeys.policy(address),
-    queryFn: () => getPolicyStatus(address as string),
+    queryFn: () => fetchPolicyGuarded(queryClient, address as string),
     enabled: address !== null,
     staleTime: 0,
   });
