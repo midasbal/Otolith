@@ -3,6 +3,9 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/components/query-keys";
+import { settleQuery } from "@/components/query-settle";
+import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
+import { getPolicyStatus } from "@/lib/stellar";
 import { getKit } from "@/components/wallet-provider";
 import { findPolicyContextRuleId } from "@/lib/stellar/policy";
 
@@ -55,10 +58,26 @@ export function useRevokePolicy() {
       }
 
       // Revoking moves no funds, so the balances and prices stand. The policy
-      // is gone, and so is any rebalance that was due under it. Both are read
-      // again now, even for a page that is not open, so none is served stale.
-      void queryClient.invalidateQueries({ queryKey: queryKeys.policy(smartAccount), refetchType: "all" });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.rebalanceCheck(smartAccount), refetchType: "all" });
+      // is gone, and so is any rebalance that was due under it. The first
+      // read after the confirmed transaction can still see the old chain, so
+      // both are read until they show it gone (see query-settle.ts), and only
+      // then is the revoke reported done, so the confirmation and the cleared
+      // state agree. If the chain does not show it in time this falls back to
+      // an ordinary re-read and the revoke is reported all the same.
+      await Promise.all([
+        settleQuery({
+          queryClient,
+          queryKey: queryKeys.policy(smartAccount),
+          read: () => getPolicyStatus(smartAccount),
+          isSettled: (policy) => policy.kind === "not-installed",
+        }),
+        settleQuery({
+          queryClient,
+          queryKey: queryKeys.rebalanceCheck(smartAccount),
+          read: () => fetchRebalanceCheck(smartAccount),
+          isSettled: (check) => check.state === "no_policy",
+        }),
+      ]);
 
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });
       return true;

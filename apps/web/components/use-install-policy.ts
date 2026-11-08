@@ -5,6 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createDefaultContext } from "smart-account-kit";
 import type { InstallStage } from "@/components/app/progress-stages";
 import { queryKeys } from "@/components/query-keys";
+import { settleQuery } from "@/components/query-settle";
+import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
+import { getPolicyStatus } from "@/lib/stellar";
 import { getKit, useWallet } from "@/components/wallet-provider";
 import { buildRebalancePolicyGateParamsScVal, type RebalancePolicyInstallParams } from "@/lib/stellar/policy-params";
 import { POLICY_CONTRACT } from "@/lib/stellar/policy-config";
@@ -62,11 +65,30 @@ export function useInstallPolicy() {
 
       // Installing moves no funds, so the balances and prices stand. What it
       // does change is whether the account has a policy at all, and with it
-      // the answer to "is a rebalance due". Both are read again now, even
-      // for a page that is not open, so none is served stale on arrival.
+      // the answer to "is a rebalance due". The transaction is confirmed,
+      // but the first read after it can still see the chain as it was, so
+      // both are read until they show the policy (see query-settle.ts), and
+      // only then is the install reported done: whoever goes on to the
+      // dashboard finds it installed. If the chain does not show it in time
+      // this falls back to an ordinary re-read and the install is reported
+      // all the same, because it did succeed.
       if (address) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.policy(address), refetchType: "all" });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.rebalanceCheck(address), refetchType: "all" });
+        clearTimeout(confirmingTimer);
+        setState({ status: "installing", stage: "confirming" });
+        await Promise.all([
+          settleQuery({
+            queryClient,
+            queryKey: queryKeys.policy(address),
+            read: () => getPolicyStatus(address),
+            isSettled: (policy) => policy.kind === "installed",
+          }),
+          settleQuery({
+            queryClient,
+            queryKey: queryKeys.rebalanceCheck(address),
+            read: () => fetchRebalanceCheck(address),
+            isSettled: (check) => check.state !== "no_policy",
+          }),
+        ]);
       }
 
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });

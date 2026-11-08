@@ -29,7 +29,7 @@ const CHECK_FRESH_MS = 15_000;
 // The route answers a failed check with an error state in its body, so the
 // body is the result whatever the HTTP status: it is read and returned as
 // it is, and only a request that fails outright counts as a failed read.
-async function fetchRebalanceCheck(address: string): Promise<RebalanceCheckResult> {
+export async function fetchRebalanceCheck(address: string): Promise<RebalanceCheckResult> {
   const res = await fetch(`/api/rebalance?account=${encodeURIComponent(address)}`);
   return (await res.json()) as RebalanceCheckResult;
 }

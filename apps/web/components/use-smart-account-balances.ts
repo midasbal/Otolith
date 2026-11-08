@@ -26,6 +26,11 @@ const ERROR: BalancesState = {
 // would change the query's key, and the balances would be read twice.
 const PAIR_TOKENS: ExtraTokenContract[] = [{ contract: BUY_ASSET.contract, code: BUY_ASSET.symbol }];
 
+/** One fresh read of the pair's balances, outside the cache (see query-settle.ts). */
+export function fetchPairBalances(address: string): Promise<SmartAccountBalancesResult> {
+  return getSmartAccountBalances(address, PAIR_TOKENS);
+}
+
 /**
  * Loads a smart account's balances for the product's fixed pair, with
  * loading and error states of its own. Passing `null` (not connected)
@@ -41,7 +46,7 @@ const PAIR_TOKENS: ExtraTokenContract[] = [{ contract: BUY_ASSET.contract, code:
 export function useSmartAccountBalances(address: string | null) {
   const query = useQuery({
     queryKey: queryKeys.balances(address),
-    queryFn: () => getSmartAccountBalances(address as string, PAIR_TOKENS),
+    queryFn: () => fetchPairBalances(address as string),
     enabled: address !== null,
     staleTime: 15_000,
   });

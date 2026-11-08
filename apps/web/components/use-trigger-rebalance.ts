@@ -4,11 +4,32 @@ import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TriggerStage } from "@/components/app/progress-stages";
 import { queryKeys } from "@/components/query-keys";
+import { settleQuery } from "@/components/query-settle";
+import { fetchRebalanceCheck, type RebalanceCheckResult } from "@/components/use-rebalance-check";
+import { fetchPairBalances } from "@/components/use-smart-account-balances";
+import { BUY_ASSET } from "@/lib/stellar/policy-config";
+import type { SmartAccountBalancesResult } from "@/lib/stellar";
 
 // The server submits, then waits for the ledger, in one request that
 // reports nothing along the way, so "confirming" follows the clock: it
 // is shown once the request has been out this long.
 const CONFIRMING_AFTER_MS = 5000;
+
+// USDC is the buy asset (see policy-config.ts) and a rebalance only ever
+// buys it, so its balance rising is the one sure sign that a rebalance has
+// reached the chain a read is looking at. Balances are decimal strings
+// with seven places.
+function buyBalanceStroops(balances: SmartAccountBalancesResult): bigint {
+  if (balances.kind !== "funded") {
+    return BigInt(0);
+  }
+  const buy = balances.balances.find((balance) => balance.contract === BUY_ASSET.contract);
+  if (!buy) {
+    return BigInt(0);
+  }
+  const [whole, fraction = ""] = buy.balance.split(".");
+  return BigInt(whole + fraction.padEnd(7, "0"));
+}
 
 type TriggerState =
   | { status: "idle" }
@@ -28,6 +49,10 @@ export function useTriggerRebalance() {
 
   const trigger = useCallback(async (account: string): Promise<boolean> => {
     setState({ status: "submitting", stage: "submitting" });
+    // What the screen held when the rebalance was asked for: what a read
+    // after it is compared against to tell the chain has caught up.
+    const balancesBefore = queryClient.getQueryData<SmartAccountBalancesResult>(queryKeys.balances(account));
+    const checkBefore = queryClient.getQueryData<RebalanceCheckResult>(queryKeys.rebalanceCheck(account));
     const confirmingTimer = setTimeout(() => setState({ status: "submitting", stage: "confirming" }), CONFIRMING_AFTER_MS);
     try {
       const res = await fetch("/api/rebalance", {
@@ -41,9 +66,36 @@ export function useTriggerRebalance() {
         // behind the valuation are read again with them. It also changes
         // whether another rebalance is due (the cooldown starts). The
         // policy itself is untouched: its stored terms do not change.
-        void queryClient.invalidateQueries({ queryKey: queryKeys.balances(account), refetchType: "all" });
+        //
+        // The first read after the confirmed transaction can still see the
+        // chain as it was, so the balances and the check are read until they
+        // differ from what was on screen before (see query-settle.ts). That
+        // runs behind the success card rather than holding it back: the card
+        // is true now, and the figures catch up as soon as the chain does.
+        // With nothing cached to compare against, they are simply read again.
         void queryClient.invalidateQueries({ queryKey: queryKeys.allPrices, refetchType: "all" });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.rebalanceCheck(account), refetchType: "all" });
+        if (balancesBefore) {
+          const buyBefore = buyBalanceStroops(balancesBefore);
+          void settleQuery({
+            queryClient,
+            queryKey: queryKeys.balances(account),
+            read: () => fetchPairBalances(account),
+            isSettled: (balances) => buyBalanceStroops(balances) > buyBefore,
+          });
+        } else {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.balances(account), refetchType: "all" });
+        }
+        if (checkBefore) {
+          const checkBeforeJson = JSON.stringify(checkBefore);
+          void settleQuery({
+            queryClient,
+            queryKey: queryKeys.rebalanceCheck(account),
+            read: () => fetchRebalanceCheck(account),
+            isSettled: (check) => JSON.stringify(check) !== checkBeforeJson,
+          });
+        } else {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.rebalanceCheck(account), refetchType: "all" });
+        }
         setState({ status: "success", hash: data.hash, ledger: data.ledger ?? null });
         return true;
       }
