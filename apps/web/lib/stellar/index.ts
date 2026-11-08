@@ -15,5 +15,12 @@ export {
 export { getPolicyStatus, findPolicyContextRuleId, type PolicyStatus, type RebalancePolicyParams } from "./policy";
 export { getRebalanceHistory, type RebalanceHistoryEntry, type RebalanceHistoryResult } from "./rebalance-history";
 export { formatBalanceAmount, formatBps, formatDurationSeconds, formatUsd } from "./format";
-export { getPortfolioValuation, type PortfolioValuation, type PortfolioAssetValue } from "./portfolio-value";
+export {
+  getValuationPrices,
+  computeValuation,
+  type PortfolioValuation,
+  type PortfolioAssetValue,
+  type ValuationInput,
+  type ValuationPrices,
+} from "./portfolio-value";
 export { getLivePrices, type LivePrice } from "./oracle-price";

@@ -1,83 +1,68 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getSmartAccountBalances, type ExtraTokenContract, type SmartAccountBalancesResult } from "@/lib/stellar";
+import { BUY_ASSET } from "@/lib/stellar/policy-config";
 
 type BalancesState =
+  | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "loaded"; result: SmartAccountBalancesResult };
 
-type Loaded = { address: string; extraKey: string; state: BalancesState };
+const IDLE: BalancesState = { status: "idle" };
+const LOADING: BalancesState = { status: "loading" };
+const ERROR: BalancesState = {
+  status: "error",
+  message: "Could not reach the Stellar network. Check your connection and try again.",
+};
 
-const NO_EXTRA_TOKENS: ExtraTokenContract[] = [];
+// The tokens this product holds are fixed: the XLM/USDC pair (see
+// policy-config.ts), with native XLM always read first by the read
+// layer. So the list is a constant, not something derived from the
+// policy once it loads: a list that changed when the policy arrived
+// would change the query's key, and the balances would be read twice.
+const PAIR_TOKENS: ExtraTokenContract[] = [{ contract: BUY_ASSET.contract, code: BUY_ASSET.symbol }];
 
 /**
- * Loads a smart account's balances from the read layer whenever the
- * address (or the extra token contracts to check alongside native XLM,
- * for example a policy's own sell_asset/buy_asset) changes, with loading
- * and error states of its own. Passing `null` (not connected) returns an
- * idle state rather than fetching.
+ * Loads a smart account's balances for the product's fixed pair, with
+ * loading and error states of its own. Passing `null` (not connected)
+ * returns an idle state rather than fetching.
  *
- * "Loading" is derived at render time (no fresh result yet for the
- * current address and extra-token set) rather than set from inside the
- * effect, so the effect itself only ever calls setState from its async
- * callbacks. The extra-token list is compared by value (serialized),
- * not by array identity, so a freshly recomputed but equal list does not
- * needlessly refetch, and a genuinely different one is not mistaken for
- * still-fresh.
+ * The read is a query keyed by the account, kept for the life of the
+ * app: a page that opens finds the last reading at once, as "loaded",
+ * and it is read again in the background if it is older than 15 seconds
+ * (or when `retry` is called). Loading is only shown when there is no
+ * reading yet, and a background read that fails keeps the last good one
+ * on screen.
  */
-export function useSmartAccountBalances(
-  address: string | null,
-  extraTokenContracts: ExtraTokenContract[] = NO_EXTRA_TOKENS,
-) {
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [reloadIndex, setReloadIndex] = useState(0);
-  const extraKey = JSON.stringify(extraTokenContracts);
+export function useSmartAccountBalances(address: string | null) {
+  const query = useQuery({
+    queryKey: ["balances", address],
+    queryFn: () => getSmartAccountBalances(address as string, PAIR_TOKENS),
+    enabled: address !== null,
+    staleTime: 15_000,
+  });
 
-  useEffect(() => {
+  const { data, isError, refetch } = query;
+
+  const state = useMemo<BalancesState>(() => {
     if (!address) {
-      return;
+      return IDLE;
     }
-
-    let cancelled = false;
-
-    getSmartAccountBalances(address, JSON.parse(extraKey))
-      .then((result) => {
-        if (!cancelled) {
-          setLoaded({ address, extraKey, state: { status: "loaded", result } });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!cancelled) {
-          setLoaded({
-            address,
-            extraKey,
-            state: {
-              status: "error",
-              message: "Could not reach the Stellar network. Check your connection and try again.",
-            },
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [address, reloadIndex, extraKey]);
+    if (data) {
+      return { status: "loaded", result: data };
+    }
+    if (isError) {
+      return ERROR;
+    }
+    return LOADING;
+  }, [address, data, isError]);
 
   const retry = useCallback(() => {
-    setReloadIndex((n) => n + 1);
-  }, []);
+    void refetch();
+  }, [refetch]);
 
-  if (!address) {
-    return { state: { status: "idle" } as const, retry };
-  }
-
-  if (loaded && loaded.address === address && loaded.extraKey === extraKey) {
-    return { state: loaded.state, retry };
-  }
-
-  return { state: { status: "loading" } as const, retry };
+  return { state, retry };
 }

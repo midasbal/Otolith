@@ -8,37 +8,26 @@ import { useRebalanceCheck } from "@/components/use-rebalance-check";
 import { useTriggerRebalance } from "@/components/use-trigger-rebalance";
 import { usePortfolioValuation, type PortfolioValuationInput } from "@/components/use-portfolio-value";
 import { DashboardConnectView, DashboardView } from "@/components/app/dashboard-view";
-import type { ExtraTokenContract } from "@/lib/stellar";
-import { BUY_ASSET } from "@/lib/stellar/policy-config";
 
 export default function DashboardPage() {
   const { address, restoring, connecting, creationStage, error, createWallet, connectWallet } = useWallet();
   const { state: policyState, retry: retryPolicy } = usePolicyStatus(address);
 
-  const extraTokenContracts: ExtraTokenContract[] = useMemo(() => {
-    // USDC is half of the rebalanced pair, so its balance belongs on the
-    // portfolio view even before a policy is installed.
-    const base: ExtraTokenContract[] = [{ contract: BUY_ASSET.contract, code: BUY_ASSET.symbol }];
-    if (policyState.status === "loaded" && policyState.result.kind === "installed") {
-      const { params } = policyState.result;
-      return [...base, { contract: params.sellAsset, code: params.sellSymbol }, { contract: params.buyAsset, code: params.buySymbol }];
-    }
-    return base;
-  }, [policyState]);
-
-  const { state: balancesState, retry: retryBalances } = useSmartAccountBalances(address, extraTokenContracts);
+  const { state: balancesState, retry: retryBalances } = useSmartAccountBalances(address);
   const { state: rebalanceState, retry: retryRebalanceCheck } = useRebalanceCheck(address);
   const { state: triggerState, trigger: triggerRebalance } = useTriggerRebalance();
 
+  // The prices only need the policy, so the valuation is handed its input
+  // as soon as a policy is installed; a balance is null until the
+  // balances have loaded.
   const valuationInput: PortfolioValuationInput | null = useMemo(() => {
     if (policyState.status !== "loaded" || policyState.result.kind !== "installed") {
       return null;
     }
-    if (balancesState.status !== "loaded") {
-      return null;
-    }
-    const balances = balancesState.result.kind === "funded" ? balancesState.result.balances : [];
-    const findBalance = (contract: string) => balances.find((b) => b.contract === contract)?.balance ?? "0";
+    const balances =
+      balancesState.status !== "loaded" ? null : balancesState.result.kind === "funded" ? balancesState.result.balances : [];
+    const findBalance = (contract: string) =>
+      balances === null ? null : (balances.find((b) => b.contract === contract)?.balance ?? "0");
     const { params } = policyState.result;
     return {
       oracle: params.oracle,

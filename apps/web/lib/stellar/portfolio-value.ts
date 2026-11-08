@@ -34,91 +34,114 @@ export type PortfolioValuation =
       bandState: "within_band" | "past_band" | "overweight";
     };
 
-type ValuationAssetInput = {
+export type ValuationAssetInput = {
   contract: string;
   symbol: string;
   balance: string;
 };
 
-/**
- * Computes live drift and total USD value for an installed policy, by
- * value, from oracle prices, the exact same price source and staleness
- * rule the contracts themselves use. Takes balances already read
- * elsewhere (useSmartAccountBalances) rather than reading them again.
- * Read-only: two oracle reads plus one decimals read, no signing, and it
- * never throws, always resolving to a typed result the caller can render
- * directly, including a graceful "not available right now" case rather
- * than a false zero.
- */
-export async function getPortfolioValuation(params: {
-  oracle: string;
+export type ValuationInput = {
   sellAsset: ValuationAssetInput;
   buyAsset: ValuationAssetInput;
   targetBuyWeightBps: number;
   bandThresholdBps: number;
-}): Promise<PortfolioValuation> {
+};
+
+/** The oracle's current prices for the pair, or why there are none. */
+export type ValuationPrices =
+  | { kind: "ok"; sellPrice: number; buyPrice: number }
+  | { kind: "unavailable"; reason: string };
+
+/**
+ * Reads the live USD price of both assets from the oracle, the exact
+ * same price source and staleness rule the contracts themselves use.
+ * Read-only: one decimals read, then two price reads. It does not need
+ * the account's balances, so it can run, and be kept, on its own. It
+ * never throws, always resolving to a typed result, including a graceful
+ * "not available right now" case rather than a false zero.
+ */
+export async function getValuationPrices(
+  oracle: string,
+  sellSymbol: string,
+  buySymbol: string,
+): Promise<ValuationPrices> {
   try {
-    const oracleDecimals = await readOracleDecimals(params.oracle);
+    const oracleDecimals = await readOracleDecimals(oracle);
     if (oracleDecimals === null) {
       return { kind: "unavailable", reason: "Could not read the oracle's price scale." };
     }
 
     const [sellPrice, buyPrice] = await Promise.all([
-      readLivePrice(params.oracle, params.sellAsset.symbol, oracleDecimals),
-      readLivePrice(params.oracle, params.buyAsset.symbol, oracleDecimals),
+      readLivePrice(oracle, sellSymbol, oracleDecimals),
+      readLivePrice(oracle, buySymbol, oracleDecimals),
     ]);
 
     if (sellPrice === null || buyPrice === null) {
       return { kind: "unavailable", reason: "A live price is not available for this pair right now." };
     }
 
-    // Display-only arithmetic: balances are already decimal strings
-    // (see lib/stellar/smart-account-balances.ts), and a USD figure
-    // shown to two decimal places has no precision concern at this
-    // scale. This never feeds back into a contract call or an amount
-    // that gets signed, unlike the raw-stroop math elsewhere in this
-    // app, which does stay in string/bigint arithmetic on purpose.
-    const sellValue = Number(params.sellAsset.balance) * sellPrice;
-    const buyValue = Number(params.buyAsset.balance) * buyPrice;
-    const totalUsdValue = sellValue + buyValue;
-
-    const currentBuyWeightBps = totalUsdValue > 0 ? Math.round((buyValue / totalUsdValue) * 10000) : 0;
-    const driftBps = currentBuyWeightBps - params.targetBuyWeightBps;
-
-    let bandState: "within_band" | "past_band" | "overweight";
-    if (currentBuyWeightBps >= params.targetBuyWeightBps) {
-      bandState = "overweight";
-    } else if (params.targetBuyWeightBps - currentBuyWeightBps > params.bandThresholdBps) {
-      bandState = "past_band";
-    } else {
-      bandState = "within_band";
-    }
-
-    return {
-      kind: "valued",
-      totalUsdValue,
-      sellAsset: {
-        code: params.sellAsset.symbol,
-        contract: params.sellAsset.contract,
-        balance: params.sellAsset.balance,
-        price: sellPrice,
-        usdValue: sellValue,
-      },
-      buyAsset: {
-        code: params.buyAsset.symbol,
-        contract: params.buyAsset.contract,
-        balance: params.buyAsset.balance,
-        price: buyPrice,
-        usdValue: buyValue,
-      },
-      currentBuyWeightBps,
-      targetBuyWeightBps: params.targetBuyWeightBps,
-      bandThresholdBps: params.bandThresholdBps,
-      driftBps,
-      bandState,
-    };
+    return { kind: "ok", sellPrice, buyPrice };
   } catch (err) {
     console.error(err);
     return { kind: "unavailable", reason: "Could not compute the portfolio's live value right now." };
   }
+}
+
+/**
+ * Computes live drift and total USD value for an installed policy, by
+ * value, from oracle prices (getValuationPrices) and balances already
+ * read elsewhere (useSmartAccountBalances). Pure: no reads, so it can be
+ * recomputed for free whenever either input changes.
+ */
+export function computeValuation(params: ValuationInput, prices: ValuationPrices): PortfolioValuation {
+  if (prices.kind === "unavailable") {
+    return { kind: "unavailable", reason: prices.reason };
+  }
+  const { sellPrice, buyPrice } = prices;
+
+  // Display-only arithmetic: balances are already decimal strings
+  // (see lib/stellar/smart-account-balances.ts), and a USD figure
+  // shown to two decimal places has no precision concern at this
+  // scale. This never feeds back into a contract call or an amount
+  // that gets signed, unlike the raw-stroop math elsewhere in this
+  // app, which does stay in string/bigint arithmetic on purpose.
+  const sellValue = Number(params.sellAsset.balance) * sellPrice;
+  const buyValue = Number(params.buyAsset.balance) * buyPrice;
+  const totalUsdValue = sellValue + buyValue;
+
+  const currentBuyWeightBps = totalUsdValue > 0 ? Math.round((buyValue / totalUsdValue) * 10000) : 0;
+  const driftBps = currentBuyWeightBps - params.targetBuyWeightBps;
+
+  let bandState: "within_band" | "past_band" | "overweight";
+  if (currentBuyWeightBps >= params.targetBuyWeightBps) {
+    bandState = "overweight";
+  } else if (params.targetBuyWeightBps - currentBuyWeightBps > params.bandThresholdBps) {
+    bandState = "past_band";
+  } else {
+    bandState = "within_band";
+  }
+
+  return {
+    kind: "valued",
+    totalUsdValue,
+    sellAsset: {
+      code: params.sellAsset.symbol,
+      contract: params.sellAsset.contract,
+      balance: params.sellAsset.balance,
+      price: sellPrice,
+      usdValue: sellValue,
+    },
+    buyAsset: {
+      code: params.buyAsset.symbol,
+      contract: params.buyAsset.contract,
+      balance: params.buyAsset.balance,
+      price: buyPrice,
+      usdValue: buyValue,
+    },
+    currentBuyWeightBps,
+    targetBuyWeightBps: params.targetBuyWeightBps,
+    bandThresholdBps: params.bandThresholdBps,
+    driftBps,
+    bandState,
+  };
 }

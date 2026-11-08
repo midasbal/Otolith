@@ -1,82 +1,95 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { getPortfolioValuation, type PortfolioValuation } from "@/lib/stellar";
+import { useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { computeValuation, getValuationPrices, type PortfolioValuation, type ValuationPrices } from "@/lib/stellar";
 
 type ValuationState =
+  | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "loaded"; result: PortfolioValuation };
 
 export type PortfolioValuationInput = {
   oracle: string;
-  sellAsset: { contract: string; symbol: string; balance: string };
-  buyAsset: { contract: string; symbol: string; balance: string };
+  /** `balance` is null until the account's balances have been read. */
+  sellAsset: { contract: string; symbol: string; balance: string | null };
+  buyAsset: { contract: string; symbol: string; balance: string | null };
   targetBuyWeightBps: number;
   bandThresholdBps: number;
 };
 
-type Loaded = { key: string; state: ValuationState };
+const IDLE: ValuationState = { status: "idle" };
+const LOADING: ValuationState = { status: "loading" };
+const ERROR: ValuationState = { status: "error", message: "Could not compute the portfolio's live value right now." };
+
+// How long a reading of the prices is trusted before a page that opens
+// reads them again. A reading that found no price is never trusted: it
+// is read again the next time anything asks.
+const PRICES_FRESH_MS = 15_000;
 
 /**
  * Loads live drift and total USD value for an installed policy. Takes
  * the policy's own params (from usePolicyStatus) and the account's
  * current balances for the same two assets (from
- * useSmartAccountBalances) as input, rather than reading either again:
- * this hook only adds the two oracle price reads plus one decimals read
- * on top of what the dashboard already has loaded.
+ * useSmartAccountBalances) as input.
  *
- * Passing null (no installed policy yet, or balances not loaded yet)
- * returns an idle state rather than fetching. Same pattern as the other
- * read-layer hooks: the input is compared by value (serialized), not by
- * object identity, and the effect only ever reconstructs its argument
- * from that serialized key, never the raw object from render scope, so a
- * freshly recomputed but equal input does not needlessly refetch.
+ * Two things make this up. The oracle prices are a query of their own,
+ * keyed by the oracle and the two symbols, so they are kept between
+ * pages and do not depend on the balances: they can be read as soon as
+ * the policy is known, while the balances are still loading, and a
+ * balance that changes does not read them again. The valuation itself is
+ * then plain arithmetic over the cached prices and the current
+ * balances, recomputed for free whenever either changes.
+ *
+ * Passing null (no installed policy yet) returns an idle state rather
+ * than fetching. While the prices or the balances are still on their
+ * way the state is loading.
  */
 export function usePortfolioValuation(input: PortfolioValuationInput | null) {
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [reloadIndex, setReloadIndex] = useState(0);
+  const query = useQuery({
+    queryKey: ["prices", input?.oracle ?? null, input?.sellAsset.symbol ?? null, input?.buyAsset.symbol ?? null],
+    queryFn: (): Promise<ValuationPrices> =>
+      getValuationPrices(input!.oracle, input!.sellAsset.symbol, input!.buyAsset.symbol),
+    enabled: input !== null,
+    staleTime: (q) => (q.state.data?.kind === "ok" ? PRICES_FRESH_MS : 0),
+  });
+
+  const { data: prices, isError, refetch } = query;
+
+  // The input is compared by value, not identity: the page rebuilds it
+  // whenever the policy or balances change, and only a different value
+  // should recompute anything.
   const key = input ? JSON.stringify(input) : null;
 
-  useEffect(() => {
+  const state = useMemo<ValuationState>(() => {
     if (!key) {
-      return;
+      return IDLE;
     }
-
-    let cancelled = false;
-
-    getPortfolioValuation(JSON.parse(key) as PortfolioValuationInput)
-      .then((result) => {
-        if (!cancelled) {
-          setLoaded({ key, state: { status: "loaded", result } });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!cancelled) {
-          setLoaded({
-            key,
-            state: { status: "error", message: "Could not compute the portfolio's live value right now." },
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [key, reloadIndex]);
+    const current = JSON.parse(key) as PortfolioValuationInput;
+    if (prices && current.sellAsset.balance !== null && current.buyAsset.balance !== null) {
+      return {
+        status: "loaded",
+        result: computeValuation(
+          {
+            sellAsset: { ...current.sellAsset, balance: current.sellAsset.balance },
+            buyAsset: { ...current.buyAsset, balance: current.buyAsset.balance },
+            targetBuyWeightBps: current.targetBuyWeightBps,
+            bandThresholdBps: current.bandThresholdBps,
+          },
+          prices,
+        ),
+      };
+    }
+    if (!prices && isError) {
+      return ERROR;
+    }
+    return LOADING;
+  }, [key, prices, isError]);
 
   const retry = useCallback(() => {
-    setReloadIndex((n) => n + 1);
-  }, []);
+    void refetch();
+  }, [refetch]);
 
-  if (!key) {
-    return { state: { status: "idle" } as const, retry };
-  }
-
-  if (loaded && loaded.key === key) {
-    return { state: loaded.state, retry };
-  }
-
-  return { state: { status: "loading" } as const, retry };
+  return { state, retry };
 }
