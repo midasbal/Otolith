@@ -4,8 +4,9 @@ import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { rpc } from "@stellar/stellar-sdk";
 import type { RevokeStage } from "@/components/app/progress-stages";
-import { applyConfirmedPolicy } from "@/components/policy-ledger-floor";
+import { applyConfirmedPolicy } from "@/components/account-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
+import { applyConfirmedNoPolicyCheck } from "@/components/rebalance-check-floor";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
 import { signatureExpirationLedger } from "@/components/signature-expiry";
@@ -116,7 +117,7 @@ export function useRevokePolicy() {
       // The mirror of an install: "not installed" is written into the cache
       // now, behind a floor at the transaction's ledger, so no read
       // evaluated before it can bring the policy back (see
-      // policy-ledger-floor.ts), and the chain's own answer replaces it in
+      // account-ledger-floor.ts), and the chain's own answer replaces it in
       // the background. Without the ledger the policy is simply read again.
       refreshSigningRules(queryClient, smartAccount, kit);
       if (typeof result.ledger === "number") {
@@ -124,14 +125,21 @@ export function useRevokePolicy() {
       } else {
         void queryClient.invalidateQueries({ queryKey: queryKeys.policy(smartAccount), refetchType: "all" });
       }
-      // The rebalance check is read by the server, not through the floor
-      // (a later stage): read until it shows no policy, behind the success.
-      void settleQuery({
-        queryClient,
-        queryKey: queryKeys.rebalanceCheck(smartAccount),
-        read: () => fetchRebalanceCheck(smartAccount),
-        isSettled: (check) => check.state === "no_policy",
-      });
+      // The mirror for the rebalance check: "no policy" is known, so it is
+      // written now behind the same floor and the rebalance section clears
+      // at once, with no read from before the revoke able to bring it back
+      // (see rebalance-check-floor.ts). Without the ledger, read until the
+      // server shows no policy, behind the success.
+      if (typeof result.ledger === "number") {
+        await applyConfirmedNoPolicyCheck(queryClient, smartAccount, result.ledger);
+      } else {
+        void settleQuery({
+          queryClient,
+          queryKey: queryKeys.rebalanceCheck(smartAccount),
+          read: () => fetchRebalanceCheck(smartAccount),
+          isSettled: (check) => check.state === "no_policy",
+        });
+      }
 
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });
       return true;

@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TriggerStage } from "@/components/app/progress-stages";
 import { queryKeys } from "@/components/query-keys";
+import { refreshCheckAfterRebalance } from "@/components/rebalance-check-floor";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck, type RebalanceCheckResult } from "@/components/use-rebalance-check";
 import { fetchPairBalances } from "@/components/use-smart-account-balances";
@@ -85,7 +86,13 @@ export function useTriggerRebalance() {
         } else {
           void queryClient.invalidateQueries({ queryKey: queryKeys.balances(account), refetchType: "all" });
         }
-        if (checkBefore) {
+        // The check is held to the floor the rebalance raised (see
+        // rebalance-check-floor.ts), which is exact where the ledger is
+        // known. Without it, it is read until it differs from what was on
+        // screen before, as the balances are.
+        if (typeof data.ledger === "number") {
+          void refreshCheckAfterRebalance(queryClient, account, data.ledger);
+        } else if (checkBefore) {
           const checkBeforeJson = JSON.stringify(checkBefore);
           void settleQuery({
             queryClient,

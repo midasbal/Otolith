@@ -2,7 +2,7 @@ import "server-only";
 
 import { Account, Address, Keypair, Operation, TransactionBuilder, nativeToScVal, rpc, scValToNative, xdr } from "@stellar/stellar-sdk";
 import { SmartAccountKit, MemoryStorage, type TransactionResult } from "smart-account-kit";
-import { NETWORK_PASSPHRASE, SOROBAN_RPC_URL, sorobanServer, getPolicyStatus } from "@/lib/stellar";
+import { NETWORK_PASSPHRASE, SOROBAN_RPC_URL, sorobanServer, getPolicyStatus, readPolicyStatus } from "@/lib/stellar";
 import { BUY_ASSET, ORACLE, REBALANCER_CONTRACT, ROUTER, SELL_ASSET, POLICY_CONTRACT } from "@/lib/stellar/policy-config";
 import { getDeployerKeypair, DeployerNotConfiguredError } from "@/lib/server/deployer";
 import { ACCOUNT_WASM_HASH, WEBAUTHN_VERIFIER_ADDRESS } from "@/lib/stellar/account-config";
@@ -118,29 +118,49 @@ function classifySimulationError(message: string): RebalanceState {
 }
 
 /**
+ * A check, with the ledger it was evaluated at: the lowest `latestLedger`
+ * of every simulation that went into it, since the answer is only as recent
+ * as the most lagging of them. Left out when any of them did not report
+ * one, so a caller never takes a guess for a reading.
+ */
+export type RebalanceCheck = RebalanceState & { ledger?: number };
+
+function withLedger(state: RebalanceState, ...ledgers: Array<number | undefined>): RebalanceCheck {
+  if (ledgers.some((ledger) => typeof ledger !== "number")) {
+    return state;
+  }
+  return { ...state, ledger: Math.min(...(ledgers as number[])) };
+}
+
+/**
  * Checks whether a rebalance is currently due for a smart account,
  * without submitting anything. The account address is the only input
  * trusted from the client; the context rule id is discovered here, the
  * same way the dashboard's own policy-status read does.
  */
-export async function checkRebalance(account: string): Promise<RebalanceState> {
-  const status = await getPolicyStatus(account);
+export async function checkRebalance(account: string): Promise<RebalanceCheck> {
+  const read = await readPolicyStatus(account);
+  const status = read.status;
   if (status.kind === "not-installed") {
-    return { state: "no_policy" };
+    return withLedger({ state: "no_policy" }, read.ledger);
   }
 
   const { sim } = await simulateRebalance(account, status.contextRuleId);
   if (rpc.Api.isSimulationError(sim)) {
-    return classifySimulationError(sim.error);
+    return withLedger(classifySimulationError(sim.error), read.ledger, sim.latestLedger);
   }
 
   const [amountIn, amountOut] = scValToNative(sim.result!.retval) as [bigint, bigint];
-  return {
-    state: "ready",
-    contextRuleId: status.contextRuleId,
-    amountIn: amountIn.toString(),
-    amountOut: amountOut.toString(),
-  };
+  return withLedger(
+    {
+      state: "ready",
+      contextRuleId: status.contextRuleId,
+      amountIn: amountIn.toString(),
+      amountOut: amountOut.toString(),
+    },
+    read.ledger,
+    sim.latestLedger,
+  );
 }
 
 /**

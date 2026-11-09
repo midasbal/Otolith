@@ -1,16 +1,12 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/components/query-keys";
+import { fetchRebalanceCheckGuarded } from "@/components/rebalance-check-floor";
+import { readRebalanceCheck, type RebalanceCheckResult } from "@/components/rebalance-check-read";
 
-export type RebalanceCheckResult =
-  | { state: "no_policy" }
-  | { state: "not_due"; reason: string }
-  | { state: "ready"; contextRuleId: number; amountIn: string; amountOut: string }
-  | { state: "cooldown" }
-  | { state: "pool_blocked" }
-  | { state: "error"; message: string };
+export type { RebalanceCheckResult };
 
 type CheckState =
   | { status: "idle" }
@@ -26,17 +22,18 @@ const ERROR: CheckState = { status: "error", message: "Could not check whether a
 // A reading the server itself reported as an error is never trusted.
 const CHECK_FRESH_MS = 15_000;
 
-// The route answers a failed check with an error state in its body, so the
-// body is the result whatever the HTTP status: it is read and returned as
-// it is, and only a request that fails outright counts as a failed read.
+// One plain read of the check, with no floor. For a caller that has no
+// ledger to hold it to (see use-trigger-rebalance.ts); the hook below reads
+// through fetchRebalanceCheckGuarded.
 export async function fetchRebalanceCheck(address: string): Promise<RebalanceCheckResult> {
-  const res = await fetch(`/api/rebalance?account=${encodeURIComponent(address)}`);
-  return (await res.json()) as RebalanceCheckResult;
+  return (await readRebalanceCheck(address)).result;
 }
 
 /**
  * Checks whether a rebalance is currently due for a smart account, via
- * the read-only /api/rebalance check.
+ * the read-only /api/rebalance check. Every read goes through
+ * fetchRebalanceCheckGuarded (rebalance-check-floor.ts), which will not
+ * store a check older than the last confirmed transaction.
  *
  * The check is a query keyed by the account, kept for the life of the
  * app: a page that opens finds the last answer at once, as "loaded", and
@@ -47,9 +44,10 @@ export async function fetchRebalanceCheck(address: string): Promise<RebalanceChe
  * fails keeps the last good answer on screen.
  */
 export function useRebalanceCheck(address: string | null) {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: queryKeys.rebalanceCheck(address),
-    queryFn: () => fetchRebalanceCheck(address as string),
+    queryFn: () => fetchRebalanceCheckGuarded(queryClient, address as string),
     enabled: address !== null,
     staleTime: (q) => (q.state.data?.state === "error" ? 0 : CHECK_FRESH_MS),
   });

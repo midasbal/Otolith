@@ -26,10 +26,10 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         },
       },
     });
-    // The policy floors are written by the app, not read from anywhere, and
-    // are held to their own window (see policy-ledger-floor.ts), so the
+    // The account floors are written by the app, not read from anywhere, and
+    // are held to their own window (see account-ledger-floor.ts), so the
     // cache must not drop them for want of a subscriber.
-    created.setQueryDefaults(queryKeys.allPolicyFloors, { gcTime: Infinity, staleTime: Infinity });
+    created.setQueryDefaults(queryKeys.allAccountFloors, { gcTime: Infinity, staleTime: Infinity });
     // The signing rules are fetched ahead of use and read back by key, with
     // no component subscribed, so the cache must not drop them for want of one
     // (signing-rules-cache.ts bounds their age itself).

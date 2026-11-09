@@ -4,10 +4,9 @@ import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createDefaultContext } from "smart-account-kit";
 import type { InstallStage } from "@/components/app/progress-stages";
-import { applyConfirmedPolicy } from "@/components/policy-ledger-floor";
+import { applyConfirmedPolicy } from "@/components/account-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
-import { settleQuery } from "@/components/query-settle";
-import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
+import { dropConfirmedCheck } from "@/components/rebalance-check-floor";
 import { signatureExpirationLedger } from "@/components/signature-expiry";
 import { signingRuleResolver } from "@/components/signing-rules";
 import { cachedSigningRules, refreshSigningRules } from "@/components/signing-rules-cache";
@@ -95,7 +94,7 @@ export function useInstallPolicy() {
       // The policy is written into the cache now, from what was just
       // installed, behind a floor at the transaction's ledger: the screen is
       // right the moment the install is, and no read evaluated before that
-      // ledger can undo it (see policy-ledger-floor.ts). The chain's own
+      // ledger can undo it (see account-ledger-floor.ts). The chain's own
       // answer replaces it in the background. Without the ledger, or the new
       // rule's id, there is nothing safe to floor or write, so the policy is
       // simply read again, as it was before the floor existed.
@@ -112,14 +111,16 @@ export function useInstallPolicy() {
         } else {
           void queryClient.invalidateQueries({ queryKey: queryKeys.policy(address), refetchType: "all" });
         }
-        // The rebalance check is read by the server, not through the floor
-        // (a later stage): read until it shows a policy, behind the success.
-        void settleQuery({
-          queryClient,
-          queryKey: queryKeys.rebalanceCheck(address),
-          read: () => fetchRebalanceCheck(address),
-          isSettled: (check) => check.state !== "no_policy",
-        });
+        // The check cannot be built from what was installed, so its cached
+        // answer (a "no policy" above all) is dropped behind the same floor,
+        // and the dashboard shows the check's own loading state until a
+        // reading at or above it lands (see rebalance-check-floor.ts). With
+        // no ledger there is no floor to hold it to: it is dropped and read.
+        if (typeof result.ledger === "number") {
+          await dropConfirmedCheck(queryClient, address, result.ledger);
+        } else {
+          void queryClient.resetQueries({ queryKey: queryKeys.rebalanceCheck(address) });
+        }
       }
 
       setState({ status: "success", hash: result.hash, ledger: result.ledger ?? null });

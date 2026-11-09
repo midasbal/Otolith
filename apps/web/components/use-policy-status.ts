@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchPolicyGuarded } from "@/components/policy-ledger-floor";
+import { fetchPolicyGuarded } from "@/components/account-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
 import type { PolicyStatus } from "@/lib/stellar";
 
@@ -24,7 +24,7 @@ const ERROR: PolicyState = {
  * with loading and error states of its own. Passing `null` (not
  * connected) returns an idle state rather than fetching.
  *
- * Every read goes through fetchPolicyGuarded (policy-ledger-floor.ts), which
+ * Every read goes through fetchPolicyGuarded (account-ledger-floor.ts), which
  * will not store a reading older than the last confirmed install or revoke.
  *
  * The read is a query keyed by the account, so the last reading is kept

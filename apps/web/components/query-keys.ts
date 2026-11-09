@@ -8,12 +8,12 @@ export const queryKeys = {
   policy: (address: string | null) => ["policy", address] as const,
   /**
    * The oldest ledger a policy reading may reflect, raised when an install
-   * or revoke is confirmed (see policy-ledger-floor.ts). Not a read: an
+   * or revoke is confirmed (see account-ledger-floor.ts). Not a read: an
    * entry the app writes itself.
    */
-  policyFloor: (address: string | null) => ["policyFloor", address] as const,
+  accountFloor: (address: string | null) => ["accountFloor", address] as const,
   /** Every policy floor, whichever account. */
-  allPolicyFloors: ["policyFloor"] as const,
+  allAccountFloors: ["accountFloor"] as const,
   /**
    * The account's context rules, listed ahead of signing (see
    * signing-rules-cache.ts). Not a read the screen shows.
