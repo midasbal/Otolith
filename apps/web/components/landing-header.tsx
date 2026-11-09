@@ -6,15 +6,22 @@ import { Mark } from "@/components/ui/mark";
 import { ThemeToggle } from "@/components/ui/theme";
 
 const NAV_LINKS = [
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Security", href: "#security" },
-  { label: "Docs", href: "https://github.com/midasbal/Otolith#readme" },
+  { label: "How it works", href: "#how-it-works", external: false },
+  { label: "Security", href: "#security", external: false },
+  // The only link that leaves the site, so the only one that opens a new tab.
+  { label: "Docs", href: "https://github.com/midasbal/Otolith#readme", external: true },
 ];
 
 function NavLinks() {
   return NAV_LINKS.map((link) => (
-    <a key={link.href} href={link.href} className="ot-navlink">
+    <a
+      key={link.href}
+      href={link.href}
+      className="ot-navlink"
+      {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
       {link.label}
+      {link.external ? <span className="sr-only"> (opens in a new tab)</span> : null}
     </a>
   ));
 }

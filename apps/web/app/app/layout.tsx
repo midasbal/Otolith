@@ -36,7 +36,7 @@ export default function AppShellLayout({
               <main id="main" className="flex-1">
                 {children}
               </main>
-              <SiteFooter className="max-w-3xl" />
+              <SiteFooter variant="app" className="max-w-3xl" />
             </div>
           </div>
         )}
