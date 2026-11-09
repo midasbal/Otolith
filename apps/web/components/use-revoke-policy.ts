@@ -8,6 +8,8 @@ import { queryKeys } from "@/components/query-keys";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
 import { signatureExpirationLedger } from "@/components/signature-expiry";
+import { signingRuleResolver } from "@/components/signing-rules";
+import { cachedSigningRules, refreshSigningRules } from "@/components/signing-rules-cache";
 import { getKit } from "@/components/wallet-provider";
 import { CONTEXT_RULE_NOT_FOUND_ERROR, findPolicyContextRuleId } from "@/lib/stellar/policy";
 
@@ -80,7 +82,18 @@ export function useRevokePolicy() {
         }
       }
 
-      const result = await kit.signAndSubmit(tx, { expiration: await expirationRead });
+      // If the account's rules were listed ahead of time, sign with the rule
+      // ids worked out from that listing rather than have the kit list them
+      // again now (see signing-rules.ts). With no listing, the kit does it.
+      const resolveContextRuleIds = signingRuleResolver(
+        cachedSigningRules(queryClient, smartAccount),
+        kit.credentialId,
+        () => tx.simulationData.result.auth,
+      );
+      const result = await kit.signAndSubmit(tx, {
+        expiration: await expirationRead,
+        ...(resolveContextRuleIds ? { resolveContextRuleIds } : {}),
+      });
 
       if (!result.success) {
         setState({ status: "error", message: result.error?.message || "The transaction failed to submit." });
@@ -95,6 +108,7 @@ export function useRevokePolicy() {
       // evaluated before it can bring the policy back (see
       // policy-ledger-floor.ts), and the chain's own answer replaces it in
       // the background. Without the ledger the policy is simply read again.
+      refreshSigningRules(queryClient, smartAccount, kit);
       if (typeof result.ledger === "number") {
         await applyConfirmedPolicy(queryClient, smartAccount, result.ledger, { kind: "not-installed", reason: "no-rule" });
       } else {

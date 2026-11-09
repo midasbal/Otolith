@@ -9,6 +9,8 @@ import { queryKeys } from "@/components/query-keys";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
 import { signatureExpirationLedger } from "@/components/signature-expiry";
+import { signingRuleResolver } from "@/components/signing-rules";
+import { cachedSigningRules, refreshSigningRules } from "@/components/signing-rules-cache";
 import { getKit, useWallet } from "@/components/wallet-provider";
 import { buildRebalancePolicyGateParamsScVal, type RebalancePolicyInstallParams } from "@/lib/stellar/policy-params";
 import { POLICY_CONTRACT } from "@/lib/stellar/policy-config";
@@ -73,7 +75,13 @@ export function useInstallPolicy() {
       ]);
       setState({ status: "installing", stage: "authorizing" });
       confirmingTimer = setTimeout(() => setState({ status: "installing", stage: "confirming" }), CONFIRMING_AFTER_MS);
-      const result = await kit.signAndSubmit(tx, { expiration });
+      // If the account's rules were listed ahead of time, sign with the rule
+      // ids worked out from that listing rather than have the kit list them
+      // again now (see signing-rules.ts). With no listing, the kit does it.
+      const resolveContextRuleIds = address
+        ? signingRuleResolver(cachedSigningRules(queryClient, address), kit.credentialId, () => tx.simulationData.result.auth)
+        : undefined;
+      const result = await kit.signAndSubmit(tx, { expiration, ...(resolveContextRuleIds ? { resolveContextRuleIds } : {}) });
 
       if (!result.success) {
         setState({ status: "error", message: result.error?.message || "The transaction failed to submit." });
@@ -92,6 +100,7 @@ export function useInstallPolicy() {
       // rule's id, there is nothing safe to floor or write, so the policy is
       // simply read again, as it was before the floor existed.
       if (address) {
+        refreshSigningRules(queryClient, address, kit);
         const ruleId = newRuleId(tx);
         if (typeof result.ledger === "number" && ruleId !== null) {
           await applyConfirmedPolicy(queryClient, address, result.ledger, {

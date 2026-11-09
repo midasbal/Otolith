@@ -12,7 +12,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { IndexedDBStorage, SmartAccountKit } from "smart-account-kit";
+import { dropSigningRules, prefetchSigningRules } from "@/components/signing-rules-cache";
 import type { CreationStage } from "@/components/app/progress-stages";
 import { NETWORK_PASSPHRASE, SOROBAN_RPC_URL } from "@/lib/stellar";
 import { ACCOUNT_WASM_HASH, WEBAUTHN_VERIFIER_ADDRESS } from "@/lib/stellar/account-config";
@@ -135,6 +137,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [connecting, setConnecting] = useState(false);
   const [creationStage, setCreationStage] = useState<CreationStage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const restoreAttempted = useRef(false);
 
   useEffect(() => {
@@ -158,6 +161,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setRestoring(false);
       });
   }, []);
+
+  // List the account's context rules in the background as soon as it is
+  // connected, so signing does not have to wait for it later (see
+  // signing-rules.ts). Failing to is harmless: signing then does it itself.
+  useEffect(() => {
+    if (address) {
+      void prefetchSigningRules(queryClient, address, getKit());
+    }
+  }, [address, queryClient]);
 
   const createWallet = useCallback(async () => {
     setConnecting(true);
@@ -226,9 +238,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       await getKit().disconnect();
     } finally {
+      dropSigningRules(queryClient);
       setAddress(null);
     }
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo(
     () => ({ address, restoring, connecting, creationStage, error, createWallet, connectWallet, disconnect }),

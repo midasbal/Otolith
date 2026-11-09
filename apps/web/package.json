@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^16.4.1",
@@ -16,7 +17,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
-    "smart-account-kit": "^0.5.1"
+    "smart-account-kit": "0.5.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

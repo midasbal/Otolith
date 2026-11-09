@@ -14,6 +14,13 @@ export const queryKeys = {
   policyFloor: (address: string | null) => ["policyFloor", address] as const,
   /** Every policy floor, whichever account. */
   allPolicyFloors: ["policyFloor"] as const,
+  /**
+   * The account's context rules, listed ahead of signing (see
+   * signing-rules-cache.ts). Not a read the screen shows.
+   */
+  signingRules: (address: string | null) => ["signingRules", address] as const,
+  /** Every account's signing rules. */
+  allSigningRules: ["signingRules"] as const,
   balances: (address: string | null) => ["balances", address] as const,
   rebalanceCheck: (address: string | null) => ["rebalanceCheck", address] as const,
   /** The oracle prices for a pair. Market data, not per-account. */
