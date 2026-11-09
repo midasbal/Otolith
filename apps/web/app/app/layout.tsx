@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { SiteFooter } from "@/components/site-footer";
 import { QueryProvider } from "@/components/query-provider";
 import { WalletProvider } from "@/components/wallet-provider";
 
@@ -29,9 +30,14 @@ export default function AppShellLayout({
         ) : (
           <div className="flex min-h-screen flex-col lg:flex-row">
             <AppSidebar />
-            <main id="main" className="min-w-0 flex-1">
-              {children}
-            </main>
+            {/* The footer sits under the content column, beside the sidebar
+                and not under it. The focused setup flow above has none. */}
+            <div className="flex min-w-0 flex-1 flex-col">
+              <main id="main" className="flex-1">
+                {children}
+              </main>
+              <SiteFooter className="max-w-3xl" />
+            </div>
           </div>
         )}
       </WalletProvider>

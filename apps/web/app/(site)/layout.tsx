@@ -1,5 +1,5 @@
 import { LandingHeader } from "@/components/landing-header";
-import { LandingFooter } from "@/components/landing-footer";
+import { SiteFooter } from "@/components/site-footer";
 
 export default function SiteLayout({
   children,
@@ -13,7 +13,7 @@ export default function SiteLayout({
       <main id="main" className="flex-1">
         {children}
       </main>
-      <LandingFooter />
+      <SiteFooter />
     </div>
   );
 }
