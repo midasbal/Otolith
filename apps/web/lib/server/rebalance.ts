@@ -5,6 +5,7 @@ import { SmartAccountKit, MemoryStorage, type TransactionResult } from "smart-ac
 import { NETWORK_PASSPHRASE, SOROBAN_RPC_URL, sorobanServer, getPolicyStatus, readPolicyStatus } from "@/lib/stellar";
 import { BUY_ASSET, ORACLE, REBALANCER_CONTRACT, ROUTER, SELL_ASSET, POLICY_CONTRACT } from "@/lib/stellar/policy-config";
 import { getDeployerKeypair, DeployerNotConfiguredError } from "@/lib/server/deployer";
+import { assertFeeBudget, FeeBudgetExhaustedError } from "@/lib/server/fee-budget";
 import { ACCOUNT_WASM_HASH, WEBAUTHN_VERIFIER_ADDRESS } from "@/lib/stellar/account-config";
 
 const DEADLINE_SECONDS = 3600;
@@ -184,6 +185,11 @@ export async function triggerRebalance(account: string): Promise<RebalanceTrigge
     return classifySimulationError(sim.error);
   }
 
+  // Only a rebalance that is due and about to be submitted spends the
+  // keeper's fees, so the floor is checked here and not before the
+  // eligibility reads (see fee-budget.ts).
+  await assertFeeBudget(deployer.publicKey());
+
   const assembledTx = rpc.assembleTransaction(tx, sim).build();
 
   const kit = new SmartAccountKit({
@@ -223,4 +229,4 @@ export async function triggerRebalance(account: string): Promise<RebalanceTrigge
   return { submitted: true, hash: result.hash, ledger: result.ledger ?? null };
 }
 
-export { DeployerNotConfiguredError };
+export { DeployerNotConfiguredError, FeeBudgetExhaustedError };

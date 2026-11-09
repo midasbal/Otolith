@@ -64,7 +64,7 @@ export type SponsorVerdict =
   | { result: "pass"; shape: "deploy" | "fund" | "install" | "revoke" }
   | { result: "reject"; rule: string; shape?: "deploy" | "fund" | "install" | "revoke" };
 
-export type SponsorStage = "validate" | "configuration" | "decode" | "prepare" | "send" | "confirm" | "unexpected";
+export type SponsorStage = "limit" | "validate" | "configuration" | "budget" | "decode" | "prepare" | "send" | "confirm" | "unexpected";
 
 export type SponsorOutcome =
   | { success: true; hash: string }

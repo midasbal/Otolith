@@ -1,6 +1,7 @@
 import "server-only";
 
 import { BASE_FEE, Keypair, Operation, TransactionBuilder, rpc, xdr } from "@stellar/stellar-sdk";
+import { assertFeeBudget } from "@/lib/server/fee-budget";
 import { NETWORK_PASSPHRASE, sorobanServer } from "@/lib/stellar";
 
 /**
@@ -123,6 +124,10 @@ export async function sponsorHostFunctionCall(func: string, auth: string[]): Pro
       err instanceof Error ? err.message : undefined,
     );
   }
+
+  // Nothing is simulated, signed or submitted once the key is at its floor
+  // (see fee-budget.ts).
+  await assertFeeBudget(deployer.publicKey());
 
   const account = await sorobanServer.getAccount(deployer.publicKey());
 

@@ -1,7 +1,9 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { checkRebalance, triggerRebalance, DeployerNotConfiguredError } from "@/lib/server/rebalance";
+import { checkRebalance, triggerRebalance, DeployerNotConfiguredError, FeeBudgetExhaustedError } from "@/lib/server/rebalance";
+import { checkRateLimit, REBALANCE_CHECK_LIMIT, REBALANCE_SUBMIT_LIMIT } from "@/lib/server/rate-limit";
+import { readJsonBody, REBALANCE_MAX_BODY_BYTES } from "@/lib/server/request-limits";
 
 function isValidAccountAddress(value: unknown): value is string {
   return typeof value === "string" && value.startsWith("C") && value.length === 56;
@@ -13,6 +15,14 @@ function isValidAccountAddress(value: unknown): value is string {
  * all, only the account address.
  */
 export async function GET(request: Request) {
+  const limit = await checkRateLimit(request, REBALANCE_CHECK_LIMIT);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { state: "error", message: "Too many requests. Try again in a moment." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
+  }
+
   const account = new URL(request.url).searchParams.get("account");
   if (!isValidAccountAddress(account)) {
     return NextResponse.json({ state: "error", message: "Expected an account query parameter (a C... address)." }, { status: 400 });
@@ -36,12 +46,21 @@ export async function GET(request: Request) {
  * submits a transaction that is not ready.
  */
 export async function POST(request: Request) {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ state: "error", message: "Invalid request body." }, { status: 400 });
+  const limit = await checkRateLimit(request, REBALANCE_SUBMIT_LIMIT);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { state: "error", message: "Too many requests. Try again in a moment." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
   }
+
+  const read = await readJsonBody(request, REBALANCE_MAX_BODY_BYTES);
+  if (!read.ok) {
+    return read.reason === "too-large"
+      ? NextResponse.json({ state: "error", message: "Request body too large." }, { status: 413 })
+      : NextResponse.json({ state: "error", message: "Invalid request body." }, { status: 400 });
+  }
+  const body = read.json;
 
   const account = typeof body === "object" && body !== null ? (body as { account?: unknown }).account : undefined;
   if (!isValidAccountAddress(account)) {
@@ -55,7 +74,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(result);
   } catch (err) {
-    if (err instanceof DeployerNotConfiguredError) {
+    if (err instanceof DeployerNotConfiguredError || err instanceof FeeBudgetExhaustedError) {
       return NextResponse.json({ state: "error", message: err.message }, { status: 503 });
     }
     console.error(err);

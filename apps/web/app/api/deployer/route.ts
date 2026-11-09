@@ -19,13 +19,15 @@ import {
   type SponsorVerdict,
 } from "@/lib/server/deployer-log";
 import { validateSponsorRequest } from "@/lib/server/deployer-validate";
+import { FeeBudgetExhaustedError } from "@/lib/server/fee-budget";
+import { checkRateLimit, DEPLOYER_LIMIT } from "@/lib/server/rate-limit";
+import { DEPLOYER_MAX_BODY_BYTES, readJsonBody } from "@/lib/server/request-limits";
 
 /**
- * Health check for the deploy-sponsoring deployer. Confirms the server can
- * load the deployer keypair from the server-only environment and that the
- * resulting account is reachable on Stellar testnet, without ever
- * returning the secret key itself. Only the public key ever appears in a
- * response.
+ * Health check for the deploy-sponsoring deployer: whether the server has a
+ * usable deployer key and its account can be reached on Stellar testnet.
+ * That is all it says. It names no address, balance or setting, and never
+ * returns the secret key.
  */
 export async function GET() {
   let publicKey: string;
@@ -33,41 +35,19 @@ export async function GET() {
     publicKey = getDeployerPublicKey();
   } catch (err) {
     if (err instanceof DeployerNotConfiguredError) {
-      return NextResponse.json({ configured: false, error: err.message }, { status: 503 });
+      return NextResponse.json({ configured: false, reachable: false }, { status: 503 });
     }
     throw err;
   }
 
   try {
-    const account = await horizonServer.loadAccount(publicKey);
-    const nativeBalance = account.balances.find((balance) => balance.asset_type === "native");
-
-    return NextResponse.json({
-      configured: true,
-      publicKey,
-      funded: true,
-      balance: nativeBalance ? nativeBalance.balance : "0",
-    });
+    await horizonServer.loadAccount(publicKey);
+    return NextResponse.json({ configured: true, reachable: true });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      return NextResponse.json({
-        configured: true,
-        publicKey,
-        funded: false,
-        balance: "0",
-      });
+    if (!(err instanceof NotFoundError)) {
+      console.error(err);
     }
-
-    console.error(err);
-    return NextResponse.json(
-      {
-        configured: true,
-        publicKey,
-        funded: null,
-        error: "Could not reach the Stellar network to check the deployer balance.",
-      },
-      { status: 502 },
-    );
+    return NextResponse.json({ configured: true, reachable: false }, { status: 503 });
   }
 }
 
@@ -77,6 +57,10 @@ export async function GET() {
  * strings, respond with { success, hash } or { success, error }), so the
  * client kit can be configured with `relayerUrl` pointed at this route
  * and call it directly with no extra client-side plumbing.
+ *
+ * Before any of that, the client's rate limit and the body size cap apply,
+ * and the sponsor refuses once the deployer's balance is at its floor (see
+ * rate-limit.ts, request-limits.ts and fee-budget.ts).
  *
  * Every request leaves one structured log line (see deployer-log.ts): what
  * was asked for, decoded, the allowlist's verdict, and how it ended.
@@ -94,13 +78,25 @@ export async function POST(request: Request) {
   let outcome: SponsorOutcome = { success: false, stage: "unexpected", reason: "The handler ended without an outcome." };
 
   try {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
+    const limit = await checkRateLimit(request, DEPLOYER_LIMIT);
+    if (!limit.allowed) {
+      outcome = { success: false, stage: "limit", reason: "Rate limited." };
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Try again in a moment." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+      );
+    }
+
+    const read = await readJsonBody(request, DEPLOYER_MAX_BODY_BYTES);
+    if (!read.ok) {
+      if (read.reason === "too-large") {
+        outcome = { success: false, stage: "limit", reason: "Request body too large." };
+        return NextResponse.json({ success: false, error: "Request body too large." }, { status: 413 });
+      }
       outcome = { success: false, stage: "validate", reason: "Invalid request body." };
       return NextResponse.json({ success: false, error: "Invalid request body." }, { status: 400 });
     }
+    const body = read.json;
 
     if (
       typeof body !== "object" ||
@@ -141,6 +137,10 @@ export async function POST(request: Request) {
     } catch (err) {
       if (err instanceof DeployerNotConfiguredError) {
         outcome = { success: false, stage: "configuration", reason: shortReason(err) };
+        return NextResponse.json({ success: false, error: err.message }, { status: 503 });
+      }
+      if (err instanceof FeeBudgetExhaustedError) {
+        outcome = { success: false, stage: "budget", reason: "Below the fee budget floor." };
         return NextResponse.json({ success: false, error: err.message }, { status: 503 });
       }
       if (err instanceof DeploySponsorError) {
