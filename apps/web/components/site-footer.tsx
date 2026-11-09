@@ -35,7 +35,7 @@ const LINK_GROUPS: FooterGroup[] = [
   {
     heading: "Resources",
     links: [
-      { label: "Docs", href: "https://github.com/midasbal/Otolith#readme", external: true },
+      { label: "Docs", href: "/docs" },
       { label: "GitHub", href: "https://github.com/midasbal/Otolith", external: true },
       { label: "X", href: "https://x.com/Otolithxyz", external: true, accessibleLabel: "Otolith on X (opens in a new tab)" },
     ],
@@ -56,11 +56,21 @@ type SiteFooterProps = {
 };
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
+  const className = "ot-quiet-link block py-1 text-sm [@media(pointer:coarse)]:py-2.5";
+  // A page of this site is a client-side link; a section of the homepage is
+  // an ordinary anchor, and anything external opens in a new tab.
+  if (!link.external && link.href.startsWith("/") && !link.href.includes("#")) {
+    return (
+      <Link href={link.href} aria-label={link.accessibleLabel} className={className}>
+        {link.label}
+      </Link>
+    );
+  }
   return (
     <a
       href={link.href}
       aria-label={link.accessibleLabel}
-      className="ot-quiet-link block py-1 text-sm [@media(pointer:coarse)]:py-2.5"
+      className={className}
       {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
       {link.label}

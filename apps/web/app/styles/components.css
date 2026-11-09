@@ -401,11 +401,13 @@
       box-shadow: var(--pressed-sm);
     }
   }
-  .ot-navlink[aria-current="page"] {
+  .ot-navlink[aria-current="page"],
+  .ot-navlink[aria-current="location"] {
     color: var(--accent);
     box-shadow: var(--pressed-sm);
   }
-  .ot-navlink[aria-current="page"]::before {
+  .ot-navlink[aria-current="page"]::before,
+  .ot-navlink[aria-current="location"]::before {
     content: "";
     flex: none;
     width: 0.375rem;

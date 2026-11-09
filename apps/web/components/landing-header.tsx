@@ -5,24 +5,19 @@ import { ButtonLink } from "@/components/ui/button";
 import { Mark } from "@/components/ui/mark";
 import { ThemeToggle } from "@/components/ui/theme";
 
+// The section links are absolute so they work from the docs page as well as
+// from the homepage they point into. Every link here stays in the tab.
 const NAV_LINKS = [
-  { label: "How it works", href: "#how-it-works", external: false },
-  { label: "Security", href: "#security", external: false },
-  // The only link that leaves the site, so the only one that opens a new tab.
-  { label: "Docs", href: "https://github.com/midasbal/Otolith#readme", external: true },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Security", href: "/#security" },
+  { label: "Docs", href: "/docs" },
 ];
 
 function NavLinks() {
   return NAV_LINKS.map((link) => (
-    <a
-      key={link.href}
-      href={link.href}
-      className="ot-navlink"
-      {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-    >
+    <Link key={link.href} href={link.href} className="ot-navlink">
       {link.label}
-      {link.external ? <span className="sr-only"> (opens in a new tab)</span> : null}
-    </a>
+    </Link>
   ));
 }
 
