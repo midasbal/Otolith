@@ -14,6 +14,11 @@ import type { HistoryState } from "./types";
 
 const SECONDS_PER_LEDGER = 5;
 
+/** How far back the search got, in words: "2 days 7 hours". */
+function windowSpan(result: { windowStartLedger: number; windowEndLedger: number }): string {
+  return formatDurationSeconds((result.windowEndLedger - result.windowStartLedger) * SECONDS_PER_LEDGER);
+}
+
 function formatTimestamp(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toLocaleString("en-US", {
     dateStyle: "medium",
@@ -75,19 +80,22 @@ export function ActivityView({ accountLabel, state, onRetry, explorerAccountUrl,
         {state.status === "loaded" ? (
           <div className="flex flex-col gap-5">
             <p className="text-sm leading-relaxed text-text-muted">
-              Showing activity from the last{" "}
-              {formatDurationSeconds(
-                (state.result.windowEndLedger - state.result.windowStartLedger) * SECONDS_PER_LEDGER,
-              )}
-              , the recent window the public network keeps directly queryable. This is recent
-              activity, not the account&rsquo;s full history.{" "}
+              Showing activity from the last {windowSpan(state.result)}
+              {state.result.scanning
+                ? " so far, searching further back."
+                : state.result.stoppedBy === "retention"
+                  ? ", the whole window the public network keeps directly queryable."
+                  : ". The search for older activity stopped there, so there may be more."}{" "}
+              This is recent activity, not the account&rsquo;s full history.{" "}
               <TextLink href={explorerAccountUrl} target="_blank" rel="noreferrer">
                 View the full history on stellar.expert
               </TextLink>
               .
             </p>
 
-            {state.result.entries.length === 0 ? (
+            {state.result.entries.length === 0 && state.result.scanning ? (
+              <LoadingState>Searching for rebalances...</LoadingState>
+            ) : state.result.entries.length === 0 ? (
               <EmptyState icon="activity">
                 No rebalances in the recent window. Your rebalances will appear here once one
                 happens.
@@ -128,6 +136,10 @@ export function ActivityView({ accountLabel, state, onRetry, explorerAccountUrl,
                 ))}
               </ul>
             )}
+
+            {state.result.scanning && state.result.entries.length > 0 ? (
+              <LoadingState>Searching further back...</LoadingState>
+            ) : null}
           </div>
         ) : null}
       </div>

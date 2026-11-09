@@ -12,7 +12,9 @@ type Loaded = { address: string; state: HistoryState };
 
 /**
  * Reads a smart account's recent rebalance history from the read
- * layer. Same "loading derived at render time" pattern as the other
+ * layer, newest first: the state is "loaded" as soon as the newest ledgers
+ * have been searched, and is updated as older ones are (result.scanning is
+ * true until the search ends). Same "loading derived at render time" pattern as the other
  * read-layer hooks: the effect only ever calls setState from its own
  * async callbacks.
  */
@@ -27,7 +29,15 @@ export function useRebalanceHistory(address: string | null) {
 
     let cancelled = false;
 
-    getRebalanceHistory(address)
+    // The newest rebalances are shown as soon as they are found, while older
+    // ledgers are still being searched (result.scanning is set until the end).
+    const onProgress = (partial: RebalanceHistoryResult) => {
+      if (!cancelled) {
+        setLoaded({ address, state: { status: "loaded", result: partial } });
+      }
+    };
+
+    getRebalanceHistory(address, onProgress)
       .then((result) => {
         if (!cancelled) {
           setLoaded({ address, state: { status: "loaded", result } });

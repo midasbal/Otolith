@@ -2,28 +2,30 @@ import { Address, TransactionBuilder, rpc, scValToNative, xdr } from "@stellar/s
 import { NETWORK_PASSPHRASE, sorobanServer } from "./config";
 import { BUY_ASSET } from "./policy-config";
 
-// A generous cap on how many rebalance events a single window query
+// A generous cap on how many rebalance events a single chunk query
 // returns. The account this app targets triggers rebalances at most
 // every few minutes (the policy's own cooldown, at least 300 seconds),
-// so a real account cannot exceed this within any window this function
-// actually searches; this is not a pagination limit that ever needs to
-// bite in practice.
+// so a real account cannot exceed this within a chunk; this is not a
+// pagination limit that ever needs to bite in practice.
 const MAX_EVENTS = 200;
 
-// getEvents' documented retention is generous (confirmed live at
-// roughly 120,000 ledgers, about 7 days, on the public testnet
-// endpoint), but a single call spanning a wide range often fails with
-// its own separate "processing limit" error (JSON-RPC code -32001)
-// well before that, depending on how much unrelated network activity
-// falls inside the requested range, confirmed by direct testing: some
-// 10,000-ledger spans further back succeed, others fail, with no
-// pattern tied to span size alone. Querying in bounded chunks, working
-// backward from the current ledger, and stopping at the first failure
-// (rather than retrying) keeps this function honest: windowStartLedger
-// in the result always reflects exactly how far back the search
-// actually succeeded, never a claimed window it did not really cover.
+// getEvents' retention on the public testnet endpoint is about 120,960
+// ledgers (roughly 7 days, read from getHealth). A single call spanning a
+// wide range often fails with its own separate "processing limit" error
+// (JSON-RPC code -32001) well before that, depending on how much unrelated
+// network activity falls inside the range, with no pattern tied to span size
+// alone. So the search works in bounded chunks, backward from the current
+// ledger, newest first. Thirteen chunks of 10,000 ledgers reach just past
+// the retention window; the search stops earlier, at the network's own
+// oldest ledger, when it gets there.
 const CHUNK_LEDGERS = 10_000;
-const MAX_CHUNKS = 4;
+const MAX_CHUNKS = 13;
+
+// A chunk that has not answered by this time counts as failed, and the whole
+// search is held to a budget, so a slow or hung endpoint can never leave the
+// page waiting: what was found by then is what is shown.
+const CHUNK_TIMEOUT_MS = 20_000;
+const SCAN_BUDGET_MS = 60_000;
 
 export type RebalanceHistoryEntry = {
   hash: string;
@@ -34,10 +36,23 @@ export type RebalanceHistoryEntry = {
   buyAmount: string;
 };
 
+/**
+ * Why the search stopped where it did, once it has: it reached the oldest
+ * ledger the network keeps ("retention"), a chunk failed or timed out
+ * ("failure"), the time budget ran out ("time"), or it covered the most it
+ * is allowed to ("limit"). Only the first means nothing older can be found.
+ */
+export type HistoryStop = "retention" | "failure" | "time" | "limit";
+
 export type RebalanceHistoryResult = {
   entries: RebalanceHistoryEntry[];
+  /** The oldest ledger the search actually covered. */
   windowStartLedger: number;
   windowEndLedger: number;
+  /** True while older ledgers are still being searched: what is here is the newest part, so far. */
+  scanning?: boolean;
+  /** Why the search ended; absent while it is still running. */
+  stoppedBy?: HistoryStop;
 };
 
 const RAW_UNITS_PER_TOKEN = BigInt(10_000_000);
@@ -67,48 +82,52 @@ function decodeSubmitter(envelopeXdr: xdr.TransactionEnvelope): string {
   return "source" in parsed ? parsed.source : parsed.innerTransaction.source;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timed out")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+/** The oldest ledger the RPC will answer for, or null if it cannot be read. */
+async function readOldestLedger(): Promise<number | null> {
+  try {
+    const health = await withTimeout(sorobanServer.getHealth(), CHUNK_TIMEOUT_MS);
+    return typeof health.oldestLedger === "number" ? health.oldestLedger : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Searches for matching events in bounded chunks, working backward
- * from the current ledger, stopping as soon as either the network's
- * own retained floor or a chunk's processing-limit error is hit.
- * windowStartLedger in the return value is the oldest ledger a query
- * actually succeeded for, the honest edge of what was searched, not
- * the network's nominal retention limit.
+ * Resolves one rebalance event to the history entry it stands for, or null
+ * if its transaction did not succeed. Throws if the transaction cannot be
+ * read, which the caller treats as a failed chunk.
  */
-async function queryRecentWindow(topics: string[][]) {
-  const latest = await sorobanServer.getLatestLedger();
-  const filters = [{ type: "contract" as const, contractIds: [BUY_ASSET.contract], topics }];
-
-  const events: rpc.Api.EventResponse[] = [];
-  let cursor = latest.sequence;
-  let windowStartLedger = latest.sequence;
-
-  for (let chunk = 0; chunk < MAX_CHUNKS && cursor > 1; chunk++) {
-    const start = Math.max(1, cursor - CHUNK_LEDGERS);
-    let result;
-    try {
-      result = await sorobanServer.getEvents({ startLedger: start, filters, limit: MAX_EVENTS });
-    } catch {
-      // Either the network's retained floor was crossed (a range
-      // error) or this endpoint's per-call processing budget was
-      // exceeded scanning this range. Either way, stop here rather
-      // than retry: windowStartLedger already reflects the oldest
-      // ledger a query actually succeeded for.
-      break;
-    }
-
-    events.push(...result.events);
-    windowStartLedger = start;
-    cursor = start;
-
-    if (start <= result.oldestLedger) {
-      // Reached the network's own retained floor: nothing older is
-      // queryable this way on any endpoint, not just this one.
-      break;
-    }
+async function resolveEvent(event: rpc.Api.EventResponse): Promise<RebalanceHistoryEntry | null> {
+  const tx = await sorobanServer.getTransaction(event.txHash);
+  if (tx.status !== rpc.Api.GetTransactionStatus.SUCCESS || !tx.returnValue) {
+    return null;
   }
 
-  return { events, windowStartLedger, windowEndLedger: latest.sequence };
+  const [sellAmountRaw, buyAmountRaw] = scValToNative(tx.returnValue) as [bigint, bigint];
+  return {
+    hash: event.txHash,
+    ledger: tx.ledger,
+    timestamp: tx.createdAt,
+    submitter: decodeSubmitter(tx.envelopeXdr),
+    sellAmount: rawToDecimalString(sellAmountRaw),
+    buyAmount: rawToDecimalString(buyAmountRaw),
+  };
 }
 
 /**
@@ -129,45 +148,111 @@ async function queryRecentWindow(topics: string[][]) {
  * the exact [sell_amount, buy_amount] pair the swap moved.
  *
  * This is bounded by the RPC endpoint's own retained ledger window
- * (nominally up to roughly 7 days on the public testnet endpoint, but
- * see queryRecentWindow above: real coverage per call is often
- * narrower). windowStartLedger in the result is the true edge of what
- * was actually searched this call, meant to be shown to the user
- * honestly rather than assumed to be a fixed number of days.
+ * (roughly 7 days on the public testnet endpoint), and often by less: a
+ * wide range can fail on its own. The search runs newest first, a chunk at
+ * a time, and `onProgress` is called with what has been found after each
+ * one, so the newest rebalances can be shown while older ledgers are still
+ * being searched. When a chunk fails or times out, everything already found
+ * is kept and the search stops there; it only throws if not even the newest
+ * chunk could be read. windowStartLedger in the result is the true edge of
+ * what was actually searched, and `stoppedBy` says why it is where it is,
+ * both meant to be shown to the user honestly rather than assumed to be a
+ * fixed number of days.
  */
-export async function getRebalanceHistory(account: string): Promise<RebalanceHistoryResult> {
-  const topics = [
-    [
-      xdr.ScVal.scvSymbol("transfer").toXDR("base64"),
-      "*",
-      Address.fromString(account).toScVal().toXDR("base64"),
-    ],
+export async function getRebalanceHistory(
+  account: string,
+  onProgress?: (partial: RebalanceHistoryResult) => void,
+): Promise<RebalanceHistoryResult> {
+  const filters = [
+    {
+      type: "contract" as const,
+      contractIds: [BUY_ASSET.contract],
+      topics: [
+        [
+          xdr.ScVal.scvSymbol("transfer").toXDR("base64"),
+          "*",
+          Address.fromString(account).toScVal().toXDR("base64"),
+        ],
+      ],
+    },
   ];
 
-  const { events, windowStartLedger, windowEndLedger } = await queryRecentWindow(topics);
+  const startedAt = Date.now();
+  const latest = await sorobanServer.getLatestLedger();
+  // A chunk that starts below the network's oldest ledger is refused outright,
+  // which would throw away everything in it that is still there: so the
+  // search never asks for a ledger below it.
+  const oldestLedger = (await readOldestLedger()) ?? 1;
 
-  const resolved = await Promise.all(
-    events.map(async (event): Promise<RebalanceHistoryEntry | null> => {
-      const tx = await sorobanServer.getTransaction(event.txHash);
-      if (tx.status !== rpc.Api.GetTransactionStatus.SUCCESS || !tx.returnValue) {
-        return null;
-      }
+  const entries: RebalanceHistoryEntry[] = [];
+  let cursor = latest.sequence;
+  let windowStartLedger = latest.sequence;
+  let covered = 0;
+  let stoppedBy: HistoryStop = "limit";
 
-      const [sellAmountRaw, buyAmountRaw] = scValToNative(tx.returnValue) as [bigint, bigint];
-      return {
-        hash: event.txHash,
-        ledger: tx.ledger,
-        timestamp: tx.createdAt,
-        submitter: decodeSubmitter(tx.envelopeXdr),
-        sellAmount: rawToDecimalString(sellAmountRaw),
-        buyAmount: rawToDecimalString(buyAmountRaw),
-      };
-    }),
-  );
+  const snapshot = (scanning: boolean): RebalanceHistoryResult => ({
+    entries: [...entries].sort((a, b) => b.ledger - a.ledger),
+    windowStartLedger,
+    windowEndLedger: latest.sequence,
+    ...(scanning ? { scanning: true } : { stoppedBy }),
+  });
 
-  const entries = resolved
-    .filter((entry): entry is RebalanceHistoryEntry => entry !== null)
-    .sort((a, b) => b.ledger - a.ledger);
+  for (let chunk = 0; chunk < MAX_CHUNKS; chunk++) {
+    if (cursor <= oldestLedger) {
+      stoppedBy = "retention";
+      break;
+    }
+    if (Date.now() - startedAt > SCAN_BUDGET_MS) {
+      stoppedBy = "time";
+      break;
+    }
 
-  return { entries, windowStartLedger, windowEndLedger };
+    const start = Math.max(oldestLedger, cursor - CHUNK_LEDGERS);
+    // A chunk gets at most CHUNK_TIMEOUT_MS, and never more than what is left
+    // of the budget, so the whole search ends close to the budget and not a
+    // chunk's worth of waiting after it.
+    const allowedMs = Math.min(CHUNK_TIMEOUT_MS, Math.max(2_000, SCAN_BUDGET_MS - (Date.now() - startedAt)));
+    let found: RebalanceHistoryEntry[];
+    try {
+      found = await withTimeout(
+        (async () => {
+          const result = await sorobanServer.getEvents({ startLedger: start, filters, limit: MAX_EVENTS });
+          const resolved = await Promise.all(result.events.map(resolveEvent));
+          return resolved.filter((entry): entry is RebalanceHistoryEntry => entry !== null);
+        })(),
+        allowedMs,
+      );
+    } catch {
+      // The range was too much for this endpoint, it did not answer in time,
+      // or one of the chunk's transactions could not be read. Every chunk
+      // already searched is kept, the search goes no further back, and
+      // windowStartLedger stays at the oldest ledger it did cover: the honest
+      // edge, never a claimed window it did not reach. Nothing is retried,
+      // since a retry of the same range tends to fail the same way.
+      stoppedBy = Date.now() - startedAt >= SCAN_BUDGET_MS ? "time" : "failure";
+      break;
+    }
+
+    // Only a chunk that came back whole is counted, and only then does it
+    // move the edge.
+    entries.push(...found);
+    windowStartLedger = start;
+    cursor = start;
+    covered += 1;
+
+    if (start <= oldestLedger) {
+      stoppedBy = "retention";
+      break;
+    }
+    // What was found so far is shown while older ledgers are still searched.
+    onProgress?.(snapshot(true));
+  }
+
+  if (covered === 0) {
+    // Not one chunk could be read, not even the newest: there is no window to
+    // report, and an empty list would read as "no rebalances". It is an error.
+    throw new Error("The rebalance history could not be read.");
+  }
+
+  return snapshot(false);
 }

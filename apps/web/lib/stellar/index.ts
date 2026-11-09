@@ -21,7 +21,12 @@ export {
   type PolicyStatus,
   type RebalancePolicyParams,
 } from "./policy";
-export { getRebalanceHistory, type RebalanceHistoryEntry, type RebalanceHistoryResult } from "./rebalance-history";
+export {
+  getRebalanceHistory,
+  type HistoryStop,
+  type RebalanceHistoryEntry,
+  type RebalanceHistoryResult,
+} from "./rebalance-history";
 export { formatBalanceAmount, formatBps, formatDurationSeconds, formatUsd } from "./format";
 export {
   getValuationPrices,
