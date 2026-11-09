@@ -91,7 +91,7 @@ export const USER_SECTIONS: DocSection[] = [
     body: (
       <>
         <P>
-          Creating an account makes you a passkey on your device and deploys a smart account that your passkey
+          Creating an account creates a passkey on your device and deploys a smart account that your passkey
           controls. The app walks through it in three stages: creating the passkey, preparing the account, then
           deploying and funding it on-chain. The deployment fee is paid by Otolith&rsquo;s fee account, not by you,
           and a new testnet account is funded with testnet XLM.

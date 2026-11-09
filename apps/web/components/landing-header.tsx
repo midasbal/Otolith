@@ -6,17 +6,24 @@ import { Mark } from "@/components/ui/mark";
 import { ThemeToggle } from "@/components/ui/theme";
 
 // The section links are absolute so they work from the docs page as well as
-// from the homepage they point into. Every link here stays in the tab.
+// from the homepage they point into. The docs open in a new tab, so the
+// page being read is not left behind.
 const NAV_LINKS = [
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Security", href: "/#security" },
-  { label: "Docs", href: "/docs" },
+  { label: "How it works", href: "/#how-it-works", newTab: false },
+  { label: "Security", href: "/#security", newTab: false },
+  { label: "Docs", href: "/docs", newTab: true },
 ];
 
 function NavLinks() {
   return NAV_LINKS.map((link) => (
-    <Link key={link.href} href={link.href} className="ot-navlink">
+    <Link
+      key={link.href}
+      href={link.href}
+      className="ot-navlink"
+      {...(link.newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
       {link.label}
+      {link.newTab ? <span className="sr-only"> (opens in a new tab)</span> : null}
     </Link>
   ));
 }

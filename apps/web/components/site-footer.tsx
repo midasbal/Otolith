@@ -8,7 +8,7 @@ const CONTACT_EMAIL = "support@otolith.xyz";
 type FooterLink = {
   label: string;
   href: string;
-  /** Leaves the site: opens in a new tab, and says so to a screen reader. */
+  /** Opens in a new tab, and says so to a screen reader. */
   external?: boolean;
   /** The link's name for a screen reader, where the visible label alone is too short to say where it goes. */
   accessibleLabel?: string;
@@ -35,7 +35,7 @@ const LINK_GROUPS: FooterGroup[] = [
   {
     heading: "Resources",
     links: [
-      { label: "Docs", href: "/docs" },
+      { label: "Docs", href: "/docs", external: true },
       { label: "GitHub", href: "https://github.com/midasbal/Otolith", external: true },
       { label: "X", href: "https://x.com/Otolithxyz", external: true, accessibleLabel: "Otolith on X (opens in a new tab)" },
     ],
@@ -57,24 +57,22 @@ type SiteFooterProps = {
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
   const className = "ot-quiet-link block py-1 text-sm [@media(pointer:coarse)]:py-2.5";
-  // A page of this site is a client-side link; a section of the homepage is
-  // an ordinary anchor, and anything external opens in a new tab.
-  if (!link.external && link.href.startsWith("/") && !link.href.includes("#")) {
+  const tabProps = link.external ? { target: "_blank", rel: "noopener noreferrer" } : {};
+  const hint = link.external && !link.accessibleLabel ? <span className="sr-only"> (opens in a new tab)</span> : null;
+  // A page of this site is a client-side link; a section of the homepage and
+  // anything external are ordinary anchors.
+  if (link.href.startsWith("/") && !link.href.includes("#")) {
     return (
-      <Link href={link.href} aria-label={link.accessibleLabel} className={className}>
+      <Link href={link.href} aria-label={link.accessibleLabel} className={className} {...tabProps}>
         {link.label}
+        {hint}
       </Link>
     );
   }
   return (
-    <a
-      href={link.href}
-      aria-label={link.accessibleLabel}
-      className={className}
-      {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-    >
+    <a href={link.href} aria-label={link.accessibleLabel} className={className} {...tabProps}>
       {link.label}
-      {link.external && !link.accessibleLabel ? <span className="sr-only"> (opens in a new tab)</span> : null}
+      {hint}
     </a>
   );
 }
