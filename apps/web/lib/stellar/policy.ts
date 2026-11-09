@@ -5,11 +5,15 @@ import { POLICY_CONTRACT } from "./policy-config";
 // The smart account contract's own error code for "no context rule
 // exists at this id" (SmartAccountError::ContextRuleNotFound, confirmed
 // directly against a real testnet account: calling get_context_rule for
-// an id past the end of the account's rule history fails with exactly
-// this code). get_context_rules_count is a monotonic "ever created"
-// counter, not a count of currently active rules, so ids in range can
-// still be missing if a rule was removed; this lets that be told apart
-// from a genuine, unexpected read failure.
+// an id with no rule fails with exactly this code).
+//
+// Rule ids are assigned once and never reused, and
+// get_context_rules_count is the number of rules the account has NOW, not
+// the next id: an account whose rules 1 and 2 were removed and whose
+// rules 3 and 4 were added reports a count of 3 with its rules at ids 0, 3
+// and 4 (confirmed on testnet). So ids cannot be assumed to run from 0 up
+// to the count; findPolicyContextRule probes past the gaps, and this code
+// is how a gap is told apart from a genuine, unexpected read failure.
 const CONTEXT_RULE_NOT_FOUND_ERROR = "Error(Contract, #3000)";
 
 // The rebalance-policy contract's own NotInstalled error code (see
@@ -17,6 +21,19 @@ const CONTEXT_RULE_NOT_FOUND_ERROR = "Error(Contract, #3000)";
 // Confirmed directly against a real testnet account with no policy
 // installed: get_params fails with exactly this text.
 const POLICY_NOT_INSTALLED_ERROR = "Error(Contract, #1)";
+
+// How many ids past the ones still missing each round of findPolicyContextRule
+// asks for. Every removed rule leaves a gap that pushes the next ids one
+// further up, so asking only for as many ids as the count says would need a
+// second round for almost any account that has ever removed a rule, and a
+// round is a full RPC round-trip. A few spare ids are cheap by comparison
+// (they run in parallel and a miss is a quick error).
+const RULE_PROBE_SLACK = 4;
+
+// The most rule ids findPolicyContextRule will probe on one account. Ids
+// are never reused, so this is the highest id it can find: far beyond
+// anything a person installing and removing a policy reaches.
+const MAX_RULE_IDS_PROBED = 256;
 
 export type RebalancePolicyParams = {
   sellAsset: string;
@@ -143,28 +160,50 @@ async function findPolicyContextRule(smartAccount: string): Promise<{ contextRul
   }
   const count = Number(scValToNative(requireRetval(countSimulation)));
 
-  const ruleIds = Array.from({ length: count }, (_, id) => id);
-  const matches = await Promise.all(
-    ruleIds.map(async (id) => {
-      const simulation = await simulateReadCall(smartAccount, "get_context_rule", [
-        nativeToScVal(id, { type: "u32" }),
-      ]);
-      if (rpc.Api.isSimulationError(simulation)) {
-        if (simulation.error.includes(CONTEXT_RULE_NOT_FOUND_ERROR)) {
-          return { id: null, ledger: simulation.latestLedger };
-        }
-        throw new Error(simulation.error);
-      }
-      const rule = scValToNative(requireRetval(simulation)) as RawContextRule;
-      return { id: rule.policies.includes(POLICY_CONTRACT) ? id : null, ledger: simulation.latestLedger };
-    }),
-  );
+  // The count is how many rules exist, so probe ids upward until that many
+  // have been found, a round at a time, each round asking for as many ids
+  // as are still missing plus a few spare (RULE_PROBE_SLACK): an account
+  // whose rules have been removed and re-added a few times is read in one
+  // round, and a longer history costs one more per few gaps. The probing is
+  // capped, so an account that cannot be made sense of is read as having no
+  // policy rather than read forever.
+  let found = 0;
+  let nextId = 0;
+  let policyRuleId: number | null = null;
+  let lowestLedger = countSimulation.latestLedger;
+  while (found < count && nextId < MAX_RULE_IDS_PROBED) {
+    const size = Math.min(count - found + RULE_PROBE_SLACK, MAX_RULE_IDS_PROBED - nextId);
+    const ids = Array.from({ length: size }, (_, offset) => nextId + offset);
+    nextId += size;
 
-  const found = matches.find((match) => match.id !== null);
-  return {
-    contextRuleId: found === undefined ? null : found.id,
-    ledger: Math.min(countSimulation.latestLedger, ...matches.map((match) => match.ledger)),
-  };
+    const batch = await Promise.all(
+      ids.map(async (id) => {
+        const simulation = await simulateReadCall(smartAccount, "get_context_rule", [
+          nativeToScVal(id, { type: "u32" }),
+        ]);
+        if (rpc.Api.isSimulationError(simulation)) {
+          if (simulation.error.includes(CONTEXT_RULE_NOT_FOUND_ERROR)) {
+            return { id, exists: false, hasPolicy: false, ledger: simulation.latestLedger };
+          }
+          throw new Error(simulation.error);
+        }
+        const rule = scValToNative(requireRetval(simulation)) as RawContextRule;
+        return { id, exists: true, hasPolicy: rule.policies.includes(POLICY_CONTRACT), ledger: simulation.latestLedger };
+      }),
+    );
+
+    for (const rule of batch) {
+      lowestLedger = Math.min(lowestLedger, rule.ledger);
+      if (rule.exists) {
+        found += 1;
+        if (rule.hasPolicy && policyRuleId === null) {
+          policyRuleId = rule.id;
+        }
+      }
+    }
+  }
+
+  return { contextRuleId: policyRuleId, ledger: lowestLedger };
 }
 
 export async function findPolicyContextRuleId(smartAccount: string): Promise<number | null> {
