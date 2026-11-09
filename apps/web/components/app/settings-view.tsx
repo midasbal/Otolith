@@ -64,7 +64,7 @@ export function SettingsView({ address, explorerAccountUrl, copyButton, policySt
           </span>
           {copyButton}
         </div>
-        <TextLink href={explorerAccountUrl} target="_blank" rel="noreferrer" className="w-fit text-sm">
+        <TextLink href={explorerAccountUrl} target="_blank" rel="noreferrer" className="ot-hit w-fit text-sm">
           View on stellar.expert
         </TextLink>
       </Card>

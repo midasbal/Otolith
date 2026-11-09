@@ -60,7 +60,7 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
     <a
       href={link.href}
       aria-label={link.accessibleLabel}
-      className="ot-quiet-link text-sm"
+      className="ot-quiet-link block py-1 text-sm [@media(pointer:coarse)]:py-2.5"
       {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
       {link.label}
@@ -95,7 +95,8 @@ function FooterLinks({ variant }: { variant: "site" | "app" }) {
       {LINK_GROUPS.filter((group) => variant === "site" || !group.siteOnly).map((group) => (
         <nav key={group.heading} aria-label={group.heading} className="flex flex-col gap-3">
           <span className="ot-caps">{group.heading}</span>
-          <ul className="flex flex-col gap-2">
+          {/* The links carry their own spacing (as padding, which grows on a touch screen), so the list needs no gap. */}
+          <ul className="flex flex-col">
             {group.links.map((link) => (
               <li key={link.href}>
                 <FooterLinkItem link={link} />
@@ -115,7 +116,7 @@ function FooterLinks({ variant }: { variant: "site" | "app" }) {
 function FooterContact() {
   return (
     <div className="flex justify-center text-sm">
-      <TextLink href={`mailto:${CONTACT_EMAIL}`} native muted className="[overflow-wrap:anywhere]">
+      <TextLink href={`mailto:${CONTACT_EMAIL}`} native muted className="ot-hit [overflow-wrap:anywhere]">
         <span className="sr-only">Email </span>
         {CONTACT_EMAIL}
       </TextLink>

@@ -98,7 +98,7 @@ export function SetupView(props: SetupViewProps) {
         title="Set target weights"
         action={
           <div className="flex items-center gap-3">
-            <TextLink href="/app" className="text-sm">
+            <TextLink href="/app" className="ot-hit text-sm">
               Back to dashboard
             </TextLink>
             {/* This flow has no sidebar, so the theme control sits here. */}

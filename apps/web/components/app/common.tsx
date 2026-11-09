@@ -138,7 +138,7 @@ export function TransactionReceipt({ hash, className }: { hash: string; classNam
     <div className={cn("flex flex-col gap-2", className)}>
       <p className="ot-caps">Transaction hash</p>
       <TxHash value={hash} />
-      <TextLink href={explorerTxUrl(hash)} target="_blank" rel="noreferrer" className="w-fit text-sm">
+      <TextLink href={explorerTxUrl(hash)} target="_blank" rel="noreferrer" className="ot-hit w-fit text-sm">
         View on stellar.expert
       </TextLink>
     </div>

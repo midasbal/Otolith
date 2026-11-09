@@ -27,7 +27,7 @@ export const metadata: Metadata = {
  */
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <header className="ot-container pt-4 sm:pt-6">
         <div className="flex items-center justify-between gap-4">
           <Link

@@ -29,9 +29,9 @@ const LINK_ICONS: Record<string, IconName> = {
   "/app/settings": "settings",
 };
 
-function ShellLogo() {
+function ShellLogo({ compactBadge = false }: { compactBadge?: boolean }) {
   return (
-    <div className="flex flex-col items-start gap-2">
+    <div className="flex min-w-0 flex-col items-start gap-2">
       <Link
         href="/app"
         className="flex items-center gap-2.5 rounded-md font-display text-md font-medium tracking-display text-text"
@@ -39,7 +39,7 @@ function ShellLogo() {
         <Mark />
         Otolith
       </Link>
-      <TestnetBadge />
+      <TestnetBadge compact={compactBadge} />
     </div>
   );
 }
@@ -159,10 +159,14 @@ export function SidebarView({ links, account, menuOpen, onToggleMenu, onCloseMen
 
       {/* Below lg: a top bar, and the same navigation in a sheet. */}
       <div className="px-[var(--space-gutter)] pt-4 lg:hidden">
-        <div className="ot-raised flex items-center justify-between gap-3 rounded-xl px-3 py-3 sm:px-5">
-          <ShellLogo />
-          <div className="flex items-center gap-2">
-            <BackgroundToggle />
+        {/* The bar wraps rather than overflows: on the narrowest phones the
+            controls drop to a row of their own under the wordmark, right
+            aligned, so the menu button is always inside the panel. The
+            pause control takes no room while it is not shown. */}
+        <div className="ot-raised flex flex-wrap items-center justify-between gap-x-3 gap-y-3 rounded-xl px-3 py-3 sm:px-5">
+          <ShellLogo compactBadge />
+          <div className="ml-auto flex items-center gap-2">
+            <BackgroundToggle className="empty:hidden" />
             <ThemeToggle />
             <IconButton label="Menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={onToggleMenu}>
               <Icon name="menu" />

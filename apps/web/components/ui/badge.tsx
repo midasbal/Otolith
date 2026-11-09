@@ -21,6 +21,16 @@ export function Badge({ dot = false, tone, className, children }: BadgeProps) {
 }
 
 /** The network marker shown beside the wordmark on every page. */
-export function TestnetBadge() {
-  return <Badge dot>Stellar Testnet</Badge>;
+export function TestnetBadge({ compact = false }: { compact?: boolean }) {
+  // `compact` drops "Stellar" on the narrowest screens, where the marker
+  // would otherwise be the widest thing in a crowded bar; the screen reader
+  // still hears the whole name.
+  return (
+    <Badge dot>
+      <span>
+        <span className={compact ? "max-[369px]:sr-only" : undefined}>Stellar </span>
+        Testnet
+      </span>
+    </Badge>
+  );
 }

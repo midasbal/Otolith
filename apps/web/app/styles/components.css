@@ -339,6 +339,25 @@
     cursor: not-allowed;
   }
 
+  /* A larger place to tap for a small link, without moving anything: the
+     link's box and the text stay as they are, and an invisible area grows
+     out of it. 24px high at least with a pointer (the WCAG 2.2 minimum for
+     the smallest text), and nearer 44px on a touch screen. Only for a link
+     with room around it; neighbours closer than this would overlap. */
+  .ot-hit {
+    position: relative;
+  }
+  .ot-hit::after {
+    content: "";
+    position: absolute;
+    inset: -0.25rem -0.25rem;
+  }
+  @media (pointer: coarse) {
+    .ot-hit::after {
+      inset: -0.65rem -0.5rem;
+    }
+  }
+
   /* A link inside a list of links (the footer): its place in the list
      already says what it is, so it stays quiet until hovered. */
   .ot-quiet-link {

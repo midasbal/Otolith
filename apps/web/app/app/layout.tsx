@@ -24,11 +24,11 @@ export default function AppShellLayout({
           Skip to content
         </a>
         {isFocusedRoute(pathname) ? (
-          <main id="main" className="min-h-screen">
+          <main id="main" className="min-h-dvh">
             {children}
           </main>
         ) : (
-          <div className="flex min-h-screen flex-col lg:flex-row">
+          <div className="flex min-h-dvh flex-col lg:flex-row">
             <AppSidebar />
             {/* The footer sits under the content column, beside the sidebar
                 and not under it. The focused setup flow above has none. */}

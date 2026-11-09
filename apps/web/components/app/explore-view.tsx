@@ -87,7 +87,7 @@ export function ExploreView({ assets, pricesState }: { assets: ExploreAsset[]; p
                     href={`https://stellar.expert/explorer/testnet/contract/${asset.contract}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs"
+                    className="ot-hit text-xs"
                   >
                     {asset.contractLabel}
                   </TextLink>
