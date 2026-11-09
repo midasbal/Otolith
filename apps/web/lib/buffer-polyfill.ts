@@ -159,9 +159,7 @@ if (typeof window !== "undefined") {
   window.Buffer = NextCompiledBuffer as unknown as typeof RealBuffer;
 
   const liveBuffer = window.Buffer;
-  if (typeof liveBuffer.prototype.readBigInt64BE === "function") {
-    console.log("[buffer-polyfill] BigInt64 Buffer methods confirmed present on window.Buffer.");
-  } else {
+  if (typeof liveBuffer.prototype.readBigInt64BE !== "function") {
     console.error(
       "[buffer-polyfill] window.Buffer is still missing readBigInt64BE after patching. " +
         "Code paths in the Stellar SDK or smart-account-kit that read or write Soroban " +

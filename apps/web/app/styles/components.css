@@ -121,7 +121,7 @@
     position: absolute;
     top: var(--space-4);
     left: var(--space-4);
-    z-index: var(--z-toast);
+    z-index: var(--z-skip);
     padding: var(--space-3) var(--space-5);
     border-radius: var(--radius-pill);
     background-color: var(--surface-strong);
@@ -966,41 +966,6 @@
     overflow: hidden;
   }
 
-  /* ── Toast ──────────────────────────────────────────────────────── */
-
-  .ot-toast-viewport {
-    position: fixed;
-    right: var(--space-gutter);
-    bottom: var(--space-gutter);
-    left: var(--space-gutter);
-    z-index: var(--z-toast);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--space-3);
-    pointer-events: none;
-  }
-  .ot-toast {
-    display: flex;
-    max-width: min(24rem, 100%);
-    align-items: flex-start;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
-    border-radius: var(--radius-md);
-    background-color: var(--surface-strong);
-    color: var(--text);
-    font-size: var(--text-sm);
-    line-height: var(--text-sm--line-height);
-    box-shadow: var(--raised-md);
-    pointer-events: auto;
-    animation: ot-rise var(--duration-base) var(--ease-settle) both;
-  }
-  .ot-toast-body {
-    min-width: 0;
-    flex: 1;
-    padding-block: var(--space-1);
-  }
-
   /* ── Notice ─────────────────────────────────────────────────────────
      Inline status: a pressed strip with an icon and text. Tone changes
      the icon and its color; a danger notice also sets its text in the
@@ -1028,12 +993,10 @@
     min-width: 0;
     flex: 1;
   }
-  .ot-notice[data-tone="danger"],
-  .ot-toast[data-tone="danger"] {
+  .ot-notice[data-tone="danger"] {
     color: var(--danger);
   }
-  .ot-notice[data-tone="danger"] .ot-notice-icon,
-  .ot-toast[data-tone="danger"] .ot-notice-icon {
+  .ot-notice[data-tone="danger"] .ot-notice-icon {
     color: var(--danger);
   }
 
@@ -1525,7 +1488,6 @@
       .ot-toggle,
       .ot-segmented,
       .ot-dialog,
-      .ot-toast,
       .ot-notice,
       .ot-empty,
       .ot-skeleton,
@@ -1592,7 +1554,6 @@
     .ot-well,
     .ot-segmented,
     .ot-dialog,
-    .ot-toast,
     .ot-notice,
     .ot-empty,
     .ot-skeleton,

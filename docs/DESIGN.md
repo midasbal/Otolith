@@ -1,36 +1,10 @@
-# apps/web
-
-Frontend for Otolith: create or connect a passkey smart account, set target weights, install a rebalance policy, view balances and drift, and trigger a rebalance.
-
-Next.js (App Router), TypeScript, Tailwind CSS. No component library and no animation or 3D library: the design system is bespoke, a dark identity built around one animated background, defined as design tokens in `app/styles/tokens.css` and built into a small set of primitives in `components/ui/`.
-
-## Status
-
-Functional against Stellar testnet. Wallet creation and connection are real (passkey-backed smart accounts via `smart-account-kit`), balances are read live from chain, the policy setup flow installs a real on-chain rule, and rebalancing can be triggered and is validated by the deployed contracts.
-
-## Run it
-
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-Then open `http://localhost:3000`.
-
-## Environment variables
-
-Copy `.env.example` to `.env.local` and fill in real values there. `.env.local` is gitignored and never committed; `.env.example` documents the variable names only, with no real secrets.
-
-`DEPLOYER_SECRET_KEY` is server-only: it has no `NEXT_PUBLIC_` prefix, so Next.js never inlines it into the client bundle, and it is only ever read from `lib/server/deployer.ts` (guarded by the `server-only` import) and the API routes under `app/api/` that use it. The real secret exists only in your own `.env.local`.
-
-## Design system
+# Design system
 
 Ink on cream, the logo's own two colors, and the same two exchanged for the dark theme. The page is one flat ground; content sits on quiet panels, a shade lighter than the ground with a hairline edge, and inputs are wells cut into a panel. One violet accent marks the primary action, focus, and whatever is current. Behind the landing page the logo itself is the picture: it comes apart and back together as the page's five chapters scroll by.
 
 Both themes ship. With no choice made the page follows the system setting, and light is what a browser with no preference gets. The toggle in the header (and in the app's sidebar and setup flow) overrides it and is remembered in `localStorage` under `otolith:theme`; an inline script in the document head applies a remembered choice before the first paint.
 
-### Where it lives
+## Where it lives
 
 | Path | What it holds |
 | --- | --- |
@@ -41,7 +15,7 @@ Both themes ship. With no choice made the page follows the system setting, and l
 | `app/styles/glow.css`, `landing.css` | The headline glow; the landing page's chapters, level, and drift simulator with its allocation dial. |
 | `components/logo/geometry.ts` | The logo as numbers: the one source every drawing of it reads (the SVG mark, the scene, the favicon). |
 | `components/background/` | The background: `engine.ts` (the WebGL loop), `logo-scene.ts` (the scene), `logo-field.ts` (loads the integral's distance field), `background.tsx` (the provider, the page reader, the pause control, and `useBackground`). |
-| `components/ui/` | The primitives as React components: Button, Card, Field, Input, Select, Slider, Toggle, Tabs, Stepper, OperationProgress (the staged display for a slow on-chain wait), Dialog, Toast, Notice, DataList, Badge, the logo and mark (`mark.tsx`), the theme toggle (`theme.tsx`), the level, the allocation donut and drift gauge. The gauge's labels are placed by arithmetic in the stylesheet (they are monospaced, so their widths are known), which keeps them apart and inside the track for any reading. |
+| `components/ui/` | The primitives as React components: Button, Card, Field, Input, Select, Slider, Toggle, Stepper, OperationProgress (the staged display for a slow on-chain wait), Dialog, Notice, DataList, Badge, the logo and mark (`mark.tsx`), the theme toggle (`theme.tsx`), the level, the allocation donut and drift gauge. The gauge's labels are placed by arithmetic in the stylesheet (they are monospaced, so their widths are known), which keeps them apart and inside the track for any reading. |
 | `components/landing/` | The chapter marker, and `rebalance-demo.tsx`: the drift simulator with its allocation dial, in "How it works". It shows the current split (the ring's arcs, the centre figure, the key) against the target (a fixed notch the knob sets), drawn from one drift number so they cannot disagree; the drift color is kept for being past the band. Its two buttons are `demo-action.tsx`: the one that is unavailable stays focusable, is marked `aria-disabled`, and takes a tick. |
 | `components/app/` | The app's screens as presentational views. They take props and render; they call no data hooks and reach no chain code. |
 | `app/app/**/page.tsx`, `components/*.tsx` | The containers: the hooks, state, and handlers, unchanged in behavior, handing their results to the views. |
@@ -49,7 +23,7 @@ Both themes ship. With no choice made the page follows the system setting, and l
 
 Tailwind is used for layout only. Its default palette and shadow scale are cleared in `tokens.css`, so a utility can reach a token and nothing else.
 
-### Tokens
+## Tokens
 
 Contrast figures are measured against `--bg` in the same theme.
 
@@ -79,15 +53,15 @@ The rest are the same in both themes:
 | `--focus-width/offset/color` | `2px / 3px / accent` | The focus ring, shared by every interactive element. |
 | `--glow-opacity/blur/hold` (and `-in`, `-out`, `-reach`, `-static-opacity`) | `0.75 / 0.22em / 1500ms`; `0.45 / 0.15em` up to 40rem | The headline glow: intensity, spread, and how long a letter stays lit. Gentler on small screens so letter edges stay crisp. |
 
-### The logo
+## The logo
 
 A filled half-disc standing on an axis, an outlined half-disc hanging from it, and an integral sign joining them: two assets out of balance, the target between them, and the flow that brings them level. `components/logo/geometry.ts` holds its numbers, traced from the artwork and cleaned (the two halves are the same circular segment, the integral is point-symmetric and centred on the axis). `<Logo>` and `<Mark>` (`components/ui/mark.tsx`) draw it as SVG at any size. The outlined half's line is 4 of the logo's 1700 units and never thinner than a visible line, and below about 400px wide the integral is drawn slightly heavier so its hairlines survive; both rules are in `.ot-logo`, measured against the logo's own width.
 
-### Icons
+## Icons
 
 `app/icon.svg` is the favicon: the logo set on the 16-pixel grid (the outline's line is one whole pixel row, the integral is thickened to a pixel), ink on nothing, turning cream when the browser's theme is dark. `app/favicon.ico` (16, 32, 48) is the same on a cream tile, for browsers that take no SVG favicon. `app/apple-icon.png` (180) and `public/icons/` (192, 512, and a 512 maskable with the logo inside the safe zone) are the logo on a cream square, listed in `app/manifest.ts`. All are drawn from the logo's own paths.
 
-### The background
+## The background
 
 Hand-written WebGL 1, no library: about 29 KB of JavaScript in the production build (13 KB gzipped) and a 13 KB texture, loaded on idle after first paint, so it never delays the largest paint. It is mounted once, in `app/layout.tsx`, and draws behind the landing page and behind the app's dashboard.
 
@@ -103,12 +77,12 @@ Hand-written WebGL 1, no library: about 29 KB of JavaScript in the production bu
 - The scene does not scroll with the page. Each chapter has one place on the screen: where its stage box is when the page stands at that chapter (the first with the page at its top, the last with the page at its end, the others with the chapter's top at the top of the screen). The picture is drawn there while the chapter is read and travels to the next chapter's place over the last stretch of scrolling before it. Drawing it wherever the box is from frame to frame would have it trail the page by a frame on every phone.
 - First paint and fallbacks: the hero's stage holds the logo itself as an SVG, exactly where the scene draws it, so the scene takes over from it without a seam (the closing chapter's stage does the same). Where the scene cannot run (no WebGL, a software renderer, a device that cannot hold a usable rate) the SVG logos stay and each of the three chapters between shows a still of its picture in its stage: one image per picture, used as a mask over the text color, so the same file serves both themes. Under `prefers-reduced-motion` the scene itself is drawn, standing still: one picture to a chapter, exchanged as the page reaches it, and nothing moving in between. Under `forced-colors` nothing is run or drawn, and the SVG logos remain in the system's colors.
 - Performance: the canvas resolution follows the measured frame time, in steps, down to half and back up. A frame rate that is held down by something other than the drawing (a browser saving battery, a phone's low power mode) is recognised: if the smallest buffer is no faster than the full one, the full one is restored. The scene stops when the tab is hidden, when the user pauses it, and for good if the device cannot hold a usable rate even at the floor. Software renderers are refused.
-- Pause: a visible control in the landing page's header and footer and in the app's shell (WCAG 2.2.2). The choice is remembered across pages in `localStorage`, and the control still works where storage is refused. A paused scene stops where it is; from then on it shows each chapter's still as the page reaches it, as under reduced motion.
+- Pause: a visible control in the landing page's header and in the app's shell (WCAG 2.2.2). The choice is remembered across pages in `localStorage`, and the control still works where storage is refused. A paused scene stops where it is; from then on it shows each chapter's still as the page reaches it, as under reduced motion.
 - The canvas never takes clicks or focus, and the page scrolls natively.
 
 The scene's assets are committed files in `public/logo/`: `integral-field.png` (the integral's distance field) and three stills (`still-drift.webp`, `still-return.webp`, `still-bounds.webp`). They are not built by anything in this repo, so if the integral's outline in `geometry.ts` or the look of those pictures changes, they have to be remade and saved over these files.
 
-### Retuning
+## Retuning
 
 - Ground and ink: change `--bg` and `--text` in both themes, and the `LIGHT` and `DARK` constants in `components/background/logo-scene.ts` to match.
 - Accent: change `--accent` and `--accent-strong` together, per theme. It must stay at or above 4.5:1 against `--bg`, and `--on-accent` at or above 4.5:1 against it.
@@ -116,6 +90,6 @@ The scene's assets are committed files in `public/logo/`: `integral-field.png` (
 - Trails: `TRAIL_SECONDS` and `TRAIL_MAX` in `logo-scene.ts`. The pour: `POUR_PACE` (how quickly it follows the page), `TRANSIT` (seconds on the path; keep it under `PAST * STEP`, the time the scene remembers), `POUR_AT_DRIFT` (what already lies in the right vessel while out of balance), `LEAN`.
 - Depth: `--depth` scales every shadow at once; the `--elev-*` distances set the three levels.
 
-### Accessibility
+## Accessibility
 
 A panel's edge is far too faint to carry meaning, so no state is ever shown by an edge or a shadow alone. Current and selected items take the accent and a marker; errors take the danger ink, an icon, and text; drift takes the drift ink, a dot, and a label; disabled is a shape, not a paler color (the fill and shadow go, a dashed outline stays, the label keeps a readable ink), with a not-allowed cursor and `aria-disabled`; a busy button keeps full contrast and shows a spinner. Every interactive element draws the same accent focus ring on keyboard focus. Text over the scene is measured over its densest frames in both themes: body text at least 4.5:1, large text at least 3:1. Nothing flashes. Under `prefers-reduced-motion` state changes are instant and the scene stands still; under `prefers-contrast: more` panels turn opaque and every edge strengthens; under `forced-colors` the scene is removed and borders come back in system colors.

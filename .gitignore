@@ -32,3 +32,10 @@ apps/web/CLAUDE.md
 # Editor
 .vscode/
 .idea/
+
+# Logs
+*.log
+
+# Soroban test-runner output: rewritten by every `cargo test` run
+contracts/rebalance-policy/test_snapshots/
+contracts/rebalancer/test_snapshots/

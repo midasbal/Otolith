@@ -583,10 +583,3 @@ export function uniforms<T extends string>(gl: WebGLRenderingContext, program: W
     WebGLUniformLocation | null
   >;
 }
-
-/** Screen-space derivatives, where the GPU has them: anti-aliased lines at any size. */
-export function derivativesHeader(gl: WebGLRenderingContext): string {
-  return gl.getExtension("OES_standard_derivatives")
-    ? "#extension GL_OES_standard_derivatives : enable\n#define HAS_DERIVATIVES\n"
-    : "";
-}

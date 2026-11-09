@@ -12,9 +12,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // A plain Node preload script (NODE_OPTIONS --require target), not
-    // application source: CommonJS require is the point of the file.
-    "scripts/**",
   ]),
 ]);
 

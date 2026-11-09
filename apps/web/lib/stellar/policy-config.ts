@@ -36,8 +36,6 @@ export const FIXED_PARAM_DEFAULTS = {
 // install()), mirrored here so the client can reject an out-of-range
 // value before ever prompting for a signature. Defaults match the
 // contract's own reasonable middle ground.
-export const TARGET_BUY_WEIGHT_BPS_RANGE = { min: 0, max: 10000 };
-
 export const BAND_THRESHOLD_BPS_RANGE = { min: 10, max: 2000, default: 200 };
 export const SLIPPAGE_TOLERANCE_BPS_RANGE = { min: 30, max: 500, default: 100 };
 export const COOLDOWN_SECS_RANGE = { min: 300, max: 604800, default: 3600 };

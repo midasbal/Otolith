@@ -195,7 +195,7 @@
 
   /* Stacking: only what has to sit above the page. Dialogs and menus use
      the browser's own top layer and need no number here. */
-  --z-toast: 60;
+  --z-skip: 60;
 }
 
 /*
