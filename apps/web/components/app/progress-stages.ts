@@ -26,6 +26,15 @@ export const INSTALL_STAGES: ProgressStage<InstallStage>[] = [
   { id: "confirming", label: "Confirming on-chain" },
 ];
 
+/** Revoking a policy. Staged like an install, and the last stage follows the call too. */
+export type RevokeStage = "preparing" | "authorizing" | "confirming";
+
+export const REVOKE_STAGES: ProgressStage<RevokeStage>[] = [
+  { id: "preparing", label: "Preparing" },
+  { id: "authorizing", label: "Authorizing" },
+  { id: "confirming", label: "Confirming on-chain" },
+];
+
 /** Submitting a rebalance through the keeper. */
 export type TriggerStage = "submitting" | "confirming";
 

@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { rpc } from "@stellar/stellar-sdk";
+import type { RevokeStage } from "@/components/app/progress-stages";
 import { applyConfirmedPolicy } from "@/components/policy-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
 import { settleQuery } from "@/components/query-settle";
@@ -13,9 +14,14 @@ import { cachedSigningRules, refreshSigningRules } from "@/components/signing-ru
 import { getKit } from "@/components/wallet-provider";
 import { CONTEXT_RULE_NOT_FOUND_ERROR, findPolicyContextRuleId } from "@/lib/stellar/policy";
 
+// signAndSubmit reports nothing between asking for the passkey and the
+// transaction landing, so "confirming" follows the clock, not the call:
+// it is shown once this long has passed since signing began.
+const CONFIRMING_AFTER_MS = 8000;
+
 type RevokeState =
   | { status: "idle" }
-  | { status: "revoking" }
+  | { status: "revoking"; stage: RevokeStage }
   | { status: "success"; hash: string; ledger: number | null }
   | { status: "error"; message: string };
 
@@ -48,7 +54,8 @@ export function useRevokePolicy() {
   // up again; if the chain has no such rule, the id is looked up as it
   // always was.
   const revoke = useCallback(async (smartAccount: string, knownRuleId?: number): Promise<boolean> => {
-    setState({ status: "revoking" });
+    setState({ status: "revoking", stage: "preparing" });
+    let confirmingTimer: ReturnType<typeof setTimeout> | undefined;
     try {
       const kit = getKit();
       // The signature's expiry is read alongside the lookup and the build
@@ -81,6 +88,9 @@ export function useRevokePolicy() {
           return false;
         }
       }
+
+      setState({ status: "revoking", stage: "authorizing" });
+      confirmingTimer = setTimeout(() => setState({ status: "revoking", stage: "confirming" }), CONFIRMING_AFTER_MS);
 
       // If the account's rules were listed ahead of time, sign with the rule
       // ids worked out from that listing rather than have the kit list them
@@ -135,6 +145,8 @@ export function useRevokePolicy() {
       console.error(err);
       setState({ status: "error", message: describeRevokeError(err) });
       return false;
+    } finally {
+      clearTimeout(confirmingTimer);
     }
   }, [queryClient]);
 

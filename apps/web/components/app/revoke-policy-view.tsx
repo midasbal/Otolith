@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card, IconWell } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
+import { OperationProgress } from "@/components/ui/operation-progress";
 import { Notice } from "@/components/ui/states";
 import { TransactionReceipt } from "./common";
+import { REVOKE_STAGES, SLOW_WAIT_NOTE } from "./progress-stages";
 import type { RevokeState } from "./types";
 
 /*
@@ -78,6 +80,16 @@ export function RevokePolicyView({ state, confirming, onAskConfirm, onCancel, on
         <Notice tone="danger" role="alert" className="w-full">
           {state.message}
         </Notice>
+      ) : null}
+
+      {state.status === "revoking" ? (
+        <OperationProgress
+          label="Revoking your policy"
+          stages={REVOKE_STAGES}
+          current={state.stage}
+          note={SLOW_WAIT_NOTE}
+          className="w-full"
+        />
       ) : null}
 
       <Dialog
