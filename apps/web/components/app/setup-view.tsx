@@ -277,6 +277,11 @@ function ParamsStep({
 
       {advancedOpen ? (
         <div className="flex flex-col gap-6">
+          <p className={copy}>
+            These are the safety limits on your policy: how far it can drift, how much slippage it tolerates, and how
+            often it can rebalance.
+          </p>
+
           <Field
             label="Drift band"
             hint={
@@ -318,7 +323,9 @@ function ParamsStep({
             label="Cooldown"
             hint={
               <>
-                The minimum time between rebalances. Allowed range:{" "}
+                The shortest time allowed between rebalances. It limits how often your account can be made to trade,
+                guarding against fee churn and price manipulation, since anyone can trigger a rebalance. Shorter keeps
+                you closer to target but costs more; longer trades less often. Allowed range:{" "}
                 {formatDurationSeconds(cooldownRangeSecs.min)} to {formatDurationSeconds(cooldownRangeSecs.max)}.
               </>
             }
