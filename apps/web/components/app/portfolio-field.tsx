@@ -36,6 +36,8 @@ export function rebalanceDue(rebalanceState: RebalanceState): boolean {
  */
 export function portfolioLevel(valuationState: ValuationState): number | null {
   if (valuationState.status !== "loaded" || valuationState.result.kind !== "valued") return null;
+  // A value from a delayed price is a dated snapshot, not a reading of now.
+  if (valuationState.result.priceAsOf !== undefined) return null;
   const { currentBuyWeightBps, targetBuyWeightBps } = valuationState.result;
   const target = 10000 - targetBuyWeightBps;
   if (target <= 0) return null;

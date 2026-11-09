@@ -7,7 +7,8 @@ import { DriftGauge } from "@/components/ui/drift-gauge";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { OperationProgress } from "@/components/ui/operation-progress";
 import { EmptyState, ErrorState, LoadingState, Notice } from "@/components/ui/states";
-import { formatBalanceAmount, formatBps, formatUsd } from "@/lib/stellar/format";
+import { isPriceProblem } from "@/components/rebalance-check-read";
+import { formatBalanceAmount, formatBps, formatPublishedAt, formatUsd } from "@/lib/stellar/format";
 import { ConnectPrompt, PolicyTermsList, Screen, ScreenHeader, TransactionReceipt } from "./common";
 import { Logo } from "@/components/ui/mark";
 import { PortfolioField, rebalanceDue } from "./portfolio-field";
@@ -92,6 +93,10 @@ export function AllocationPanel({ result, due }: { result: Valued; due: boolean 
   // Exactly on target counts as within the band here, not as holding more than target.
   const bandState = result.driftBps === 0 ? "within_band" : result.bandState;
   const flagged = due && bandState === "past_band";
+  // A value worked out from a delayed price is a snapshot: the split is
+  // shown, but whether it is within the band is left to the rebalance
+  // status, which is the authority on whether a rebalance can happen.
+  const dated = result.priceAsOf !== undefined;
 
   return (
     <div className="grid items-center gap-x-8 gap-y-6 sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -113,27 +118,42 @@ export function AllocationPanel({ result, due }: { result: Valued; due: boolean 
       </AllocationDonut>
 
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="ot-label">Drift</span>
-          {/* Marked only while a rebalance is called for; above target, however far, it stays neutral. */}
-          <Badge dot={flagged} tone={flagged ? "drift" : undefined}>
-            {BAND_LABEL[bandState]}
-          </Badge>
-        </div>
-        <p className="ot-num mt-1 text-lg text-text">{formatDriftBps(result.driftBps)}</p>
-        <DriftGauge
-          value={result.driftBps}
-          notches={[{ at: -result.bandThresholdBps, label: `-${formatBps(result.bandThresholdBps)}` }]}
-          label={`Drift is ${formatDriftBps(result.driftBps)} of ${buySymbol} against target. A rebalance becomes due past -${formatBps(result.bandThresholdBps)}.`}
-          className="mt-2"
-        />
-        <p className="mt-3 text-sm text-text-muted">
-          Current {formatBps(result.currentBuyWeightBps)} {buySymbol} / Target{" "}
-          {formatBps(result.targetBuyWeightBps)} {buySymbol}
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-text-muted">
-          {driftStatusCopy(bandState, buySymbol)}
-        </p>
+        {dated ? (
+          <>
+            <span className="ot-label">Allocation</span>
+            <p className="mt-3 text-sm text-text-muted">
+              Current {formatBps(result.currentBuyWeightBps)} {buySymbol} / Target{" "}
+              {formatBps(result.targetBuyWeightBps)} {buySymbol}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-text-muted">
+              Drift is not assessed from a delayed price. See the rebalance status below.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="ot-label">Drift</span>
+              {/* Marked only while a rebalance is called for; above target, however far, it stays neutral. */}
+              <Badge dot={flagged} tone={flagged ? "drift" : undefined}>
+                {BAND_LABEL[bandState]}
+              </Badge>
+            </div>
+            <p className="ot-num mt-1 text-lg text-text">{formatDriftBps(result.driftBps)}</p>
+            <DriftGauge
+              value={result.driftBps}
+              notches={[{ at: -result.bandThresholdBps, label: `-${formatBps(result.bandThresholdBps)}` }]}
+              label={`Drift is ${formatDriftBps(result.driftBps)} of ${buySymbol} against target. A rebalance becomes due past -${formatBps(result.bandThresholdBps)}.`}
+              className="mt-2"
+            />
+            <p className="mt-3 text-sm text-text-muted">
+              Current {formatBps(result.currentBuyWeightBps)} {buySymbol} / Target{" "}
+              {formatBps(result.targetBuyWeightBps)} {buySymbol}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-text-muted">
+              {driftStatusCopy(bandState, buySymbol)}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -168,7 +188,9 @@ function PortfolioCard({ terms, valuationState, due }: { terms: PolicyTerms; val
               ${formatUsd(valued.totalUsdValue)}
             </p>
             <p className="mt-2 text-sm text-text-muted">
-              Priced from the same live oracle the contracts use, not a market quote.
+              {valued.priceAsOf !== undefined
+                ? `The live price feed is delayed. Valued at the last published price, from ${formatPublishedAt(valued.priceAsOf)}.`
+                : "Priced from the same live oracle the contracts use, not a market quote."}
             </p>
           </>
         ) : null}
@@ -331,10 +353,18 @@ export function DashboardView({
                 </RebalanceCard>
               ) : null}
 
-              {rebalanceState.status === "loaded" && rebalanceState.result.state === "not_due" && rebalanceState.result.reason !== "CostExceedsBenefit" ? (
+              {rebalanceState.status === "loaded" && rebalanceState.result.state === "not_due" && rebalanceState.result.reason !== "CostExceedsBenefit" && !isPriceProblem(rebalanceState.result) ? (
                 <RebalanceCard icon="check" title="Rebalance">
                   <p className={cardCopy}>
                     Your portfolio is within its target band. No rebalance is needed right now.
+                  </p>
+                </RebalanceCard>
+              ) : null}
+
+              {rebalanceState.status === "loaded" && isPriceProblem(rebalanceState.result) ? (
+                <RebalanceCard icon="info" title="Rebalance">
+                  <p className={cardCopy}>
+                    The live price is delayed or unavailable, so the rebalance status can&rsquo;t be determined right now.
                   </p>
                 </RebalanceCard>
               ) : null}

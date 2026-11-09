@@ -26,3 +26,13 @@ export async function readRebalanceCheck(address: string): Promise<RebalanceChec
     ledger: typeof ledger === "number" ? ledger : undefined,
   };
 }
+
+// The rebalancer's reasons for a check that could not be decided because of
+// the oracle's price: the price is past the staleness window, missing, or
+// invalid (lib/server/rebalance.ts maps the contract's codes to these).
+const PRICE_PROBLEM_REASONS = ["PriceStale", "PriceMissing", "PriceInvalid"];
+
+/** Whether the check is "not due" only because the oracle's price could not be used. */
+export function isPriceProblem(result: RebalanceCheckResult): boolean {
+  return result.state === "not_due" && PRICE_PROBLEM_REASONS.includes(result.reason);
+}

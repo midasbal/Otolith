@@ -12,6 +12,13 @@ export type PortfolioValuation =
   | { kind: "unavailable"; reason: string }
   | {
       kind: "valued";
+      /**
+       * Set only when the value was worked out from a price older than the
+       * oracle's staleness window: when that price was published, in Unix
+       * seconds. The value is then a dated snapshot, and the band state
+       * below is not a verdict on whether a rebalance is due.
+       */
+      priceAsOf?: number;
       totalUsdValue: number;
       sellAsset: PortfolioAssetValue;
       buyAsset: PortfolioAssetValue;
@@ -47,14 +54,20 @@ export type ValuationInput = {
   bandThresholdBps: number;
 };
 
-/** The oracle's current prices for the pair, or why there are none. */
+/**
+ * The oracle's prices for the pair, or why there are none. "stale" carries
+ * the last published prices, at least one of them older than the staleness
+ * window, with the earliest publish time of the two.
+ */
 export type ValuationPrices =
   | { kind: "ok"; sellPrice: number; buyPrice: number }
+  | { kind: "stale"; sellPrice: number; buyPrice: number; publishedAt: number }
   | { kind: "unavailable"; reason: string };
 
 /**
- * Reads the live USD price of both assets from the oracle, the exact
- * same price source and staleness rule the contracts themselves use.
+ * Reads the USD price of both assets from the oracle, the exact same
+ * price source and staleness rule the contracts themselves use. A price
+ * past that rule is returned as "stale", dated, instead of dropped.
  * Read-only: one decimals read, then two price reads. It does not need
  * the account's balances, so it can run, and be kept, on its own. It
  * never throws, always resolving to a typed result, including a graceful
@@ -76,11 +89,20 @@ export async function getValuationPrices(
       readLivePrice(oracle, buySymbol, oracleDecimals),
     ]);
 
-    if (sellPrice === null || buyPrice === null) {
+    if (sellPrice.kind === "unavailable" || buyPrice.kind === "unavailable") {
       return { kind: "unavailable", reason: "A live price is not available for this pair right now." };
     }
 
-    return { kind: "ok", sellPrice, buyPrice };
+    if (sellPrice.kind === "stale" || buyPrice.kind === "stale") {
+      return {
+        kind: "stale",
+        sellPrice: sellPrice.price,
+        buyPrice: buyPrice.price,
+        publishedAt: Math.min(sellPrice.publishedAt, buyPrice.publishedAt),
+      };
+    }
+
+    return { kind: "ok", sellPrice: sellPrice.price, buyPrice: buyPrice.price };
   } catch (err) {
     console.error(err);
     return { kind: "unavailable", reason: "Could not compute the portfolio's live value right now." };
@@ -98,6 +120,7 @@ export function computeValuation(params: ValuationInput, prices: ValuationPrices
     return { kind: "unavailable", reason: prices.reason };
   }
   const { sellPrice, buyPrice } = prices;
+  const priceAsOf = prices.kind === "stale" ? prices.publishedAt : undefined;
 
   // Display-only arithmetic: balances are already decimal strings
   // (see lib/stellar/smart-account-balances.ts), and a USD figure
@@ -123,6 +146,7 @@ export function computeValuation(params: ValuationInput, prices: ValuationPrices
 
   return {
     kind: "valued",
+    ...(priceAsOf !== undefined ? { priceAsOf } : {}),
     totalUsdValue,
     sellAsset: {
       code: params.sellAsset.symbol,

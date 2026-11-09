@@ -2,7 +2,7 @@ import { TextLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DataList, DataRow } from "@/components/ui/data-list";
 import { Notice, Skeleton } from "@/components/ui/states";
-import { formatUsd } from "@/lib/stellar/format";
+import { formatPublishedAt, formatUsd } from "@/lib/stellar/format";
 import { Screen, ScreenHeader } from "./common";
 import type { LivePricesState } from "./types";
 
@@ -20,8 +20,12 @@ export type ExploreAsset = {
   role: string;
 };
 
-function findPrice(prices: { symbol: string; price: number | null }[], symbol: string): number | null {
-  return prices.find((entry) => entry.symbol === symbol)?.price ?? null;
+type PriceEntry = { price: number | null; stale: boolean; publishedAt: number | null };
+
+const NO_PRICE: PriceEntry = { price: null, stale: false, publishedAt: null };
+
+function findPrice(prices: { symbol: string; price: number | null; stale: boolean; publishedAt: number | null }[], symbol: string): PriceEntry {
+  return prices.find((entry) => entry.symbol === symbol) ?? NO_PRICE;
 }
 
 function PriceReadout({ price }: { price: number | null }) {
@@ -47,7 +51,7 @@ export function ExploreView({ assets, pricesState }: { assets: ExploreAsset[]; p
 
       <div className="grid min-w-0 gap-6 sm:grid-cols-2">
         {assets.map((asset) => {
-          const price = pricesState.status === "loaded" ? findPrice(pricesState.prices, asset.symbol) : null;
+          const entry = pricesState.status === "loaded" ? findPrice(pricesState.prices, asset.symbol) : NO_PRICE;
           return (
             <Card key={asset.symbol} className="flex flex-col gap-5">
               <div className="min-w-0">
@@ -65,10 +69,14 @@ export function ExploreView({ assets, pricesState }: { assets: ExploreAsset[]; p
                       <Skeleton className="h-7 w-32" />
                     </>
                   ) : (
-                    <PriceReadout price={price} />
+                    <PriceReadout price={entry.price} />
                   )}
                 </div>
-                <p className="mt-1 text-sm text-text-muted">Live oracle price</p>
+                <p className="mt-1 text-sm text-text-muted">
+                  {entry.stale && entry.publishedAt !== null
+                    ? `The live price feed is delayed. Last published price, from ${formatPublishedAt(entry.publishedAt)}.`
+                    : "Live oracle price"}
+                </p>
               </div>
 
               <p className="text-sm leading-relaxed text-text-muted">{asset.role}</p>

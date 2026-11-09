@@ -25,36 +25,49 @@ function reflectorAssetScVal(symbol: string): xdr.ScVal {
 type ReflectorPrice = { price: bigint; timestamp: bigint } | undefined;
 
 /**
- * Reads a single asset's live USD price from the oracle, by ticker
- * symbol, the same call shape contracts/rebalancer and
- * contracts/rebalance-policy already use server-side. Returns null for
- * every way this can fail to produce a number worth trusting: the RPC
- * call itself failing, the oracle returning no price at all (Option::None
- * decodes to undefined), or the price being older than the same
- * staleness window the contracts enforce. Never throws.
+ * What the oracle has for one asset. `publishedAt` is when the oracle
+ * published the price, in Unix seconds.
+ *
+ * "fresh" is within the staleness window the contracts enforce. "stale" is
+ * a real price the oracle published, older than that window: the contracts
+ * would refuse to act on it, but it is still the last price there is, so
+ * it is returned with its time rather than thrown away. "unavailable" is
+ * everything else: the call failed, or the oracle has no price at all.
  */
-export async function readLivePrice(oracle: string, symbol: string, oracleDecimals: number): Promise<number | null> {
+export type OraclePrice =
+  | { kind: "fresh"; price: number; publishedAt: number }
+  | { kind: "stale"; price: number; publishedAt: number }
+  | { kind: "unavailable" };
+
+/**
+ * Reads a single asset's USD price from the oracle, by ticker symbol, the
+ * same call shape contracts/rebalancer and contracts/rebalance-policy
+ * already use server-side. A price older than the staleness window the
+ * contracts enforce comes back as "stale", with its value and publish time;
+ * the RPC call failing, or the oracle returning no price at all
+ * (Option::None decodes to undefined), comes back as "unavailable". Never
+ * throws.
+ */
+export async function readLivePrice(oracle: string, symbol: string, oracleDecimals: number): Promise<OraclePrice> {
   const simulation = await simulateReadCall(oracle, "lastprice", [reflectorAssetScVal(symbol)]);
   if (rpc.Api.isSimulationError(simulation)) {
-    return null;
+    return { kind: "unavailable" };
   }
 
   const retval = simulation.result?.retval;
   if (!retval) {
-    return null;
+    return { kind: "unavailable" };
   }
 
   const native = scValToNative(retval) as ReflectorPrice;
   if (!native) {
-    return null;
+    return { kind: "unavailable" };
   }
 
-  const ageSecs = Math.floor(Date.now() / 1000) - Number(native.timestamp);
-  if (ageSecs > MAX_PRICE_AGE_SECS) {
-    return null;
-  }
-
-  return Number(native.price) / 10 ** oracleDecimals;
+  const publishedAt = Number(native.timestamp);
+  const price = Number(native.price) / 10 ** oracleDecimals;
+  const ageSecs = Math.floor(Date.now() / 1000) - publishedAt;
+  return { kind: ageSecs > MAX_PRICE_AGE_SECS ? "stale" : "fresh", price, publishedAt };
 }
 
 export async function readOracleDecimals(oracle: string): Promise<number | null> {
@@ -66,24 +79,37 @@ export async function readOracleDecimals(oracle: string): Promise<number | null>
   return retval ? Number(scValToNative(retval)) : null;
 }
 
-export type LivePrice = { symbol: string; price: number | null };
+export type LivePrice = {
+  symbol: string;
+  /** The last price the oracle published, fresh or not; null if there is none. */
+  price: number | null;
+  /** Whether `price` is older than the staleness window. */
+  stale: boolean;
+  /** When `price` was published, in Unix seconds; null if there is no price. */
+  publishedAt: number | null;
+};
 
 /**
- * Reads live USD prices for a batch of ticker symbols from one oracle,
- * sharing a single decimals read across all of them. A symbol the oracle
- * has no current, fresh price for comes back with price: null rather
- * than failing the whole batch, so one unavailable ticker never hides
- * the others.
+ * Reads USD prices for a batch of ticker symbols from one oracle, sharing
+ * a single decimals read across all of them. A symbol whose price is stale
+ * comes back with that price, marked stale and dated; one the oracle has no
+ * price for comes back with price: null. Neither fails the batch, so one
+ * unavailable ticker never hides the others.
  */
 export async function getLivePrices(oracle: string, symbols: string[]): Promise<LivePrice[]> {
   const oracleDecimals = await readOracleDecimals(oracle);
   if (oracleDecimals === null) {
-    return symbols.map((symbol) => ({ symbol, price: null }));
+    return symbols.map((symbol) => ({ symbol, price: null, stale: false, publishedAt: null }));
   }
 
   const prices = await Promise.all(
     symbols.map((symbol) => readLivePrice(oracle, symbol, oracleDecimals)),
   );
 
-  return symbols.map((symbol, i) => ({ symbol, price: prices[i] }));
+  return symbols.map((symbol, i) => {
+    const read = prices[i];
+    return read.kind === "unavailable"
+      ? { symbol, price: null, stale: false, publishedAt: null }
+      : { symbol, price: read.price, stale: read.kind === "stale", publishedAt: read.publishedAt };
+  });
 }

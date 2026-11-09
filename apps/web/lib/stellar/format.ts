@@ -133,3 +133,8 @@ export function formatDurationSeconds(totalSeconds: number): string {
 
   return parts.slice(0, 2).join(" ");
 }
+
+/** A Unix timestamp in seconds, as a short local date and time: "Nov 9, 2026, 8:50 PM". */
+export function formatPublishedAt(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
