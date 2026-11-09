@@ -18,7 +18,8 @@ import { readPolicyStatus, type PolicyStatus } from "@/lib/stellar";
   every reading that depends on the account's state. Each such reading
   goes through readAtFloor, which will not hand back an answer below the
   floor: the policy through fetchPolicyGuarded here, the rebalance check
-  through fetchRebalanceCheckGuarded (rebalance-check-floor.ts). That
+  through fetchRebalanceCheckGuarded (rebalance-check-floor.ts), the
+  balances through fetchBalancesGuarded (balances-floor.ts). That
   covers a page opening, the retry button, a reconnect, and the reconcile
   below.
 
@@ -32,7 +33,7 @@ import { readPolicyStatus, type PolicyStatus } from "@/lib/stellar";
 export const FLOOR_LOG_TAG = "account-floor";
 
 /** The readings held to the floor. */
-export type FloorReader = "policy" | "rebalanceCheck";
+export type FloorReader = "policy" | "rebalanceCheck" | "balances";
 
 type Floor = {
   /** The ledger the confirmed transaction was included in. */

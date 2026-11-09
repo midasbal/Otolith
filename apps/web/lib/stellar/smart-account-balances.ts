@@ -38,11 +38,17 @@ function stroopsToDecimalString(raw: bigint): string {
   return `${negative ? "-" : ""}${whole.toString()}.${fraction}`;
 }
 
+type TokenBalanceRead = {
+  amount: bigint;
+  /** The ledger the simulation was evaluated at; undefined if it did not say. */
+  ledger: number | undefined;
+};
+
 /**
  * Reads a single token's balance for a holder address as a read-only
  * Soroban RPC simulation.
  */
-async function readTokenBalance(tokenContract: string, holder: string): Promise<bigint> {
+async function readTokenBalance(tokenContract: string, holder: string): Promise<TokenBalanceRead> {
   const holderScVal = Address.fromString(holder).toScVal();
   const simulation = await simulateReadCall(tokenContract, "balance", [holderScVal]);
 
@@ -50,12 +56,13 @@ async function readTokenBalance(tokenContract: string, holder: string): Promise<
     throw new Error(simulation.error);
   }
 
+  const ledger = typeof simulation.latestLedger === "number" ? simulation.latestLedger : undefined;
   const retval = simulation.result?.retval;
   if (!retval) {
-    return ZERO;
+    return { amount: ZERO, ledger };
   }
 
-  return BigInt(scValToNative(retval));
+  return { amount: BigInt(scValToNative(retval)), ledger };
 }
 
 /**
@@ -104,24 +111,44 @@ function dedupeByContract(tokens: ExtraTokenContract[]): ExtraTokenContract[] {
   return unique;
 }
 
-export async function getSmartAccountBalances(
+export type SmartAccountBalancesRead = {
+  result: SmartAccountBalancesResult;
+  /**
+   * The ledger the balances were evaluated at: the lowest of the
+   * simulations that made them up. Left out when any of them did not report
+   * one, so a caller never takes a guess for a reading.
+   */
+  ledger: number | undefined;
+};
+
+/** As getSmartAccountBalances, with the ledger the balances were evaluated at. */
+export async function readSmartAccountBalances(
   contractId: string,
   extraTokenContracts: ExtraTokenContract[] = [],
-): Promise<SmartAccountBalancesResult> {
+): Promise<SmartAccountBalancesRead> {
   const tokens = dedupeByContract([{ code: "XLM", contract: NATIVE_SAC }, ...extraTokenContracts]);
 
-  const rawBalances = await Promise.all(tokens.map((token) => readTokenBalance(token.contract, contractId)));
+  const reads = await Promise.all(tokens.map((token) => readTokenBalance(token.contract, contractId)));
+  const ledgers = reads.map((read) => read.ledger);
+  const ledger = ledgers.every((value): value is number => value !== undefined) ? Math.min(...ledgers) : undefined;
 
-  const hasAnyBalance = rawBalances.some((amount) => amount !== ZERO);
+  const hasAnyBalance = reads.some((read) => read.amount !== ZERO);
   if (!hasAnyBalance) {
-    return { kind: "empty" };
+    return { result: { kind: "empty" }, ledger };
   }
 
   const balances: SmartAccountAssetBalance[] = tokens.map((token, i) => ({
     code: token.code,
     contract: token.contract,
-    balance: stroopsToDecimalString(rawBalances[i]),
+    balance: stroopsToDecimalString(reads[i].amount),
   }));
 
-  return { kind: "funded", balances };
+  return { result: { kind: "funded", balances }, ledger };
+}
+
+export async function getSmartAccountBalances(
+  contractId: string,
+  extraTokenContracts: ExtraTokenContract[] = [],
+): Promise<SmartAccountBalancesResult> {
+  return (await readSmartAccountBalances(contractId, extraTokenContracts)).result;
 }

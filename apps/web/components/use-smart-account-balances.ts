@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchBalancesGuarded } from "@/components/balances-floor";
 import { queryKeys } from "@/components/query-keys";
-import { getSmartAccountBalances, type ExtraTokenContract, type SmartAccountBalancesResult } from "@/lib/stellar";
-import { BUY_ASSET } from "@/lib/stellar/policy-config";
+import type { SmartAccountBalancesResult } from "@/lib/stellar";
 
 type BalancesState =
   | { status: "idle" }
@@ -19,22 +19,13 @@ const ERROR: BalancesState = {
   message: "Could not reach the Stellar network. Check your connection and try again.",
 };
 
-// The tokens this product holds are fixed: the XLM/USDC pair (see
-// policy-config.ts), with native XLM always read first by the read
-// layer. So the list is a constant, not something derived from the
-// policy once it loads: a list that changed when the policy arrived
-// would change the query's key, and the balances would be read twice.
-const PAIR_TOKENS: ExtraTokenContract[] = [{ contract: BUY_ASSET.contract, code: BUY_ASSET.symbol }];
-
-/** One fresh read of the pair's balances, outside the cache (see query-settle.ts). */
-export function fetchPairBalances(address: string): Promise<SmartAccountBalancesResult> {
-  return getSmartAccountBalances(address, PAIR_TOKENS);
-}
-
 /**
  * Loads a smart account's balances for the product's fixed pair, with
  * loading and error states of its own. Passing `null` (not connected)
  * returns an idle state rather than fetching.
+ *
+ * Every read goes through fetchBalancesGuarded (balances-floor.ts), which
+ * will not store a reading older than the last confirmed transaction.
  *
  * The read is a query keyed by the account, kept for the life of the
  * app: a page that opens finds the last reading at once, as "loaded",
@@ -44,9 +35,10 @@ export function fetchPairBalances(address: string): Promise<SmartAccountBalances
  * on screen.
  */
 export function useSmartAccountBalances(address: string | null) {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: queryKeys.balances(address),
-    queryFn: () => fetchPairBalances(address as string),
+    queryFn: () => fetchBalancesGuarded(queryClient, address as string),
     enabled: address !== null,
     staleTime: 15_000,
   });

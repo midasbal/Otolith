@@ -8,6 +8,7 @@ export {
 export { getAccountBalances, type AccountBalancesResult, type AssetBalance } from "./balances";
 export {
   getSmartAccountBalances,
+  readSmartAccountBalances,
   type SmartAccountBalancesResult,
   type SmartAccountAssetBalance,
   type ExtraTokenContract,
