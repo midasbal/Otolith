@@ -68,6 +68,11 @@ export default function SettingsPage() {
         policyInstalled || revoked ? (
           <RevokePolicyPanel
             address={address}
+            contextRuleId={
+              policyState.status === "loaded" && policyState.result.kind === "installed" && !policyState.result.provisional
+                ? policyState.result.contextRuleId
+                : undefined
+            }
             onRevoked={() => setRevoked(true)}
             onContinue={() => router.push("/app")}
           />

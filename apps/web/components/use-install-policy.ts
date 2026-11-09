@@ -8,6 +8,7 @@ import { applyConfirmedPolicy } from "@/components/policy-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
+import { signatureExpirationLedger } from "@/components/signature-expiry";
 import { getKit, useWallet } from "@/components/wallet-provider";
 import { buildRebalancePolicyGateParamsScVal, type RebalancePolicyInstallParams } from "@/lib/stellar/policy-params";
 import { POLICY_CONTRACT } from "@/lib/stellar/policy-config";
@@ -64,10 +65,15 @@ export function useInstallPolicy() {
     try {
       const gateParams = buildRebalancePolicyGateParamsScVal(params);
       const kit = getKit();
-      const tx = await kit.rules.add(createDefaultContext(), ruleName, [], new Map([[POLICY_CONTRACT, gateParams]]));
+      // The signature's expiry is read alongside building the transaction
+      // rather than after it (see signature-expiry.ts).
+      const [tx, expiration] = await Promise.all([
+        kit.rules.add(createDefaultContext(), ruleName, [], new Map([[POLICY_CONTRACT, gateParams]])),
+        signatureExpirationLedger(kit),
+      ]);
       setState({ status: "installing", stage: "authorizing" });
       confirmingTimer = setTimeout(() => setState({ status: "installing", stage: "confirming" }), CONFIRMING_AFTER_MS);
-      const result = await kit.signAndSubmit(tx);
+      const result = await kit.signAndSubmit(tx, { expiration });
 
       if (!result.success) {
         setState({ status: "error", message: result.error?.message || "The transaction failed to submit." });

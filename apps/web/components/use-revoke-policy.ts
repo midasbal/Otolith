@@ -2,12 +2,14 @@
 
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { rpc } from "@stellar/stellar-sdk";
 import { applyConfirmedPolicy } from "@/components/policy-ledger-floor";
 import { queryKeys } from "@/components/query-keys";
 import { settleQuery } from "@/components/query-settle";
 import { fetchRebalanceCheck } from "@/components/use-rebalance-check";
+import { signatureExpirationLedger } from "@/components/signature-expiry";
 import { getKit } from "@/components/wallet-provider";
-import { findPolicyContextRuleId } from "@/lib/stellar/policy";
+import { CONTEXT_RULE_NOT_FOUND_ERROR, findPolicyContextRuleId } from "@/lib/stellar/policy";
 
 type RevokeState =
   | { status: "idle" }
@@ -39,18 +41,46 @@ export function useRevokePolicy() {
   const [state, setState] = useState<RevokeState>({ status: "idle" });
   const queryClient = useQueryClient();
 
-  const revoke = useCallback(async (smartAccount: string): Promise<boolean> => {
+  // `knownRuleId` is the rule id from the policy status the screen is
+  // showing, when that status is a real reading. It saves looking the id
+  // up again; if the chain has no such rule, the id is looked up as it
+  // always was.
+  const revoke = useCallback(async (smartAccount: string, knownRuleId?: number): Promise<boolean> => {
     setState({ status: "revoking" });
     try {
-      const contextRuleId = await findPolicyContextRuleId(smartAccount);
-      if (contextRuleId === null) {
-        setState({ status: "error", message: "No active policy was found to revoke." });
-        return false;
+      const kit = getKit();
+      // The signature's expiry is read alongside the lookup and the build
+      // rather than after them (see signature-expiry.ts).
+      const expirationRead = signatureExpirationLedger(kit);
+
+      const buildRemoval = async (contextRuleId: number) => {
+        const built = await kit.rules.remove(contextRuleId);
+        // A rule id the chain does not have does not throw here: the failed
+        // simulation is recorded on the transaction and would only surface
+        // when signing starts. So it is checked for now.
+        const simulation = built.simulation;
+        if (simulation && rpc.Api.isSimulationError(simulation) && simulation.error.includes(CONTEXT_RULE_NOT_FOUND_ERROR)) {
+          return null;
+        }
+        return built;
+      };
+
+      let contextRuleId = knownRuleId ?? null;
+      let tx = contextRuleId === null ? null : await buildRemoval(contextRuleId);
+      if (tx === null) {
+        contextRuleId = await findPolicyContextRuleId(smartAccount);
+        if (contextRuleId === null) {
+          setState({ status: "error", message: "No active policy was found to revoke." });
+          return false;
+        }
+        tx = await buildRemoval(contextRuleId);
+        if (tx === null) {
+          setState({ status: "error", message: "No active policy was found to revoke." });
+          return false;
+        }
       }
 
-      const kit = getKit();
-      const tx = await kit.rules.remove(contextRuleId);
-      const result = await kit.signAndSubmit(tx);
+      const result = await kit.signAndSubmit(tx, { expiration: await expirationRead });
 
       if (!result.success) {
         setState({ status: "error", message: result.error?.message || "The transaction failed to submit." });

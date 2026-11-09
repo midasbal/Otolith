@@ -14,7 +14,7 @@ import { POLICY_CONTRACT } from "./policy-config";
 // and 4 (confirmed on testnet). So ids cannot be assumed to run from 0 up
 // to the count; findPolicyContextRule probes past the gaps, and this code
 // is how a gap is told apart from a genuine, unexpected read failure.
-const CONTEXT_RULE_NOT_FOUND_ERROR = "Error(Contract, #3000)";
+export const CONTEXT_RULE_NOT_FOUND_ERROR = "Error(Contract, #3000)";
 
 // The rebalance-policy contract's own NotInstalled error code (see
 // contracts/rebalance-policy/src/lib.rs, Error::NotInstalled = 1).
