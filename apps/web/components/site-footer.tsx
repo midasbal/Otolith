@@ -10,6 +10,8 @@ type FooterLink = {
   href: string;
   /** Opens in a new tab, and says so to a screen reader. */
   external?: boolean;
+  /** Opens in a new tab only in the app's footer: a page of this site, read from inside the app, should not take the app's tab. */
+  appNewTab?: boolean;
   /** The link's name for a screen reader, where the visible label alone is too short to say where it goes. */
   accessibleLabel?: string;
 };
@@ -35,7 +37,7 @@ const LINK_GROUPS: FooterGroup[] = [
   {
     heading: "Resources",
     links: [
-      { label: "Docs", href: "/docs", external: true },
+      { label: "Docs", href: "/docs", appNewTab: true },
       { label: "GitHub", href: "https://github.com/midasbal/Otolith", external: true },
       { label: "X", href: "https://x.com/Otolithxyz", external: true, accessibleLabel: "Otolith on X (opens in a new tab)" },
     ],
@@ -55,10 +57,11 @@ type SiteFooterProps = {
   className?: string;
 };
 
-function FooterLinkItem({ link }: { link: FooterLink }) {
+function FooterLinkItem({ link, variant }: { link: FooterLink; variant: "site" | "app" }) {
   const className = "ot-quiet-link block py-1 text-sm [@media(pointer:coarse)]:py-2.5";
-  const tabProps = link.external ? { target: "_blank", rel: "noopener noreferrer" } : {};
-  const hint = link.external && !link.accessibleLabel ? <span className="sr-only"> (opens in a new tab)</span> : null;
+  const newTab = link.external || (link.appNewTab && variant === "app");
+  const tabProps = newTab ? { target: "_blank", rel: "noopener noreferrer" } : {};
+  const hint = newTab && !link.accessibleLabel ? <span className="sr-only"> (opens in a new tab)</span> : null;
   // A page of this site is a client-side link; a section of the homepage and
   // anything external are ordinary anchors.
   if (link.href.startsWith("/") && !link.href.includes("#")) {
@@ -107,7 +110,7 @@ function FooterLinks({ variant }: { variant: "site" | "app" }) {
           <ul className="flex flex-col">
             {group.links.map((link) => (
               <li key={link.href}>
-                <FooterLinkItem link={link} />
+                <FooterLinkItem link={link} variant={variant} />
               </li>
             ))}
           </ul>
