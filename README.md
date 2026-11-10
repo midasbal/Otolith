@@ -80,12 +80,25 @@ The source of truth is `apps/web/lib/stellar/policy-config.ts`. The full list, w
 
 Working on Stellar testnet. Account creation with a passkey, policy setup, live drift and value, permissionless rebalancing, revoke, and an on-chain activity feed all work, and have been confirmed with real transactions, including both a successful rebalance and a rebalance the contracts correctly refused.
 
-Not built yet, and the next milestone:
+The roadmap from here:
 
-- Passkey recovery, so a lost device does not mean a lost account.
-- A sign-in path that does not depend on a passkey.
-- Full transaction history. Activity today covers the recent window the RPC keeps queryable.
-- Portfolios of more than two assets.
+**Non-custodial completeness**
+
+- A withdraw and send flow, so funds can leave the account from the interface. The account already permits it; this adds the interface and the fee-sponsor path.
+- Account recovery: a user-held backup signer set up at onboarding, so a lost passkey does not mean a lost account, and a sign-in path that does not depend on a passkey.
+- Optional automated rebalancing: a scheduled, permissionless trigger, with the manual button and open contract calls as fallbacks.
+- Continuous integration and a frontend test suite.
+
+**Protocol v2 (a new contract deployment)**
+
+- Bidirectional rebalancing, to correct an overweight position as well as an underweight one.
+- Multi-asset baskets beyond the current two-asset pair.
+- On-chain rebalance events, storage lifetime handling, cross-field parameter validation, and a caller-tip seam that opens the trigger to a competitive keeper market.
+
+**Security and mainnet**
+
+- A public adversarial testing program against a frozen release candidate.
+- A security review, then mainnet deployment with split operational keys, multisig, monitoring, and a documented incident process.
 
 ## Security
 
