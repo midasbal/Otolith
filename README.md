@@ -102,7 +102,7 @@ The roadmap from here:
 
 ## Security
 
-The contracts enforce the limits on-chain, and the web app and keeper cannot authorize a trade. They are testnet deployments. They went through an internal review, in which a critical authorization flaw was found and fixed before deployment, and they have not been externally audited. The threat model and what enforces each protection are in the [security model](https://otolith.xyz/docs#tech-security).
+The contracts enforce the limits on-chain, and the web app and keeper cannot authorize a trade. They are testnet deployments. They went through an internal review, in which a critical authorization flaw was found and fixed during development, and they have not been externally audited. The full threat model is in [docs/threat-model.md](docs/threat-model.md), and what enforces each protection is in the [security model](https://otolith.xyz/docs#tech-security) on the docs site.
 
 ## License
 
