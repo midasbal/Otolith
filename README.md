@@ -1,73 +1,96 @@
 # Otolith
 
-A non-custodial, on-chain portfolio auto-rebalancer on Stellar.
+A non-custodial, on-chain portfolio rebalancer on Stellar.
 
-You choose a target allocation, for example 80% XLM and 20% USDC, and sign it once with a passkey. Otolith then keeps your portfolio aligned to that target automatically. Your funds never leave your own account, and you can remove the automation's permission at any time.
+Otolith keeps a two-asset XLM and USDC portfolio near a target split. You choose the split and sign once with a passkey. After that, a rebalance can be triggered by anyone, and it can only execute inside the limits you signed. Your funds stay in your own smart account the whole time, and one signature removes the permission again. It runs on Stellar testnet only.
 
-**Live demo:** https://otolith.vercel.app
-**Network:** Stellar Testnet
+**Live app:** https://otolith.xyz/ · **Docs:** https://otolith.xyz/docs · **SCF submission:** _link to be added_
 
-## The problem
+## How it works
 
-Holding a target allocation usually forces a choice. You either rebalance by hand, watching prices and placing trades yourself, or you hand your assets to a custodian and trust them to do it. The first is tedious and easy to get wrong. The second means giving up control of your funds.
+Each user's funds sit in a passkey-owned Soroban smart account. Setting a target installs a rule on that account with no signers and one policy attached, the `rebalance-policy` contract. The rule defers every authorization to the policy, which is what lets a rebalance happen without a signature, and the policy approves only one narrow shape: a swap of XLM for USDC through Soroswap, delivered back to the account, inside the bounds you set.
 
-Otolith removes that trade-off. It automates rebalancing while your assets stay entirely in your own custody. The target user is anyone who wants a hands-off, rules-based portfolio without surrendering their keys.
+The design is compute-then-validate. The `rebalancer` contract reads both prices from the Reflector oracle, sizes the exact trade, and calls the router. The policy does not trust that arithmetic: it reads the oracle itself, derives its own slippage floor and trade ceiling, enforces the cooldown, and checks the finished swap against them. A missing or stale price stops the rebalance, and nothing falls back to another source. The keeper that submits a rebalance only pays the fee. It is never a signer on any account, and the contracts never authorize it to move funds.
 
-## How it works for a user
+The architecture, parameters and error codes are in the [technical guide](https://otolith.xyz/docs). The plain-language version is the user guide on the same page.
 
-1. Create an account with a passkey. No seed phrase, no browser extension.
-2. Set your target allocation, drift band, slippage limit, and cooldown. Signing this once installs the policy on your account.
-3. Fund it by sending XLM and USDC to your account's address.
-4. When the portfolio drifts past the band, a rebalance brings it back. Anyone can trigger it, but it can only execute within the rules you signed.
-5. Revoke anytime. One signature removes the automation's permission and your balances stay put.
+## Repository layout
 
-## Architecture
+```
+contracts/            Rust workspace of Soroban contracts
+  rebalance-policy/     the policy that gates every rebalance (a stellar-accounts Policy)
+  rebalancer/           prices, sizes and submits the swap
+  rebalance-sizing/     pure shared crate: the sizing formula, no contract surface
+apps/web/             Next.js app (App Router, TypeScript, Tailwind)
+docs/                 GLOSSARY.md, PROJECT.md, and DESIGN.md (the design-system reference)
+```
 
-Otolith is built around a passkey-owned Soroban smart account and two Rust contracts that govern it.
+The web app uses no component library and no animation or 3D library.
 
-**Smart account.** Each user's funds live in their own smart account, owned by a WebAuthn passkey. This is what makes the system non-custodial: the account holds the assets, and only its owner can authorize changes to how it is governed.
+## Running locally
 
-**Policy contract (`rebalance-policy`).** When a user sets a target, this contract stores the policy as a scoped rule on the account: target weights, drift band, slippage tolerance, cooldown, and an over-trading gate. On every rebalance it validates the proposed trade on-chain against those bounds and against the oracle price. If the trade violates any limit, it is rejected. This contract is the core of the security model.
+**Prerequisites**
 
-**Rebalancer contract (`rebalancer`).** This executes an approved rebalance. It reads the current allocation, computes the trade needed to move toward target, and routes the swap. It can never move assets outside what the policy contract allows.
+- Contracts: Rust (edition 2021) with the `wasm32-unknown-unknown` target, and the Stellar CLI. `soroban-sdk` 26.1.1 and `stellar-accounts` 0.7.2 are pinned in the workspace `Cargo.toml`.
+- Web app: Node 20.9 or newer (Next.js 16).
 
-**Web app (`apps/web`).** A Next.js frontend for account creation, portfolio setup, live drift and value readouts, triggering rebalances, and revoke. It reads chain state through public Stellar RPC and the oracle, with no trusted backend in the custody path.
+**Contracts**, from the repo root:
 
-## Stellar integrations
+```bash
+cargo test                # run the contract tests
+stellar contract build    # build the wasm
+```
 
-- **Soroban smart accounts** for non-custodial, passkey-owned wallets and the scoped policy signer that authorizes permissionless rebalances.
-- **Reflector oracle** for on-chain pricing. Every rebalance is valued and bounds-checked against Reflector, so trades cannot execute at a price the contract would not trust.
-- **Soroswap** as the execution venue. Approved rebalances route their swaps through Soroswap pools.
+The repo has no Makefile or build script, so these are the plain commands. Deploying is done with the Stellar CLI, and the repo carries no deploy script.
 
-## Key design decisions and trade-offs
+**Web app**, from `apps/web`:
 
-**One signature, then none.** Setup is the only action a user signs. The policy rule it installs authorizes any future rebalance that stays within its bounds, so rebalances are permissionless and require no further signing. The trade-off is that the rule must be written carefully, since it is a standing authorization. We bound it tightly (target, band, slippage, cooldown, over-trading gate) and made it revocable in a single signature.
+```bash
+npm install
+npm run dev               # http://localhost:3000
+npm run build
+npm start
+npm run lint
+npm test
+npx tsc --noEmit
+```
 
-**Enforce on-chain, do not trust off-chain.** Rather than a backend deciding when and how to rebalance, the policy contract enforces every limit on-chain. The keeper that submits a rebalance only pays the fee; it is never a signer and cannot move funds. This keeps the trust surface on the contracts.
+**Environment variables.** Copy `apps/web/.env.example` to `apps/web/.env.local` and fill it in there. `.env.local` is never committed. The app reads:
 
-**Two assets first.** The current policy governs a two-asset target (XLM and USDC). The data model is built to extend to multi-asset baskets, which is the natural next step, but we kept v1 focused so the safety logic could be simple and auditable.
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_HORIZON_URL` | Horizon endpoint. Defaults to the public testnet. |
+| `NEXT_PUBLIC_SOROBAN_RPC_URL` | Soroban RPC endpoint. Defaults to the public testnet. |
+| `DEPLOYER_SECRET_KEY` | Server-only key that sponsors fees and submits rebalances. |
+| `DEPLOYER_ENFORCE` | Enforces the deploy sponsor's allowlist, rejecting requests that fail it. The deployed instance runs with this enabled. Unset, failures are only logged. |
+| `DEPLOYER_MIN_BALANCE_XLM` | Balance floor for the fee key. Below it, sponsoring stops. Defaults to 100. |
+| `UPSTASH_REDIS_REST_URL` | Rate-limit store, optional. With it missing, requests are allowed. |
+| `UPSTASH_REDIS_REST_TOKEN` | Credential for the rate-limit store, optional. |
 
-## Technical challenges
+`DEPLOYER_SECRET_KEY` is server-only: it has no `NEXT_PUBLIC_` prefix, it is read only behind the `server-only` import, and it lives in `.env.local` and nowhere in the repository. Without it the app still reads chain state, but account creation and keeper rebalances need it.
 
-**Authorization safety.** The hardest part was making a standing, no-signer authorization safe. During our own security review we found and fixed a critical authorization flaw before deployment, where a rebalance could be steered outside the user's intended bounds. The fix shaped the current design, an independent destination check plus oracle-bounded trade sizing enforced in the policy contract.
-
-**Getting a smart account to trade permissionlessly.** A permissionless rebalance is not a passkey operation, but the outer transaction still needs a classic account to pay the fee. We resolved this with a fee-only submitter that satisfies the transaction envelope without ever becoming a signer on the smart account, preserving the non-custodial property.
-
-## Deployed contracts (Stellar Testnet)
+## Deployed contracts (Stellar testnet)
 
 - `rebalance-policy`: `CADFMK3SCILEPHADKHRLH6W7HWNY6R3VSTYMWJINIPKDQX5NW2YJKS2Q`
 - `rebalancer`: `CAPGATGURDTJDSUPPD6KC4NKLRG4FY4NOKHFCG7LHZ4FOP3FLKCLNGFV`
 
-## Status
+The source of truth is `apps/web/lib/stellar/policy-config.ts`. The full list, with the router, oracle, tokens and verifier, is under [Deployed contracts](https://otolith.xyz/docs#tech-contracts) in the docs.
 
-Working MVP on Stellar testnet. Account creation, setup, live drift and value, permissionless rebalancing, revoke, and an on-chain activity feed are all functional and confirmed with real transactions, including both the successful rebalance path and the safety-rejection path (a rebalance is intentionally refused when a testnet pool cannot fill it within the user's slippage bound).
+## Status and roadmap
 
-## Repo layout
+Working on Stellar testnet. Account creation with a passkey, policy setup, live drift and value, permissionless rebalancing, revoke, and an on-chain activity feed all work, and have been confirmed with real transactions, including both a successful rebalance and a rebalance the contracts correctly refused.
 
-- `contracts/`: Soroban smart contracts (Rust workspace)
-- `packages/`: generated TypeScript bindings
-- `apps/web`: frontend
+Not built yet, and the next milestone:
 
-## Development
+- Passkey recovery, so a lost device does not mean a lost account.
+- A sign-in path that does not depend on a passkey.
+- Full transaction history. Activity today covers the recent window the RPC keeps queryable.
+- Portfolios of more than two assets.
 
-Requires the Rust toolchain, the `wasm32-unknown-unknown` target, and the Stellar CLI.
+## Security
+
+The contracts enforce the limits on-chain, and the web app and keeper cannot authorize a trade. They are testnet deployments. They went through an internal review, in which a critical authorization flaw was found and fixed before deployment, and they have not been externally audited. The threat model and what enforces each protection are in the [security model](https://otolith.xyz/docs#tech-security).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
