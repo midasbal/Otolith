@@ -12,7 +12,7 @@ Each user's funds sit in a passkey-owned Soroban smart account. Setting a target
 
 The design is compute-then-validate. The `rebalancer` contract reads both prices from the Reflector oracle, sizes the exact trade, and calls the router. The policy does not trust that arithmetic: it reads the oracle itself, derives its own slippage floor and trade ceiling, enforces the cooldown, and checks the finished swap against them. A missing or stale price stops the rebalance, and nothing falls back to another source. The keeper that submits a rebalance only pays the fee. It is never a signer on any account, and the contracts never authorize it to move funds.
 
-The architecture, parameters and error codes are in the [technical guide](https://otolith.xyz/docs). The plain-language version is the user guide on the same page.
+The architecture, parameters and error codes are in the [technical guide](https://www.otolith.xyz/docs#tech-architecture). The plain-language version is the user guide on the same page.
 
 ## Repository layout
 
